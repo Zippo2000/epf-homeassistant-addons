@@ -1,0 +1,197 @@
+# Git ignore file for EPF E-Ink Photo Frame Add-on
+# This prevents sensitive files from being committed to the repository
+
+# ==========================================
+# CONFIGURATION FILES WITH SECRETS
+# ==========================================
+
+# Local configuration with real values (API keys, URLs, etc.)
+config.yaml
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Alternative config formats
+*.local.yaml
+*.local.yml
+
+
+# ==========================================
+# PYTHON
+# ==========================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+
+# ==========================================
+# IDE & EDITOR FILES
+# ==========================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# nano
+.nano_history
+
+
+# ==========================================
+# OS FILES
+# ==========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.localized
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+
+# ==========================================
+# LOGS & TEMP FILES
+# ==========================================
+
+# Log files
+*.log
+*.log.*
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+
+# Tracking files (from app.py)
+tracking.txt
+photos/
+
+# Downloaded images
+/photos/
+/downloads/
+
+
+# ==========================================
+# DOCKER
+# ==========================================
+
+# Docker build artifacts
+.dockerignore
+docker-compose.override.yml
+
+
+# ==========================================
+# DEVELOPMENT
+# ==========================================
+
+# Node (if using npm/yarn for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# macOS workspace settings
+.workspace
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated certificates
+*.pem
+*.crt
+*.key
+*.cert
+
+# API responses (for debugging)
+*.json.bak
+response_*.json
