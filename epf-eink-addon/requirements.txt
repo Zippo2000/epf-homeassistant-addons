@@ -1,0 +1,22 @@
+# ==============================================================================
+# Python Requirements for EPF E-Ink Add-on
+# ==============================================================================
+
+# Core Web Framework
+Flask==3.0.3
+Werkzeug==3.0.4
+
+# Image Processing
+Pillow==11.0.0
+numpy==2.1.3
+
+# Immich API Integration
+requests==2.32.3
+urllib3==2.2.3
+
+# Performance Optimization (optional - kann bei ARM Problemen entfernt werden)
+# Cython==3.0.11
+
+# Additional dependencies
+python-dotenv==1.0.1
+gunicorn==23.0.0
