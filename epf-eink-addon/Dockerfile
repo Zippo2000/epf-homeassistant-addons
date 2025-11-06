@@ -53,7 +53,7 @@ RUN \
 # Copy application files
 COPY app.py /app/
 COPY templates/ /app/templates/
-COPY static/ /app/static/
+#COPY static/ /app/static/
 
 # Copy run script
 COPY run.sh /
