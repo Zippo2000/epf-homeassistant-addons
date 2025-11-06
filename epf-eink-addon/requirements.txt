@@ -1,37 +1,17 @@
-# ==============================================================================
-# Python Requirements for EPF E-Ink Add-on (Full Zippo2000 Version)
-# ==============================================================================
-
-# Core Web Framework
 Flask==3.0.3
 Werkzeug==3.0.4
 
-# Image Processing
-Pillow==11.0.0
+Pillow==10.4.0
 pillow-heif==0.18.0
-numpy==2.1.3
-rawpy==0.23.0
+numpy==1.24.4
+Cython==3.0.10
+rawpy==0.21.0 #0.19.1
 
-# Immich API Integration
 requests==2.32.3
 urllib3==2.2.3
 
-# Configuration Management
 PyYAML==6.0.2
-
-# File Watching
 watchdog==6.0.0
-
-# NTP Time Sync
 ntplib==0.4.0
-
-# Production Server
 gunicorn==23.0.0
-
-# Additional dependencies
 python-dotenv==1.0.1
-
-# Optional: Cython for Performance (High Priority!)
-# Cython==3.0.11
-# NOTE: You need to build the cpy module separately (compile_image.pyx)
-# Without Cython, the app will use pure Python (5x slower)
