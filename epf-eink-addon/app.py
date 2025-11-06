@@ -1,11 +1,12 @@
 #-*- coding:utf8 -*-
+
 # ==============================================================================
 # Home Assistant Add-on: EPF E-Ink Photo Frame
 # Based on Zippo2000/EPF with HA Integration
 # Full-featured Flask Server with Cython Optimization
 # ==============================================================================
 
-from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for
+from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for, Blueprint
 import yaml
 import requests
 import os
@@ -19,25 +20,15 @@ from datetime import datetime, timedelta
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
-
-# Import Cython-optimized functions (optional - fallback to pure Python if not available)
-try:
-    from cpy import convert_image_atkinson, load_scaled
-    CYTHON_AVAILABLE = True
-    print("✅ Cython optimization available")
-except ImportError:
-    CYTHON_AVAILABLE = False
-    print("⚠️  Cython not available - using pure Python (slower)")
-
 import ntplib
 import time
 import logging
 import sys
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # ==============================================================================
 # Logging Setup
 # ==============================================================================
-
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL),
@@ -46,12 +37,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+# ==============================================================================
+# Cython Optimization
+# ==============================================================================
+try:
+    from cpy import convert_image_atkinson, load_scaled
+    CYTHON_AVAILABLE = True
+    logger.info("✅ Cython optimization available")
+except ImportError:
+    CYTHON_AVAILABLE = False
+    logger.warning("⚠️ Cython not available - using pure Python (slower)")
 
 # ==============================================================================
 # Default Configuration
 # ==============================================================================
-
 DEFAULT_CONFIG = {
     'immich': {
         'url': os.getenv('IMMICH_URL', 'http://192.168.1.10'),
@@ -90,7 +89,6 @@ sleep_end_minute = current_config['immich']['sleep_end_minute']
 apikey = os.getenv('IMMICH_API_KEY')
 photodir = os.getenv('IMMICH_PHOTO_DEST', '/photos')
 config_path = os.getenv('CONFIG_PATH', '/config/config.yaml')
-
 tracking_file = os.path.join(photodir, 'tracking.txt')
 
 # Ensure directory exists
@@ -115,20 +113,18 @@ register_heif_opener()
 # ==============================================================================
 # E-Ink Palette (WaveShare 7.5inch Spectra-E6)
 # ==============================================================================
-
 palette = [
-    (0, 0, 0),           # Black
-    (255, 255, 255),     # White
-    (255, 243, 56),      # Yellow
-    (191, 0, 0),         # Deep Red
-    (100, 64, 255),      # Blue
-    (67, 138, 28)        # Green
+    (0, 0, 0),        # Black
+    (255, 255, 255),  # White
+    (255, 243, 56),   # Yellow
+    (191, 0, 0),      # Deep Red
+    (100, 64, 255),   # Blue
+    (67, 138, 28)     # Green
 ]
 
 # ==============================================================================
 # Battery Tracking (Lithium Battery)
 # ==============================================================================
-
 last_battery_voltage = 0
 last_battery_update = 0
 
@@ -159,14 +155,13 @@ def calculate_battery_percentage(voltage):
 # ==============================================================================
 # Tracking Functions
 # ==============================================================================
-
 def load_downloaded_images():
     """Load downloaded image IDs from tracking.txt"""
     global albumname
     try:
         if not os.path.exists(tracking_file):
             open(tracking_file, 'w').close()
-        os.chmod(tracking_file, 0o666)
+            os.chmod(tracking_file, 0o666)
         
         with open(tracking_file, 'r+') as f:
             lines = f.readlines()
@@ -186,7 +181,7 @@ def save_downloaded_image(asset_id):
     try:
         if not os.path.exists(tracking_file):
             open(tracking_file, 'w').close()
-        os.chmod(tracking_file, 0o666)
+            os.chmod(tracking_file, 0o666)
         
         with open(tracking_file, 'r+') as f:
             lines = f.readlines()
@@ -209,7 +204,6 @@ def reset_tracking_file():
 # ==============================================================================
 # Image Processing Functions
 # ==============================================================================
-
 def atkinson_dither_pure_python(image, palette):
     """Pure Python Atkinson Dithering (Fallback if Cython unavailable)"""
     if image.mode != 'RGB':
@@ -221,10 +215,9 @@ def atkinson_dither_pure_python(image, palette):
     for y in range(height):
         for x in range(width):
             old_pixel = pixels[x, y]
-            new_pixel = min(palette, key=lambda color: 
+            new_pixel = min(palette, key=lambda color:
                 sum((old_pixel[i] - color[i])**2 for i in range(3)))
             pixels[x, y] = new_pixel
-            
             error = tuple(old_pixel[i] - new_pixel[i] for i in range(3))
             
             def distribute_error(dx, dy, factor=1/8):
@@ -283,7 +276,6 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
             new_width = int(temp_height * aspect)
         
         image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
         canvas = Image.new('RGB', (temp_width, temp_height), bg_color)
         x = (temp_width - new_width) // 2
         y = (temp_height - new_height) // 2
@@ -336,7 +328,6 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     img_io = io.BytesIO()
     output_img.save(img_io, 'BMP')
     img_io.seek(0)
-    
     return img_io
 
 def convert_raw_or_dng_to_jpg(input_file_path, output_dir):
@@ -359,9 +350,9 @@ def convert_heic_to_jpg(input_file_path, output_dir):
 # ==============================================================================
 # Configuration Management
 # ==============================================================================
-
 class ConfigFileHandler(FileSystemEventHandler):
     """Watch config.yaml for changes"""
+    
     def __init__(self, config_path, config_update_callback):
         self.config_path = config_path
         self.config_update_callback = config_update_callback
@@ -405,7 +396,6 @@ def update_app_config(new_config):
     global strength, display_mode, image_order, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     
     current_config = new_config
-    
     url = new_config['immich']['url']
     albumname = new_config['immich']['album']
     rotationAngle = new_config['immich']['rotation']
@@ -430,12 +420,30 @@ def start_config_watcher(config_path):
     return observer
 
 # ==============================================================================
-# Flask Routes
+# Flask App Setup
+# ==============================================================================
+app = Flask(__name__)
+
+# ProxyFix für Home Assistant Ingress
+# Important: This handles X-Forwarded-* headers properly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+logger.info("=" * 80)
+logger.info("EPF Flask Server (Zippo2000 + HA) Initializing")
+logger.info("=" * 80)
+logger.info(f"Cython Available: {CYTHON_AVAILABLE}")
+logger.info(f"Config Path: {config_path}")
+logger.info("=" * 80)
+
+# ==============================================================================
+# BLUEPRINT SETUP
 # ==============================================================================
 
-@app.route('/setting', methods=['GET', 'POST'])
+bp = Blueprint('main', __name__)
+
+@bp.route('/', methods=['GET', 'POST'])
 def settings():
-    """Settings page"""
+    """Settings page - ROOT ROUTE"""
     global current_config, last_battery_voltage, last_battery_update
     
     current_time = time.time()
@@ -475,21 +483,34 @@ def settings():
             with open(config_path, 'w') as f:
                 yaml.safe_dump(new_config, f)
             update_app_config(new_config)
-            return redirect(url_for('settings'))
+            return redirect(url_for('main.settings'))
         except Exception as e:
             return f"Error saving config: {str(e)}", 500
     
     return render_template('settings.html',
-                          config=current_config,
-                          battery_voltage=battery_voltage,
-                          battery_percentage=battery_percentage)
+                           config=current_config,
+                           battery_voltage=battery_voltage,
+                           battery_percentage=battery_percentage)
 
-@app.route('/')
-def index():
-    return redirect(url_for('settings'))
+@bp.route('/health', methods=['GET', 'HEAD'])
+def health():
+    """Health check endpoint"""
+    try:
+        response = requests.get(f"{url}/api/server/ping", timeout=5)
+        immich_ok = response.status_code == 200
+    except:
+        immich_ok = False
+    
+    status_code = 200 if immich_ok else 503
+    return jsonify({
+        "status": "healthy" if immich_ok else "degraded",
+        "timestamp": datetime.now().isoformat(),
+        "immich": "connected" if immich_ok else "unreachable"
+    }), status_code
 
-@app.route('/download', methods=['GET'])
+@bp.route('/download', methods=['GET'])
 def process_and_download():
+    """Download and process image from Immich"""
     global url, albumname, last_battery_voltage, last_battery_update
     
     try:
@@ -551,7 +572,6 @@ def process_and_download():
         
         # Process image
         image_data = io.BytesIO(response.content)
-        
         if selected_image['originalPath'].lower().endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
             with rawpy.imread(image_data) as raw:
                 rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
@@ -566,12 +586,12 @@ def process_and_download():
         processed_image.seek(0)
         
         return send_file(processed_image, mimetype='image/bmp', download_name='frame.bmp')
-        
+    
     except Exception as e:
         logger.error(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/sleep', methods=['GET'])
+@bp.route('/sleep', methods=['GET'])
 def get_sleep_duration():
     """Get sleep duration for ESP32"""
     current_time = datetime.now()
@@ -633,31 +653,22 @@ def get_sleep_duration():
         "sleep_duration": sleep_ms
     })
 
-@app.route('/health', methods=['GET'])
-def health():
-    """Health check endpoint"""
-    try:
-        response = requests.get(f"{url}/api/server-info/ping", timeout=5)
-        immich_ok = response.status_code == 200
-    except:
-        immich_ok = False
-    
-    return jsonify({
-        "status": "healthy" if immich_ok else "degraded",
-        "timestamp": datetime.now().isoformat(),
-        "immich": "connected" if immich_ok else "unreachable"
-    }), 200
+# ==============================================================================
+# REGISTER BLUEPRINT WITH EMPTY PREFIX (ProxyFix handles the base path)
+# ==============================================================================
+app.register_blueprint(bp)
+logger.info("✅ Blueprint registered")
 
 # ==============================================================================
 # NTP Sync (Optional)
 # ==============================================================================
-
 def run_daily_ntp_sync():
     """Daily NTP sync"""
     while True:
         try:
             now = datetime.now()
             next_sync = now.replace(hour=4, minute=0, second=0, microsecond=0)
+            
             if now >= next_sync:
                 next_sync = next_sync + timedelta(days=1)
             
@@ -674,32 +685,22 @@ def run_daily_ntp_sync():
             time.sleep(3600)
 
 # ==============================================================================
-# Main
+# Application Initialization
 # ==============================================================================
 
-def main():
-    config_path_value = config_path
-    config_observer = start_config_watcher(config_path_value)
-    
-    try:
-        initial_config = ConfigFileHandler(config_path_value, update_app_config).config
-        update_app_config(initial_config)
-        
-        ntp_thread = threading.Thread(target=run_daily_ntp_sync, daemon=True)
-        ntp_thread.start()
-        
-        logger.info("=" * 80)
-        logger.info("EPF Flask Server (Zippo2000 + HA) Starting")
-        logger.info("=" * 80)
-        logger.info(f"Cython Available: {CYTHON_AVAILABLE}")
-        logger.info(f"Config Path: {config_path_value}")
-        logger.info("=" * 80)
-        
-        app.run(host='0.0.0.0', port=5000, use_reloader=False)
-        
-    except KeyboardInterrupt:
-        config_observer.stop()
-        config_observer.join()
+# Start config watcher
+config_observer = start_config_watcher(config_path)
+
+# Load initial config
+try:
+    initial_config = ConfigFileHandler(config_path, update_app_config).config
+    update_app_config(initial_config)
+except Exception as e:
+    logger.error(f"Failed to load initial config: {e}")
+
+# Start NTP sync thread
+ntp_thread = threading.Thread(target=run_daily_ntp_sync, daemon=True)
+ntp_thread.start()
 
 if __name__ == '__main__':
-    main()
+    app.run(host='0.0.0.0', port=5000, use_reloader=False, debug=False)
