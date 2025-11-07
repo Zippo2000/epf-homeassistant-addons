@@ -418,7 +418,7 @@
         <!-- Photo Preview & Management Card -->
         <div class="card">
             <h2 class="card-title">📸 Photo Preview & Management</h2>
-
+            
             <div class="preview-container">
                 <div id="photoPreviewWrapper" style="text-align: center; margin-bottom: 1.5rem; position: relative;">
                     <img id="photoPreview" 
@@ -426,25 +426,23 @@
                          alt="No photo prepared yet" 
                          style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain; border: 2px solid #eee;"
                          onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
-
-                    <!-- Status Badge -->
+                    
                     <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
-
+                    
                     <div id="noPreviewMessage" style="display: none; padding: 2rem; background: #f0f0f0; border-radius: 8px; color: #666;">
                         <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">📷 No photo prepared yet</p>
                         <p style="margin: 0; font-size: 0.9rem;">Click "Prepare New Photo" to fetch and prepare an image</p>
                     </div>
                 </div>
-
-                <!-- Status Info -->
+                
                 <div id="photoInfo" style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem; color: #666; display: none;">
                     <span id="photoTimestamp"></span>
                 </div>
-
+                
                 <button type="button" class="prepare-photo-btn" onclick="prepareNewPhoto()">
                     🔄 Prepare New Photo
                 </button>
-
+                
                 <div id="prepareStatus" style="margin-top: 1rem; text-align: center; display: none;">
                     <span style="color: #4361EE;">⏳ Preparing photo...</span>
                 </div>
@@ -736,13 +734,11 @@
                     showNotification('Error: ' + error.message);
                 });
         }
-    
 
         // ====================================================================
         // Photo Preview & Management Functions
         // ====================================================================
         function updatePhotoStatus() {
-            // CRITICAL: Use relative URL for Ingress compatibility
             fetch('./preview-status')
                 .then(response => response.json())
                 .then(data => {
@@ -751,13 +747,12 @@
                     const timestamp = document.getElementById('photoTimestamp');
                     const preview = document.getElementById('photoPreview');
                     const noPreviewMsg = document.getElementById('noPreviewMessage');
-
+                    
                     if (data.exists) {
                         preview.style.display = 'block';
                         preview.src = './preview-photo?' + new Date().getTime();
                         noPreviewMsg.style.display = 'none';
-
-                        // Show status badge
+                        
                         badge.style.display = 'block';
                         if (data.status === 'new') {
                             badge.textContent = '✨ Ready to deliver';
@@ -768,8 +763,7 @@
                             badge.style.background = '#6c757d';
                             badge.style.color = 'white';
                         }
-
-                        // Show timestamp
+                        
                         info.style.display = 'block';
                         timestamp.textContent = '📅 Prepared: ' + data.formatted_time;
                     } else {
@@ -779,36 +773,25 @@
                         noPreviewMsg.style.display = 'block';
                     }
                 })
-                .catch(error => {
-                    console.error('Error fetching photo status:', error);
-                });
+                .catch(error => console.error('Error:', error));
         }
 
         function prepareNewPhoto() {
             const statusDiv = document.getElementById('prepareStatus');
             const button = document.querySelector('.prepare-photo-btn');
-
+            
             statusDiv.style.display = 'block';
             button.disabled = true;
-            button.style.opacity = '0.6';
-
-            // CRITICAL: Use relative URL for Ingress compatibility
+            
             fetch('./prepare-photo', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: {'Content-Type': 'application/json'}
             })
-            .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers.get('content-type'));
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 statusDiv.style.display = 'none';
                 button.disabled = false;
-                button.style.opacity = '1';
-
+                
                 if (data.success) {
                     showNotification('✅ Photo prepared successfully!', 'success');
                     updatePhotoStatus();
@@ -819,17 +802,12 @@
             .catch(error => {
                 statusDiv.style.display = 'none';
                 button.disabled = false;
-                button.style.opacity = '1';
                 showNotification('❌ Network error: ' + error.message, 'error');
-                console.error('Full error:', error);
             });
         }
 
-        // Initialize photo status on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Photo management initialized');
             updatePhotoStatus();
-            // Auto-refresh every 30 seconds
             setInterval(updatePhotoStatus, 30000);
         });
 

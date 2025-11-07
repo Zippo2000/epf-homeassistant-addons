@@ -1,5 +1,5 @@
 name: "E-Paper Photo Frame (EPF)"
-version: "1.0.1"
+version: "1.0.2"
 slug: "epf-eink-addon"
 description: "E-Ink Photo Frame with Immich integration for displaying photos on E-Ink displays"
 url: "https://github.com/Zippo2000/epf-homeassistant-addons"
@@ -40,3 +40,5 @@ schema:
   sleep_duration: "int"
   log_level: "list(debug|info|warning|error)"
   image_quality: "int(1,100)"
+  image_order: "list(random|newest)"
+  dithering_method: "list(atkinson|floyd-steinberg)"
