@@ -512,7 +512,7 @@ def health():
 @bp.route('/download', methods=['GET'])
 def process_and_download():
     """Download image for ESP32 (with status tracking and fallback)"""
-    global url, albumname, last_battery_voltage, last_battery_update
+    global last_battery_voltage, last_battery_update
 
     # Battery tracking
     try:
@@ -530,19 +530,22 @@ def process_and_download():
     status_file = os.path.join(photodir, 'latest.status')
 
     if os.path.exists(preview_bmp_path) and os.path.exists(status_file):
-        with open(status_file, 'r') as f:
-            status = f.read().strip()
+        try:
+            with open(status_file, 'r') as f:
+                status = f.read().strip()
 
-        if status == 'new':
-            logger.info("📤 Serving pre-prepared photo to ESP32 (marking as DELIVERED)")
+            if status == 'new':
+                logger.info("📤 Serving pre-prepared photo to ESP32 (marking as DELIVERED)")
 
-            # Mark as DELIVERED
-            with open(status_file, 'w') as f:
-                f.write('delivered')
+                # Mark as DELIVERED
+                with open(status_file, 'w') as f:
+                    f.write('delivered')
 
-            return send_file(preview_bmp_path, mimetype='image/bmp', download_name='frame.bmp')
-        else:
-            logger.info("⏭️ Pre-prepared photo already delivered, fetching new one")
+                return send_file(preview_bmp_path, mimetype='image/bmp', download_name='frame.bmp')
+            else:
+                logger.info("⏭️ Pre-prepared photo already delivered, fetching new one")
+        except Exception as e:
+            logger.warning(f"⚠️ Error reading status file: {e}")
 
     # ====================================================================
     # No NEW photo available - fetch and prepare on-the-fly
@@ -550,22 +553,32 @@ def process_and_download():
     logger.info("🔄 Fetching and preparing photo on-the-fly")
 
     try:
-        if not url or not albumname:
+        # Read config values
+        immich_url = current_config['immich']['url']
+        immich_api_key = current_config['immich']['api_key']
+        album_name = current_config['immich']['album']
+
+        if not immich_url or not immich_api_key or not album_name:
             return jsonify({"error": "Not configured"}), 500
 
+        headers = {
+            'x-api-key': immich_api_key,
+            'Accept': 'application/json'
+        }
+
         # Get albums
-        response = requests.get(f"{url}/api/albums", headers=headers)
+        response = requests.get(f"{immich_url}/api/albums", headers=headers)
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch albums"}), 500
 
         data = response.json()
-        albumid = next((item['id'] for item in data if item['albumName'] == albumname), None)
+        albumid = next((item['id'] for item in data if item.get('albumName') == album_name), None)
 
         if not albumid:
             return jsonify({"error": "Album not found"}), 404
 
         # Get photos
-        response = requests.get(f"{url}/api/albums/{albumid}", headers=headers)
+        response = requests.get(f"{immich_url}/api/albums/{albumid}", headers=headers)
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch album"}), 500
 
@@ -574,7 +587,7 @@ def process_and_download():
             return jsonify({"error": "No images"}), 404
 
         # Get image ordering
-        image_order_config = current_config['immich']['image_order']
+        image_order_config = current_config['immich'].get('image_order', 'random')
         downloaded_images = load_downloaded_images()
 
         if image_order_config == 'newest':
@@ -594,17 +607,19 @@ def process_and_download():
         save_downloaded_image(asset_id)
 
         # Download
-        response = requests.get(f"{url}/api/assets/{asset_id}/original", headers=headers, stream=True)
+        response = requests.get(f"{immich_url}/api/assets/{asset_id}/original", headers=headers, stream=True)
         if response.status_code != 200:
             return jsonify({"error": "Failed to download"}), 500
 
         # Process image
         image_data = io.BytesIO(response.content)
-        if selected_image['originalPath'].lower().endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
+        original_path = selected_image.get('originalPath', '').lower()
+
+        if original_path.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
             with rawpy.imread(image_data) as raw:
                 rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
                 image = Image.fromarray(rgb)
-        elif selected_image['originalPath'].lower().endswith('.heic'):
+        elif original_path.endswith('.heic'):
             image = Image.open(image_data).convert("RGB")
         else:
             image = Image.open(image_data)
@@ -637,37 +652,63 @@ def process_and_download():
         logger.error(f"❌ Error in /download: {e}")
         return jsonify({"error": str(e)}), 500
 
+
+# ============================================================================
+# Photo Preview & Management Routes (v1.0.1)
+# ============================================================================
+
 @bp.route('/prepare-photo', methods=['POST'])
 def prepare_photo():
     """Manually fetch and prepare a new photo from Immich"""
-    global url, albumname
-
     try:
-        if not url or not albumname:
-            return jsonify({"error": "Not configured", "success": False}), 500
+        logger.info("📸 Manual photo preparation requested")
+
+        # Read config values
+        immich_url = current_config['immich']['url']
+        immich_api_key = current_config['immich']['api_key']
+        album_name = current_config['immich']['album']
+
+        if not immich_url or not immich_api_key or not album_name:
+            logger.error("❌ Immich not configured properly")
+            return jsonify({"error": "Immich not configured", "success": False}), 500
+
+        headers = {
+            'x-api-key': immich_api_key,
+            'Accept': 'application/json'
+        }
+
+        logger.info(f"🔍 Fetching albums from {immich_url}")
 
         # Get albums
-        response = requests.get(f"{url}/api/albums", headers=headers)
+        response = requests.get(f"{immich_url}/api/albums", headers=headers, timeout=10)
         if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch albums", "success": False}), 500
+            logger.error(f"❌ Failed to fetch albums: {response.status_code}")
+            return jsonify({"error": f"Failed to fetch albums: {response.status_code}", "success": False}), 500
 
         data = response.json()
-        album_id = next((item['id'] for item in data if item['albumName'] == albumname), None)
+        album_id = next((item['id'] for item in data if item.get('albumName') == album_name), None)
 
         if not album_id:
-            return jsonify({"error": "Album not found", "success": False}), 404
+            logger.error(f"❌ Album '{album_name}' not found")
+            return jsonify({"error": f"Album '{album_name}' not found", "success": False}), 404
 
-        # Get photos
-        response = requests.get(f"{url}/api/albums/{album_id}", headers=headers)
+        logger.info(f"✅ Found album: {album_name} (ID: {album_id})")
+
+        # Get photos from album
+        response = requests.get(f"{immich_url}/api/albums/{album_id}", headers=headers, timeout=10)
         if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch album", "success": False}), 500
+            logger.error(f"❌ Failed to fetch album assets: {response.status_code}")
+            return jsonify({"error": "Failed to fetch album assets", "success": False}), 500
 
         data = response.json()
         if 'assets' not in data or not data['assets']:
-            return jsonify({"error": "No images", "success": False}), 404
+            logger.error("❌ No images in album")
+            return jsonify({"error": "No images in album", "success": False}), 404
 
-        # Get image ordering
-        image_order_config = current_config['immich']['image_order']
+        logger.info(f"📷 Found {len(data['assets'])} photos in album")
+
+        # Get image ordering configuration
+        image_order_config = current_config['immich'].get('image_order', 'random')
         downloaded_images = load_downloaded_images()
 
         if image_order_config == 'newest':
@@ -678,6 +719,7 @@ def prepare_photo():
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
+                logger.info("🔄 All images shown, resetting tracking")
                 reset_tracking_file()
                 remaining_images = data['assets']
 
@@ -686,23 +728,32 @@ def prepare_photo():
         asset_id = selected_image['id']
         save_downloaded_image(asset_id)
 
-        # Download
-        response = requests.get(f"{url}/api/assets/{asset_id}/original", headers=headers, stream=True)
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to download", "success": False}), 500
+        logger.info(f"⬇️ Downloading image: {asset_id}")
 
-        # Process image
+        # Download image
+        response = requests.get(f"{immich_url}/api/assets/{asset_id}/original", 
+                               headers=headers, stream=True, timeout=30)
+        if response.status_code != 200:
+            logger.error(f"❌ Failed to download image: {response.status_code}")
+            return jsonify({"error": "Failed to download image", "success": False}), 500
+
+        # Process image based on file type
         image_data = io.BytesIO(response.content)
-        if selected_image['originalPath'].lower().endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
+        original_path = selected_image.get('originalPath', '').lower()
+
+        logger.info(f"🖼️ Processing image type: {original_path}")
+
+        if original_path.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
             with rawpy.imread(image_data) as raw:
                 rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
                 image = Image.fromarray(rgb)
-        elif selected_image['originalPath'].lower().endswith('.heic'):
+        elif original_path.endswith('.heic'):
             image = Image.open(image_data).convert("RGB")
         else:
             image = Image.open(image_data)
 
-        # Process image
+        # Process image using scale_img_in_memory
+        logger.info("⚙️ Processing image for E-Ink display")
         processed_image = scale_img_in_memory(image)
 
         # Save as BMP for ESP32
@@ -710,11 +761,15 @@ def prepare_photo():
         with open(preview_bmp_path, 'wb') as f:
             f.write(processed_image.getvalue())
 
+        logger.info(f"💾 Saved BMP: {preview_bmp_path}")
+
         # Save as JPEG for web preview
         processed_image.seek(0)
         bmp_image = Image.open(processed_image)
         preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
         bmp_image.save(preview_jpg_path, 'JPEG', quality=85)
+
+        logger.info(f"💾 Saved preview: {preview_jpg_path}")
 
         # Mark as NEW (not yet delivered)
         status_file = os.path.join(photodir, 'latest.status')
@@ -730,8 +785,11 @@ def prepare_photo():
             "preview_url": f"/preview-photo?t={int(time.time())}"
         }), 200
 
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ Network error: {e}")
+        return jsonify({"error": f"Network error: {str(e)}", "success": False}), 500
     except Exception as e:
-        logger.error(f"❌ Error preparing photo: {e}")
+        logger.error(f"❌ Error preparing photo: {e}", exc_info=True)
         return jsonify({"error": str(e), "success": False}), 500
 
 
@@ -768,7 +826,7 @@ def preview_status():
 
     return jsonify({
         "exists": True,
-        "status": status,  # 'new' or 'delivered'
+        "status": status,
         "timestamp": timestamp,
         "formatted_time": datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     })
