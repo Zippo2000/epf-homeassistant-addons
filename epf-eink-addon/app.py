@@ -222,66 +222,84 @@ def reset_tracking_file():
 # Image Processing Functions
 # ==============================================================================
 def atkinson_dither_pure_python(image, palette):
-    """Pure Python Atkinson Dithering (Fallback if Cython unavailable)"""
+    """Pure Python Atkinson Dithering - numpy basiert!"""
     if image.mode != 'RGB':
         image = image.convert('RGB')
     
-    width, height = image.size
-    pixels = image.load()
+    # KRITISCH: Konvertiere zu numpy array!
+    img_array = np.array(image, dtype=np.float32)
+    height, width = img_array.shape[:2]
+    
+    # Palette als numpy array
+    palette_array = np.array(palette, dtype=np.float32)
     
     for y in range(height):
         for x in range(width):
-            old_pixel = pixels[x, y]
-            new_pixel = min(palette, key=lambda color:
-                sum((old_pixel[i] - color[i])**2 for i in range(3)))
-            pixels[x, y] = new_pixel
-            error = tuple(old_pixel[i] - new_pixel[i] for i in range(3))
+            old_pixel = img_array[y, x]
             
-            def distribute_error(dx, dy, factor=1/8):
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < width and 0 <= ny < height:
-                    current = pixels[nx, ny]
-                    pixels[nx, ny] = tuple(
-                        int(max(0, min(255, current[i] + error[i] * factor)))
-                        for i in range(3)
-                    )
+            # Finde nächste Farbe
+            distances = np.sum((palette_array - old_pixel)**2, axis=1)
+            closest_idx = np.argmin(distances)
+            new_pixel = palette_array[closest_idx]
             
-            distribute_error(1, 0)
-            distribute_error(2, 0)
-            distribute_error(-1, 1)
-            distribute_error(0, 1)
-            distribute_error(1, 1)
-            distribute_error(0, 2)
+            img_array[y, x] = new_pixel
+            error = old_pixel - new_pixel
+            
+            # Atkinson error diffusion (1/8 weight)
+            if x + 1 < width:
+                img_array[y, x + 1] += error * (1/8)
+            if x + 2 < width:
+                img_array[y, x + 2] += error * (1/8)
+            if y + 1 < height:
+                if x - 1 >= 0:
+                    img_array[y + 1, x - 1] += error * (1/8)
+                img_array[y + 1, x] += error * (1/8)
+                if x + 1 < width:
+                    img_array[y + 1, x + 1] += error * (1/8)
+            if y + 2 < height:
+                img_array[y + 2, x] += error * (1/8)
     
-    return image
+    # Clip values to valid range
+    img_array = np.clip(img_array, 0, 255)
+    
+    # KRITISCH: Konvertiere zurück zu PIL Image!
+    return Image.fromarray(img_array.astype(np.uint8), mode='RGB')
+
 
 def floyd_steinberg_dither(image, palette):
-    """Pure Python Floyd-Steinberg Dithering"""
+    """Pure Python Floyd-Steinberg Dithering - numpy basiert!"""
     if image.mode != 'RGB':
         image = image.convert('RGB')
     
-    width, height = image.size
-    pixels = image.load()
+    # KRITISCH: Konvertiere zu numpy array!
+    img_array = np.array(image, dtype=np.float32)
+    height, width = img_array.shape[:2]
+    
+    palette_array = np.array(palette, dtype=np.float32)
     
     for y in range(height):
         for x in range(width):
-            old_pixel = pixels[x, y]
-            new_pixel = min(palette, key=lambda c: sum((old_pixel[i]-c[i])**2 for i in range(3)))
-            pixels[x, y] = new_pixel
-            error = tuple(old_pixel[i] - new_pixel[i] for i in range(3))
+            old_pixel = img_array[y, x]
             
-            def distribute(dx, dy, factor):
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < width and 0 <= ny < height:
-                    current = pixels[nx, ny]
-                    pixels[nx, ny] = tuple(int(max(0, min(255, current[i] + error[i] * factor))) for i in range(3))
+            distances = np.sum((palette_array - old_pixel)**2, axis=1)
+            closest_idx = np.argmin(distances)
+            new_pixel = palette_array[closest_idx]
             
-            distribute(1, 0, 7/16)    # Rechts
-            distribute(-1, 1, 3/16)   # Links-Unten
-            distribute(0, 1, 5/16)    # Unten
-            distribute(1, 1, 1/16)    # Rechts-Unten
+            img_array[y, x] = new_pixel
+            error = old_pixel - new_pixel
+            
+            # Floyd-Steinberg error diffusion
+            if x + 1 < width:
+                img_array[y, x + 1] += error * (7/16)
+            if y + 1 < height:
+                if x - 1 >= 0:
+                    img_array[y + 1, x - 1] += error * (3/16)
+                img_array[y + 1, x] += error * (5/16)
+                if x + 1 < width:
+                    img_array[y + 1, x + 1] += error * (1/16)
     
-    return image
+    img_array = np.clip(img_array, 0, 255)
+    return Image.fromarray(img_array.astype(np.uint8), mode='RGB')
 
 def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
     """
@@ -314,27 +332,52 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         if rotation != 0:
             image = image.rotate(360 - rotation, expand=True, resample=Image.Resampling.LANCZOS)
         
-        # 2. Calculate dimensions (ALWAYS 800×480, no swapping!)
+        # 2. Calculate dimensions (ALWAYS 800×480)
         target_w, target_h = target_width, target_height
-        
-        # 3. Scale with aspect ratio
-        aspect = image.width / image.height
-        if aspect > target_w / target_h:
-            new_width = target_w
-            new_height = int(target_w / aspect)
-        else:
-            new_height = target_h
-            new_width = int(target_h * aspect)
-        
-        image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
-        # 4. Create canvas (ALWAYS 800×480)
-        canvas = Image.new('RGB', (target_w, target_h), bg_color)
-        x = (target_w - new_width) // 2
-        y = (target_h - new_height) // 2
-        canvas.paste(image, (x, y))
-        
-        img = canvas
+
+        # 3. Scale with aspect ratio - FILL MODE!
+        aspect_image = image.width / image.height
+        aspect_display = target_w / target_h
+
+        if display_mode == 'fill':
+            # FILL: Scale so the SMALLER dimension fits, then crop
+            if aspect_image < aspect_display:
+                # Image is taller → scale to width
+                new_width = target_w
+                new_height = int(target_w / aspect_image)
+            else:
+                # Image is wider → scale to height
+                new_height = target_h
+                new_width = int(target_h * aspect_image)
+            
+            # Resize image
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Crop to target size (center crop)
+            left = (new_width - target_w) // 2
+            top = (new_height - target_h) // 2
+            image = image.crop((left, top, left + target_w, top + target_h))
+            
+            img = image  # No canvas needed!
+
+        else:  # 'fit'
+            # FIT: Scale so the LARGER dimension fits, add borders
+            if aspect_image > aspect_display:
+                new_width = target_w
+                new_height = int(target_w / aspect_image)
+            else:
+                new_height = target_h
+                new_width = int(target_h * aspect_image)
+            
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Create canvas and paste centered
+            canvas = Image.new('RGB', (target_w, target_h), bg_color)
+            x = (target_w - new_width) // 2
+            y = (target_h - new_height) // 2
+            canvas.paste(image, (x, y))
+            
+            img = canvas
     
     # Enhance
     enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
