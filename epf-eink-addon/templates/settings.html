@@ -394,7 +394,7 @@
         <h1>E-paper Photo Frame Settings</h1>
     
             <div style="text-align: right; font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;">
-                Version {{ addon_version }}
+                v{{ addon_version }} ({{ build_timestamp }})
             </div>
         </header>
 
@@ -422,7 +422,7 @@
             <div class="preview-container">
                 <div id="photoPreviewWrapper" style="text-align: center; margin-bottom: 1.5rem; position: relative;">
                     <img id="photoPreview" 
-                         src="/preview-photo" 
+                         src="./preview-photo" 
                          alt="No photo prepared yet" 
                          style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain; border: 2px solid #eee;"
                          onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
@@ -729,7 +729,8 @@
         // Photo Preview & Management Functions
         // ====================================================================
         function updatePhotoStatus() {
-            fetch('/preview-status')
+            // CRITICAL: Use relative URL for Ingress compatibility
+            fetch('./preview-status')
                 .then(response => response.json())
                 .then(data => {
                     const badge = document.getElementById('photoStatusBadge');
@@ -740,7 +741,7 @@
 
                     if (data.exists) {
                         preview.style.display = 'block';
-                        preview.src = '/preview-photo?' + new Date().getTime();
+                        preview.src = './preview-photo?' + new Date().getTime();
                         noPreviewMsg.style.display = 'none';
 
                         // Show status badge
@@ -778,13 +779,18 @@
             button.disabled = true;
             button.style.opacity = '0.6';
 
-            fetch('/prepare-photo', {
+            // CRITICAL: Use relative URL for Ingress compatibility
+            fetch('./prepare-photo', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+                return response.json();
+            })
             .then(data => {
                 statusDiv.style.display = 'none';
                 button.disabled = false;
@@ -802,11 +808,13 @@
                 button.disabled = false;
                 button.style.opacity = '1';
                 showNotification('❌ Network error: ' + error.message, 'error');
+                console.error('Full error:', error);
             });
         }
 
         // Initialize photo status on page load
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Photo management initialized');
             updatePhotoStatus();
             // Auto-refresh every 30 seconds
             setInterval(updatePhotoStatus, 30000);
