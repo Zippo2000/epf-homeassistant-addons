@@ -218,97 +218,16 @@ def reset_tracking_file():
     except Exception as e:
         logger.error(f"Error resetting tracking file: {e}")
 
-# ==============================================================================
-# Image Processing Functions
-# ==============================================================================
-def atkinson_dither_pure_python(image, palette):
-    """Pure Python Atkinson Dithering - numpy basiert!"""
-    if image.mode != 'RGB':
-        image = image.convert('RGB')
-    
-    # KRITISCH: Konvertiere zu numpy array!
-    img_array = np.array(image, dtype=np.float32)
-    height, width = img_array.shape[:2]
-    
-    # Palette als numpy array
-    palette_array = np.array(palette, dtype=np.float32)
-    
-    for y in range(height):
-        for x in range(width):
-            old_pixel = img_array[y, x]
-            
-            # Finde nächste Farbe
-            distances = np.sum((palette_array - old_pixel)**2, axis=1)
-            closest_idx = np.argmin(distances)
-            new_pixel = palette_array[closest_idx]
-            
-            img_array[y, x] = new_pixel
-            error = old_pixel - new_pixel
-            
-            # Atkinson error diffusion (1/8 weight)
-            if x + 1 < width:
-                img_array[y, x + 1] += error * (1/8)
-            if x + 2 < width:
-                img_array[y, x + 2] += error * (1/8)
-            if y + 1 < height:
-                if x - 1 >= 0:
-                    img_array[y + 1, x - 1] += error * (1/8)
-                img_array[y + 1, x] += error * (1/8)
-                if x + 1 < width:
-                    img_array[y + 1, x + 1] += error * (1/8)
-            if y + 2 < height:
-                img_array[y + 2, x] += error * (1/8)
-    
-    # Clip values to valid range
-    img_array = np.clip(img_array, 0, 255)
-    
-    # KRITISCH: Konvertiere zurück zu PIL Image!
-    return Image.fromarray(img_array.astype(np.uint8), mode='RGB')
-
-
-def floyd_steinberg_dither(image, palette):
-    """Pure Python Floyd-Steinberg Dithering - numpy basiert!"""
-    if image.mode != 'RGB':
-        image = image.convert('RGB')
-    
-    # KRITISCH: Konvertiere zu numpy array!
-    img_array = np.array(image, dtype=np.float32)
-    height, width = img_array.shape[:2]
-    
-    palette_array = np.array(palette, dtype=np.float32)
-    
-    for y in range(height):
-        for x in range(width):
-            old_pixel = img_array[y, x]
-            
-            distances = np.sum((palette_array - old_pixel)**2, axis=1)
-            closest_idx = np.argmin(distances)
-            new_pixel = palette_array[closest_idx]
-            
-            img_array[y, x] = new_pixel
-            error = old_pixel - new_pixel
-            
-            # Floyd-Steinberg error diffusion
-            if x + 1 < width:
-                img_array[y, x + 1] += error * (7/16)
-            if y + 1 < height:
-                if x - 1 >= 0:
-                    img_array[y + 1, x - 1] += error * (3/16)
-                img_array[y + 1, x] += error * (5/16)
-                if x + 1 < width:
-                    img_array[y + 1, x + 1] += error * (1/16)
-    
-    img_array = np.clip(img_array, 0, 255)
-    return Image.fromarray(img_array.astype(np.uint8), mode='RGB')
 
 def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
     """
-    Process image in memory
-    Uses Cython if available, falls back to pure Python
+    Process image in memory - SIMPLIFIED VERSION using Cython
+    Same as app_standalone.py but with logging
     """
     global rotation
     rotation = rotationAngle
     
+    # Extract EXIF date
     try:
         exif = image._getexif()
         date_time = exif.get(36867) if exif else None
@@ -320,83 +239,58 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     # Read correct photo orientation from EXIF
     image = ImageOps.exif_transpose(image)
     
-    # Use Cython if available, otherwise pure Python
+    # ========================================================================
+    # CRITICAL: Use Cython load_scaled (like app_standalone.py)
+    # ========================================================================
     if CYTHON_AVAILABLE:
+        logger.info(f"✅ Using Cython load_scaled(rotation={rotation}, mode={display_mode})")
         img = load_scaled(image, rotation, display_mode)
     else:
-        # ====================================================================
-        # CRITICAL FIX: Rotate BEFORE resize (like Cython does)
-        # ====================================================================
-        
-        # 1. Rotate original image FIRST
-        if rotation != 0:
-            image = image.rotate(360 - rotation, expand=True, resample=Image.Resampling.LANCZOS)
-        
-        # 2. Calculate dimensions (ALWAYS 800×480)
-        target_w, target_h = target_width, target_height
-
-        # 3. Scale with aspect ratio - FILL MODE!
-        aspect_image = image.width / image.height
-        aspect_display = target_w / target_h
-
-        if display_mode == 'fill':
-            # FILL: Scale so the SMALLER dimension fits, then crop
-            if aspect_image < aspect_display:
-                # Image is taller → scale to width
-                new_width = target_w
-                new_height = int(target_w / aspect_image)
-            else:
-                # Image is wider → scale to height
-                new_height = target_h
-                new_width = int(target_h * aspect_image)
-            
-            # Resize image
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Crop to target size (center crop)
-            left = (new_width - target_w) // 2
-            top = (new_height - target_h) // 2
-            image = image.crop((left, top, left + target_w, top + target_h))
-            
-            img = image  # No canvas needed!
-
-        else:  # 'fit'
-            # FIT: Scale so the LARGER dimension fits, add borders
-            if aspect_image > aspect_display:
-                new_width = target_w
-                new_height = int(target_w / aspect_image)
-            else:
-                new_height = target_h
-                new_width = int(target_h * aspect_image)
-            
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            # Create canvas and paste centered
-            canvas = Image.new('RGB', (target_w, target_h), bg_color)
-            x = (target_w - new_width) // 2
-            y = (target_h - new_height) // 2
-            canvas.paste(image, (x, y))
-            
-            img = canvas
+        logger.error("❌ Cython not available - image processing will fail!")
+        raise RuntimeError("Cython module 'cpy' is required but not available")
+    
+    logger.info(f"📐 Image after load_scaled: size={img.size}, mode={img.mode}")
     
     # Enhance
     enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
     enhanced_img = ImageEnhance.Contrast(enhanced_img).enhance(img_contrast)
     
-    # Dither with selected method
-    if CYTHON_AVAILABLE:
-        if dithering_method == 'floyd-steinberg':
-            output_img = floyd_steinberg_dither(enhanced_img, palette)
-        else:  # atkinson (default)
-            output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
-            output_img = Image.fromarray(output_img, mode="RGB")
-    else:
-        if dithering_method == 'floyd-steinberg':
-            output_img = floyd_steinberg_dither(enhanced_img, palette)
-        else:
-            output_img = atkinson_dither_pure_python(enhanced_img, palette)
+    # ========================================================================
+    # Palette definition (flat list for Cython/pal_image)
+    # ========================================================================
+    palette = [
+        0, 0, 0,      # Black
+        255, 255, 255,  # White
+        255, 255, 0,    # Yellow
+        255, 0, 0,      # Red
+        0, 0, 255,      # Blue
+        0, 255, 0       # Green
+    ]
     
-    # Add date if available
+    # Prepare palette image (like app_standalone.py)
+    e = len(palette)
+    assert e > 0, "Palette unexpectedly short"
+    assert e <= 768, "Palette unexpectedly long"
+    assert e % 3 == 0, "Palette not multiple of 3, so not RGB"
+    
+    pal_image = Image.new("P", (1, 1))
+    palette += (768 - e) * [0]
+    pal_image.putpalette(palette)
+    
+    # ========================================================================
+    # CRITICAL: Use Cython convert_image_atkinson (like app_standalone.py)
+    # ========================================================================
+    if CYTHON_AVAILABLE:
+        logger.info(f"✅ Using Cython convert_image_atkinson(strength={strength})")
+        output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
+        output_img = Image.fromarray(output_img, mode="RGB")
+    else:
+        logger.error("❌ Cython not available - dithering will fail!")
+        raise RuntimeError("Cython module 'cpy' is required but not available")
+    
+    logger.info(f"🎨 Image after dithering: size={output_img.size}, mode={output_img.mode}")
+    
+    # Add date overlay if available
     if date_time:
         draw = ImageDraw.Draw(output_img)
         try:
@@ -414,13 +308,11 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         except:
             formatted_time = date_time
         
-        # Calculate position (bottom-right corner)
         text_bbox = draw.textbbox((0, 0), formatted_time, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
         padding = 5
         
-        # Position is ALWAYS based on 800×480 (no rotation adjustment needed!)
         position = (target_width - text_width - 40, target_height - text_height - 40)
         rect_coords = (
             position[0] - padding,
@@ -430,33 +322,27 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         )
         draw.rectangle(rect_coords, fill=(0, 0, 0))
         draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
-        logger.info(f"📅 Date overlay added: {formatted_time}")
+        logger.info(f"📅 Date overlay: {formatted_time}")
     
-    # CRITICAL: Ensure RGB mode before saving BMP
-    logger.info(f"📊 Image mode before save: {output_img.mode}, size: {output_img.size}")
+    # Save BMP
+    logger.info(f"💾 Saving BMP: mode={output_img.mode}, size={output_img.size}")
     
-    if output_img.mode != 'RGB':
-        logger.warning(f"⚠️ Converting from {output_img.mode} to RGB")
-        output_img = output_img.convert('RGB')
-    
-    # Save BMP (RGB mode - 24-bit)
     img_io = io.BytesIO()
     output_img.save(img_io, 'BMP')
     
-    # Log BMP size for verification
     bmp_size = img_io.tell()
-    expected_size = 800 * 480 * 3 + 54  # 24-bit RGB + BMP header
-    logger.info(f"📦 BMP size: {bmp_size} bytes (expected ~{expected_size} bytes)")
+    expected_size = 800 * 480 * 3 + 54
+    logger.info(f"📦 BMP: {bmp_size} bytes (expected ~{expected_size})")
     
     if bmp_size < expected_size * 0.9:
-        logger.error(f"⚠️ BMP too small! Might be palette-indexed instead of RGB!")
+        logger.warning(f"⚠️ BMP smaller than expected")
     
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
     output_img.save(preview_jpg_path, 'JPEG', quality=85)
+    logger.info(f"🖼️ Preview saved")
     
     img_io.seek(0)
     return img_io
-
 
 def convert_raw_or_dng_to_jpg(input_file_path, output_dir):
     """Convert RAW/DNG to JPG"""
