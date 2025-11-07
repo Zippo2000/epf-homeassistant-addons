@@ -396,8 +396,15 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         except:
             formatted_time = date_time
     
+    # Speichere BMP (mode P ist OK für BMP)
     img_io = io.BytesIO()
     output_img.save(img_io, 'BMP')
+
+    # Für JPEG Preview: Konvertiere zu RGB!
+    preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
+    output_img.convert('RGB').save(preview_jpg_path, 'JPEG', quality=85)
+    #          ^^^^^^^^^^^^^^ KRITISCH: Zurück zu RGB!
+
     img_io.seek(0)
     return img_io
 
@@ -702,7 +709,7 @@ def process_and_download():
         processed_image.seek(0)
         bmp_image = Image.open(processed_image)
         preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
-        bmp_image.save(preview_jpg_path, 'JPEG', quality=85)
+        bmp_image.convert('RGB').save(preview_jpg_path, 'JPEG', quality=85)
 
         # Mark as DELIVERED
         with open(status_file, 'w') as f:
@@ -803,7 +810,7 @@ def prepare_photo():
         processed_image.seek(0)
         bmp_image = Image.open(processed_image)
         preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
-        bmp_image.save(preview_jpg_path, 'JPEG', quality=85)
+        bmp_image.convert('RGB').save(preview_jpg_path, 'JPEG', quality=85)
         
         status_file = os.path.join(photodir, 'latest.status')
         with open(status_file, 'w') as f:
