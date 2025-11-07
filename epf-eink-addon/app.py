@@ -61,6 +61,7 @@ DEFAULT_CONFIG = {
         'strength': float(os.getenv('DITHERING_STRENGTH', '0.8')),
         'display_mode': os.getenv('DISPLAY_MODE', 'fill'),
         'image_order': os.getenv('IMAGE_ORDER', 'random'),
+        'dithering_method': os.getenv('DITHERING_METHOD', 'atkinson'),
         'sleep_start_hour': int(os.getenv('SLEEP_START_HOUR', '23')),
         'sleep_start_minute': int(os.getenv('SLEEP_START_MINUTE', '0')),
         'sleep_end_hour': int(os.getenv('SLEEP_END_HOUR', '6')),
@@ -80,6 +81,7 @@ img_contrast = current_config['immich']['contrast']
 strength = current_config['immich']['strength']
 display_mode = current_config['immich']['display_mode']
 image_order = current_config['immich']['image_order']
+dithering_method = current_config['immich']['dithering_method']
 sleep_start_hour = current_config['immich']['sleep_start_hour']
 sleep_start_minute = current_config['immich']['sleep_start_minute']
 sleep_end_hour = current_config['immich']['sleep_end_hour']
@@ -238,6 +240,34 @@ def atkinson_dither_pure_python(image, palette):
     
     return image
 
+def floyd_steinberg_dither(image, palette):
+    """Pure Python Floyd-Steinberg Dithering"""
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    
+    width, height = image.size
+    pixels = image.load()
+    
+    for y in range(height):
+        for x in range(width):
+            old_pixel = pixels[x, y]
+            new_pixel = min(palette, key=lambda c: sum((old_pixel[i]-c[i])**2 for i in range(3)))
+            pixels[x, y] = new_pixel
+            error = tuple(old_pixel[i] - new_pixel[i] for i in range(3))
+            
+            def distribute(dx, dy, factor):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < width and 0 <= ny < height:
+                    current = pixels[nx, ny]
+                    pixels[nx, ny] = tuple(int(max(0, min(255, current[i] + error[i] * factor))) for i in range(3))
+            
+            distribute(1, 0, 7/16)    # Rechts
+            distribute(-1, 1, 3/16)   # Links-Unten
+            distribute(0, 1, 5/16)    # Unten
+            distribute(1, 1, 1/16)    # Rechts-Unten
+    
+    return image
+
 def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
     """
     Process image in memory
@@ -300,13 +330,20 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     pal_image = Image.new("P", (1, 1))
     pal_image.putpalette(palette_list)
     
-    # Dither
+    # Dither    
     if CYTHON_AVAILABLE:
-        output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
-        output_img = Image.fromarray(output_img, mode="RGB")
+        if dithering_method == 'floyd-steinberg':
+           output_img = convert_image(enhanced_img, dithering_strength=strength)
+        else:  # atkinson (default)
+            output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
+        output_img = Image.fromarray(output_img, mode='RGB')
     else:
-        output_img = atkinson_dither_pure_python(enhanced_img, palette)
-    
+        # Pure Python fallback
+        if dithering_method == 'floyd-steinberg':
+            output_img = floyd_steinberg_dither(enhanced_img, palette)
+        else:  # atkinson
+            output_img = atkinson_dither_pure_python(enhanced_img, palette)
+
     # Add date if available
     if date_time:
         draw = ImageDraw.Draw(output_img)
@@ -399,7 +436,7 @@ class ConfigFileHandler(FileSystemEventHandler):
 def update_app_config(new_config):
     """Update configuration"""
     global current_config, url, albumname, rotationAngle, img_enhanced, img_contrast
-    global strength, display_mode, image_order, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
+    global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     
     current_config = new_config
     url = new_config['immich']['url']
@@ -410,12 +447,13 @@ def update_app_config(new_config):
     strength = new_config['immich']['strength']
     display_mode = new_config['immich']['display_mode']
     image_order = new_config['immich']['image_order']
+    dithering_method = new_config['immich']['dithering_method']
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
     sleep_end_minute = new_config['immich']['sleep_end_minute']
     
-    logger.info(f"Config updated: URL={url}, Album={albumname}, Rotation={rotationAngle}°")
+    logger.info(f"Config updated: URL={url}, Album={albumname}, Rotation={rotationAngle}°, Dithering={dithering_method}")
 
 def start_config_watcher(config_path):
     """Start watching config.yaml"""
@@ -475,6 +513,7 @@ def settings():
                 'strength': float(request.form.get('strength', current_config['immich']['strength'])),
                 'display_mode': request.form.get('display_mode', current_config['immich']['display_mode']),
                 'image_order': request.form.get('image_order', current_config['immich']['image_order']),
+                'dithering_method': request.form.get('dithering_method', current_config['immich']['dithering_method']),
                 'sleep_start_hour': int(request.form.get('sleep_start_hour', current_config['immich']['sleep_start_hour'])),
                 'sleep_start_minute': int(request.form.get('sleep_start_minute', current_config['immich']['sleep_start_minute'])),
                 'sleep_end_hour': int(request.form.get('sleep_end_hour', current_config['immich']['sleep_end_hour'])),
