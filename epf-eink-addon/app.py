@@ -348,6 +348,12 @@ def convert_heic_to_jpg(input_file_path, output_dir):
     return jpg_path
 
 # ==============================================================================
+# Build Information
+# ==============================================================================
+BUILD_TIMESTAMP = "2025-11-07 13:44:09 CET"
+BUILD_VERSION = "1.0.1"
+
+# ==============================================================================
 # Configuration Management
 # ==============================================================================
 class ConfigFileHandler(FileSystemEventHandler):
@@ -430,6 +436,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 logger.info("=" * 80)
 logger.info("EPF Flask Server (Zippo2000 + HA) Initializing")
+logger.info(f"Build: Version {BUILD_VERSION} - {BUILD_TIMESTAMP}")
 logger.info("=" * 80)
 logger.info(f"Cython Available: {CYTHON_AVAILABLE}")
 logger.info(f"Config Path: {config_path}")
@@ -491,7 +498,8 @@ def settings():
                            config=current_config,
                            battery_voltage=battery_voltage,
                            battery_percentage=battery_percentage,
-                           addon_version='1.0.1')
+                           addon_version=BUILD_VERSION,
+                           build_timestamp=BUILD_TIMESTAMP)
 
 @bp.route('/health', methods=['GET', 'HEAD'])
 def health():
@@ -553,32 +561,23 @@ def process_and_download():
     logger.info("🔄 Fetching and preparing photo on-the-fly")
 
     try:
-        # Read config values
-        immich_url = current_config['immich']['url']
-        immich_api_key = current_config['immich']['api_key']
-        album_name = current_config['immich']['album']
-
-        if not immich_url or not immich_api_key or not album_name:
+        # Use global variables (like original code)
+        if not url or not albumname:
             return jsonify({"error": "Not configured"}), 500
 
-        headers = {
-            'x-api-key': immich_api_key,
-            'Accept': 'application/json'
-        }
-
-        # Get albums
-        response = requests.get(f"{immich_url}/api/albums", headers=headers)
+        # Get albums (using global headers)
+        response = requests.get(f"{url}/api/albums", headers=headers)
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch albums"}), 500
 
         data = response.json()
-        albumid = next((item['id'] for item in data if item.get('albumName') == album_name), None)
+        albumid = next((item['id'] for item in data if item.get('albumName') == albumname), None)
 
         if not albumid:
             return jsonify({"error": "Album not found"}), 404
 
         # Get photos
-        response = requests.get(f"{immich_url}/api/albums/{albumid}", headers=headers)
+        response = requests.get(f"{url}/api/albums/{albumid}", headers=headers)
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch album"}), 500
 
@@ -607,7 +606,7 @@ def process_and_download():
         save_downloaded_image(asset_id)
 
         # Download
-        response = requests.get(f"{immich_url}/api/assets/{asset_id}/original", headers=headers, stream=True)
+        response = requests.get(f"{url}/api/assets/{asset_id}/original", headers=headers, stream=True)
         if response.status_code != 200:
             return jsonify({"error": "Failed to download"}), 500
 
@@ -627,7 +626,7 @@ def process_and_download():
         # Process image
         processed_image = scale_img_in_memory(image)
 
-        # Save for web preview
+        # Save as BMP
         preview_bmp_path = os.path.join(photodir, 'latest.bmp')
         with open(preview_bmp_path, 'wb') as f:
             f.write(processed_image.getvalue())
@@ -638,7 +637,7 @@ def process_and_download():
         preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
         bmp_image.save(preview_jpg_path, 'JPEG', quality=85)
 
-        # Mark as DELIVERED (since we're serving it now)
+        # Mark as DELIVERED
         with open(status_file, 'w') as f:
             f.write('delivered')
 
@@ -653,9 +652,9 @@ def process_and_download():
         return jsonify({"error": str(e)}), 500
 
 
-# ============================================================================
+# ==============================================================================
 # Photo Preview & Management Routes (v1.0.1)
-# ============================================================================
+# ==============================================================================
 
 @bp.route('/prepare-photo', methods=['POST'])
 def prepare_photo():
@@ -663,23 +662,21 @@ def prepare_photo():
     try:
         logger.info("📸 Manual photo preparation requested")
 
-        # Read config values
+        # Read URL and album name from config
         immich_url = current_config['immich']['url']
-        immich_api_key = current_config['immich']['api_key']
         album_name = current_config['immich']['album']
 
-        if not immich_url or not immich_api_key or not album_name:
+        # CRITICAL: Use the global 'headers' variable!
+        # It already contains the API key: headers = {'x-api-key': apikey}
+        # Do NOT try to recreate it or read from current_config['immich']['api_key']
+
+        if not immich_url or not album_name:
             logger.error("❌ Immich not configured properly")
             return jsonify({"error": "Immich not configured", "success": False}), 500
 
-        headers = {
-            'x-api-key': immich_api_key,
-            'Accept': 'application/json'
-        }
-
         logger.info(f"🔍 Fetching albums from {immich_url}")
 
-        # Get albums
+        # Get albums (using global headers variable)
         response = requests.get(f"{immich_url}/api/albums", headers=headers, timeout=10)
         if response.status_code != 200:
             logger.error(f"❌ Failed to fetch albums: {response.status_code}")
@@ -752,7 +749,7 @@ def prepare_photo():
         else:
             image = Image.open(image_data)
 
-        # Process image using scale_img_in_memory
+        # Process image
         logger.info("⚙️ Processing image for E-Ink display")
         processed_image = scale_img_in_memory(image)
 
@@ -782,7 +779,7 @@ def prepare_photo():
             "success": True,
             "message": "Photo prepared successfully",
             "asset_id": asset_id,
-            "preview_url": f"/preview-photo?t={int(time.time())}"
+            "preview_url": f"./preview-photo?t={int(time.time())}"
         }), 200
 
     except requests.exceptions.RequestException as e:
@@ -795,7 +792,7 @@ def prepare_photo():
 
 @bp.route('/preview-photo', methods=['GET'])
 def preview_photo():
-    """Serve the latest prepared photo as preview (regardless of delivery status)"""
+    """Serve the latest prepared photo as preview"""
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
 
     if not os.path.exists(preview_jpg_path):
