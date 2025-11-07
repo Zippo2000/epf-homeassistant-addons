@@ -306,37 +306,33 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     if CYTHON_AVAILABLE:
         img = load_scaled(image, rotation, display_mode)
     else:
-        # Fallback: manual scaling
-        if rotation in [90, 270]:
-            temp_width, temp_height = target_height, target_width
-        else:
-            temp_width, temp_height = target_width, target_height
+        # ====================================================================
+        # CRITICAL FIX: Rotate BEFORE resize (like Cython does)
+        # ====================================================================
         
+        # 1. Rotate original image FIRST
+        if rotation != 0:
+            image = image.rotate(360 - rotation, expand=True, resample=Image.Resampling.LANCZOS)
+        
+        # 2. Calculate dimensions (ALWAYS 800×480, no swapping!)
+        target_w, target_h = target_width, target_height
+        
+        # 3. Scale with aspect ratio
         aspect = image.width / image.height
-        if aspect > temp_width / temp_height:
-            new_width = temp_width
-            new_height = int(temp_width / aspect)
+        if aspect > target_w / target_h:
+            new_width = target_w
+            new_height = int(target_w / aspect)
         else:
-            new_height = temp_height
-            new_width = int(temp_height * aspect)
+            new_height = target_h
+            new_width = int(target_h * aspect)
         
         image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        canvas = Image.new('RGB', (temp_width, temp_height), bg_color)
-        x = (temp_width - new_width) // 2
-        y = (temp_height - new_height) // 2
-        canvas.paste(image, (x, y))
         
-        if rotation != 0:
-            canvas = canvas.rotate(360 - rotation, expand=True)
-            # Nach der Rotation auf korrekte Größe zuschneiden:
-            if rotation in [90, 270]:
-                final_size = (target_height, target_width)
-            else:
-                final_size = (target_width, target_height)
-            # Center crop
-            left = (canvas.width - final_size[0]) // 2
-            top = (canvas.height - final_size[1]) // 2
-            canvas = canvas.crop((left, top, left + final_size[0], top + final_size[1]))
+        # 4. Create canvas (ALWAYS 800×480)
+        canvas = Image.new('RGB', (target_w, target_h), bg_color)
+        x = (target_w - new_width) // 2
+        y = (target_h - new_height) // 2
+        canvas.paste(image, (x, y))
         
         img = canvas
     
@@ -356,7 +352,7 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
             output_img = floyd_steinberg_dither(enhanced_img, palette)
         else:
             output_img = atkinson_dither_pure_python(enhanced_img, palette)
-
+    
     # Add date if available
     if date_time:
         draw = ImageDraw.Draw(output_img)
@@ -375,21 +371,14 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         except:
             formatted_time = date_time
         
-        # ← AB HIER: ALLES MUSS EINGERÜCKT SEIN! (4 Spaces)
         # Calculate position (bottom-right corner)
         text_bbox = draw.textbbox((0, 0), formatted_time, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
         padding = 5
         
-        # Position based on rotation
-        if rotation in [90, 270]:
-            img_width, img_height = target_height, target_width
-        else:
-            img_width, img_height = target_width, target_height
-        
-        # Draw date (bottom-right with black background)
-        position = (img_width - text_width - 40, img_height - text_height - 40)
+        # Position is ALWAYS based on 800×480 (no rotation adjustment needed!)
+        position = (target_width - text_width - 40, target_height - text_height - 40)
         rect_coords = (
             position[0] - padding,
             position[1] - padding,
@@ -399,35 +388,32 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         draw.rectangle(rect_coords, fill=(0, 0, 0))
         draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
         logger.info(f"📅 Date overlay added: {formatted_time}")
-    # ← ENDE des if date_time: Blocks
-
-    # Ab hier normal weiter (NICHT eingerückt):
+    
     # CRITICAL: Ensure RGB mode before saving BMP
     logger.info(f"📊 Image mode before save: {output_img.mode}, size: {output_img.size}")
-
-
+    
     if output_img.mode != 'RGB':
         logger.warning(f"⚠️ Converting from {output_img.mode} to RGB")
         output_img = output_img.convert('RGB')
-
+    
     # Save BMP (RGB mode - 24-bit)
     img_io = io.BytesIO()
     output_img.save(img_io, 'BMP')
-
+    
     # Log BMP size for verification
     bmp_size = img_io.tell()
     expected_size = 800 * 480 * 3 + 54  # 24-bit RGB + BMP header
     logger.info(f"📦 BMP size: {bmp_size} bytes (expected ~{expected_size} bytes)")
-
+    
     if bmp_size < expected_size * 0.9:
         logger.error(f"⚠️ BMP too small! Might be palette-indexed instead of RGB!")
-
+    
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
     output_img.save(preview_jpg_path, 'JPEG', quality=85)
-    # Kein .convert() nötig, da bereits RGB!
-
+    
     img_io.seek(0)
     return img_io
+
 
 def convert_raw_or_dng_to_jpg(input_file_path, output_dir):
     """Convert RAW/DNG to JPG"""
