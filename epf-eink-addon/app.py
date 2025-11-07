@@ -323,16 +323,6 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
     enhanced_img = ImageEnhance.Contrast(enhanced_img).enhance(img_contrast)
     
-    # Prepare palette
-    palette_list = []
-    for color in palette:
-        palette_list.extend(color)
-    e = len(palette_list)
-    palette_list += (768 - e) * [0]
-    
-    pal_image = Image.new("P", (1, 1))
-    pal_image.putpalette(palette_list)
-    
     # Dither with selected method
     if CYTHON_AVAILABLE:
         if dithering_method == 'floyd-steinberg':
@@ -366,12 +356,11 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     
     # Speichere BMP (mode P ist OK für BMP)
     img_io = io.BytesIO()
-    output_img.save(img_io, 'BMP')
+    output_img.save(img_io, 'BMP')  # Bleibt RGB-Modus!
 
-    # Für JPEG Preview: Konvertiere zu RGB!
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
-    output_img.convert('RGB').save(preview_jpg_path, 'JPEG', quality=85)
-    #          ^^^^^^^^^^^^^^ KRITISCH: Zurück zu RGB!
+    output_img.save(preview_jpg_path, 'JPEG', quality=85)
+    # Kein .convert() nötig, da bereits RGB!
 
     img_io.seek(0)
     return img_io
