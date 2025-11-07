@@ -370,6 +370,11 @@
             transform: translateY(0);
         }
 
+        .prepare-photo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .preview-container {
             padding: 1rem 0;
         }
@@ -387,7 +392,11 @@
 
     <header>
         <h1>E-paper Photo Frame Settings</h1>
-    </header>
+    
+            <div style="text-align: right; font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;">
+                Version {{ addon_version }}
+            </div>
+        </header>
 
     <div class="container">
         {% if error %}
@@ -404,7 +413,7 @@
                     <div id="batteryLevel" class="battery-level" style="width: {{ battery_percentage }}%"></div>
                 </div>
             </div>
-
+        </div>
         <!-- Photo Preview & Management Card -->
         <div class="card">
             <h2 class="card-title">📸 Photo Preview & Management</h2>
@@ -418,7 +427,7 @@
                          onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
 
                     <!-- Status Badge -->
-                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: none;"></div>
+                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
 
                     <div id="noPreviewMessage" style="display: none; padding: 2rem; background: #f0f0f0; border-radius: 8px; color: #666;">
                         <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">📷 No photo prepared yet</p>
@@ -441,7 +450,7 @@
             </div>
         </div>
 
-        </div>
+
 
         <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
             <div class="card">
@@ -715,6 +724,7 @@
                 });
         }
     
+
         // ====================================================================
         // Photo Preview & Management Functions
         // ====================================================================
@@ -782,7 +792,7 @@
 
                 if (data.success) {
                     showNotification('✅ Photo prepared successfully!', 'success');
-                    updatePhotoStatus();  // Refresh status
+                    updatePhotoStatus();
                 } else {
                     showNotification('❌ Error: ' + (data.error || 'Unknown error'), 'error');
                 }
@@ -795,14 +805,12 @@
             });
         }
 
-        // Auto-update photo status on page load and periodically
+        // Initialize photo status on page load
         document.addEventListener('DOMContentLoaded', function() {
             updatePhotoStatus();
-
-            // Auto-refresh status every 30 seconds
+            // Auto-refresh every 30 seconds
             setInterval(updatePhotoStatus, 30000);
         });
-
 
     </script>
 </body>

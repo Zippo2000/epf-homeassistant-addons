@@ -490,7 +490,8 @@ def settings():
     return render_template('settings.html',
                            config=current_config,
                            battery_voltage=battery_voltage,
-                           battery_percentage=battery_percentage)
+                           battery_percentage=battery_percentage,
+                           addon_version='1.0.1')
 
 @bp.route('/health', methods=['GET', 'HEAD'])
 def health():
