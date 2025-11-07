@@ -116,15 +116,27 @@ os.makedirs(photodir, exist_ok=True)
 register_heif_opener()
 
 # ==============================================================================
-# E-Ink Palette (WaveShare 7.5inch Spectra-E6)
+# E-Ink Palette (WaveShare 7.5inch Spectra-E6) - für Cython
+# ==============================================================================
+#palette = [
+#    (0, 0, 0),        # Black
+#    (255, 255, 255),  # White
+#    (255, 243, 56),   # Yellow
+#    (191, 0, 0),      # Deep Red
+#    (100, 64, 255),   # Blue
+#    (67, 138, 28)     # Green
+#]
+
+# ==============================================================================
+# E-Ink Palette (WaveShare 7.5inch Spectra-E6) - Standard RGB Werte
 # ==============================================================================
 palette = [
-    (0, 0, 0),        # Black
-    (255, 255, 255),  # White
-    (255, 243, 56),   # Yellow
-    (191, 0, 0),      # Deep Red
-    (100, 64, 255),   # Blue
-    (67, 138, 28)     # Green
+    (0, 0, 0),       # Black
+    (255, 255, 255), # White
+    (255, 255, 0),   # Yellow - Standard RGB
+    (255, 0, 0),     # Red - Standard RGB
+    (0, 0, 255),     # Blue - Standard RGB
+    (0, 255, 0)      # Green - Standard RGB
 ]
 
 # ==============================================================================
@@ -315,7 +327,16 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         canvas.paste(image, (x, y))
         
         if rotation != 0:
-            canvas = canvas.rotate(360 - rotation, expand=False)
+            canvas = canvas.rotate(360 - rotation, expand=True)
+            # Nach der Rotation auf korrekte Größe zuschneiden:
+            if rotation in [90, 270]:
+                final_size = (target_height, target_width)
+            else:
+                final_size = (target_width, target_height)
+            # Center crop
+            left = (canvas.width - final_size[0]) // 2
+            top = (canvas.height - final_size[1]) // 2
+            canvas = canvas.crop((left, top, left + final_size[0], top + final_size[1]))
         
         img = canvas
     
