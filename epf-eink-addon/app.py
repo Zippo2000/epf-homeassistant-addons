@@ -354,9 +354,50 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         except:
             formatted_time = date_time
     
-    # Speichere BMP (mode P ist OK für BMP)
+    # Calculate position (bottom-right corner)
+    text_bbox = draw.textbbox((0, 0), formatted_time, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    padding = 5
+    
+    # Position based on rotation
+    if rotation in [90, 270]:
+        img_width, img_height = target_height, target_width
+    else:
+        img_width, img_height = target_width, target_height
+    
+    # Draw date (bottom-right with black background)
+    position = (img_width - text_width - 40, img_height - text_height - 40)
+    rect_coords = (
+        position[0] - padding,
+        position[1] - padding,
+        position[0] + text_width + padding,
+        position[1] + text_height + padding
+    )
+    draw.rectangle(rect_coords, fill=(0, 0, 0))
+    draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
+    logger.info(f"📅 Date overlay added: {formatted_time}")
+    
+    # ============================================================================
+    # CRITICAL: Ensure RGB mode before saving BMP
+    # ============================================================================
+    logger.info(f"📊 Image mode before save: {output_img.mode}, size: {output_img.size}")
+
+    if output_img.mode != 'RGB':
+        logger.warning(f"⚠️ Converting from {output_img.mode} to RGB")
+        output_img = output_img.convert('RGB')
+
+    # Save BMP (RGB mode - 24-bit)
     img_io = io.BytesIO()
-    output_img.save(img_io, 'BMP')  # Bleibt RGB-Modus!
+    output_img.save(img_io, 'BMP')
+
+    # Log BMP size for verification
+    bmp_size = img_io.tell()
+    expected_size = 800 * 480 * 3 + 54  # 24-bit RGB + BMP header
+    logger.info(f"📦 BMP size: {bmp_size} bytes (expected ~{expected_size} bytes)")
+
+    if bmp_size < expected_size * 0.9:
+        logger.error(f"⚠️ BMP too small! Might be palette-indexed instead of RGB!")
 
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
     output_img.save(preview_jpg_path, 'JPEG', quality=85)
