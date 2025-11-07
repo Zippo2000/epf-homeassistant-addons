@@ -127,15 +127,6 @@ register_heif_opener()
 #    (67, 138, 28)     # Green
 #]
 
-palette = [
-    (0, 0, 0),       # Black
-    (255, 255, 255), # White
-    (255, 255, 0),   # Yellow - CORRECTED for ESP32
-    (255, 0, 0),     # Red - CORRECTED for ESP32
-    (0, 0, 255),     # Blue - CORRECTED for ESP32
-    (0, 255, 0)      # Green - CORRECTED for ESP32
-]
-
 # ==============================================================================
 # Battery Tracking (Lithium Battery)
 # ==============================================================================
@@ -354,29 +345,6 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
             output_img = floyd_steinberg_dither(enhanced_img, palette)
         else:
             output_img = atkinson_dither_pure_python(enhanced_img, palette)
-    
-    # ============================================================================
-    # CRITICAL: Convert to palette-indexed BMP for ESP32
-    # ESP32 E-Ink expects 4-bit indexed BMP, not 24-bit RGB!
-    # ============================================================================
-    
-    # Ensure RGB mode
-    if output_img.mode != 'RGB':
-        output_img = output_img.convert('RGB')
-    
-    # Create palette list (768 bytes)
-    palette_list = []
-    for color in palette:
-        palette_list.extend(color)
-    palette_list.extend([0] * (768 - len(palette_list)))
-    
-    # Create palette image
-    pal_image = Image.new('P', (1, 1))
-    pal_image.putpalette(palette_list)
-    
-    # Convert RGB to palette-indexed (dither=0 since already dithered!)
-    output_img = output_img.quantize(palette=pal_image, dither=0)
-
 
     # Add date if available
     if date_time:
