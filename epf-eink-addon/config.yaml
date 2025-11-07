@@ -12,12 +12,8 @@ arch:
 startup: application
 boot: auto
 init: false
-# Enable Ingress for secure access through HA UI
 ingress: true
 ingress_port: 5000
-# Enable Home Assistant API access (optional, for future automation features)
-# homeassistant_api: true
-# Panel icon
 panel_icon: mdi:image-frame
 ports:
   5000/tcp: 5000
@@ -27,7 +23,7 @@ webui: "http://[HOST]:[PORT:5000]"
 options:
   immich_api_key: ""
   immich_url: ""
-  album_name: "EPF"
+  album_name: "eink"
   rotation_angle: 0
   color_enhance: 1.0
   contrast: 1.0
@@ -39,9 +35,8 @@ schema:
   immich_url: "url"
   album_name: "str"
   rotation_angle: "list(0|90|180|270)"
-  color_enhance: "float(0.0,3.0)"
-  contrast: "float(0.0,3.0)"
-  sleep_duration: "int(60,86400)"
+  color_enhance: "float"
+  contrast: "float"
+  sleep_duration: "int"
   log_level: "list(debug|info|warning|error)"
   image_quality: "int(1,100)"
-image: "ghcr.io/zippo2000/epf-eink-addon-{arch}"
