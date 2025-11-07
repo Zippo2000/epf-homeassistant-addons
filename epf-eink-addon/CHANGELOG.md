@@ -2,6 +2,91 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1] - 2025-11-07
+
+MODIFIZIERTE DATEIEN:
+1. app_modified.py      (Original: app.py)
+2. settings_modified.html (Original: settings.html)
+
+=============================================================================
+ÄNDERUNGEN IN app.py:
+=============================================================================
+
+NEUE ROUTEN:
+------------
+1. /prepare-photo (POST)
+   - Manuelles Abrufen und Vorbereiten eines Fotos aus Immich
+   - Speichert Foto als:
+     * /photos/latest.bmp (für ESP32)
+     * /photos/latest_preview.jpg (für Web-Vorschau)
+     * /photos/latest.status (Status: 'new' oder 'delivered')
+   - Markiert Foto als 'new' (noch nicht ausgeliefert)
+
+2. /preview-photo (GET)
+   - Liefert Vorschau-Foto (JPEG) für Webinterface
+   - Unabhängig vom Auslieferungsstatus
+
+3. /preview-status (GET)
+   - Gibt Status des aktuellen Fotos zurück (JSON)
+   - Enthält: exists, status, timestamp, formatted_time
+
+MODIFIZIERTE ROUTE:
+------------------
+/download (GET) - KOMPLETT ÜBERARBEITET
+   - Prüft ob vorbereitetes Foto mit Status 'new' existiert
+   - Falls JA: Liefert vorbereitetes Foto aus, ändert Status auf 'delivered'
+   - Falls NEIN: Holt neues Foto von Immich, verarbeitet es, speichert es
+     mit Status 'delivered' und liefert es aus
+
+FUNKTIONSWEISE:
+---------------
+Szenario 1: Manueller Button gedrückt
+  → /prepare-photo erstellt Foto mit Status 'new'
+  → ESP32 wacht auf → /download findet Status 'new'
+  → Foto wird ausgeliefert, Status → 'delivered'
+  → Vorschau bleibt im Web sichtbar
+
+Szenario 2: Kein manuelles Foto
+  → ESP32 wacht auf → /download findet kein 'new' Foto
+  → Automatisches Holen und Verarbeiten
+  → Foto wird ausgeliefert UND als Vorschau gespeichert
+  → Status → 'delivered'
+
+=============================================================================
+ÄNDERUNGEN IN settings.html:
+=============================================================================
+
+NEUE KOMPONENTEN:
+-----------------
+1. Photo Preview Card
+   - Zeigt Vorschau des letzten vorbereiteten Fotos
+   - Status-Badge: "✨ Ready to deliver" oder "✓ Already delivered"
+   - Timestamp der Foto-Vorbereitung
+   - Button "🔄 Prepare New Photo"
+   - Placeholder wenn kein Foto vorhanden
+
+2. CSS-Erweiterungen
+   - .prepare-photo-btn (Gradient-Button mit Hover-Effekten)
+   - .preview-container
+   - #photoPreview Styling
+
+3. JavaScript-Funktionen
+   - updatePhotoStatus() - Aktualisiert Foto-Status vom Server
+   - prepareNewPhoto() - Löst manuelles Foto-Abrufen aus
+   - Auto-Update alle 30 Sekunden
+   - Beim Laden der Seite
+
+=============================================================================
+DATEISTRUKTUR:
+=============================================================================
+
+Neue Dateien in /photos/:
+- latest.bmp           (Vorbereitetes Foto für ESP32, BMP-Format)
+- latest_preview.jpg   (Vorschau für Webinterface, JPEG-Format)
+- latest.status        (Textdatei mit 'new' oder 'delivered')
+
+=============================================================================
+
 ## [1.0.0] - 2025-10-29
 
 ### Added

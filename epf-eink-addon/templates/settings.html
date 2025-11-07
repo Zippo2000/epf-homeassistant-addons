@@ -345,6 +345,40 @@
                 flex-wrap: wrap;
             }
         }
+    
+        /* Photo Preview Styles */
+        .prepare-photo-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .prepare-photo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .prepare-photo-btn:active {
+            transform: translateY(0);
+        }
+
+        .preview-container {
+            padding: 1rem 0;
+        }
+
+        #photoPreview {
+            display: block;
+            margin: 0 auto;
+        }
+
     </style>
 </head>
 
@@ -370,6 +404,43 @@
                     <div id="batteryLevel" class="battery-level" style="width: {{ battery_percentage }}%"></div>
                 </div>
             </div>
+
+        <!-- Photo Preview & Management Card -->
+        <div class="card">
+            <h2 class="card-title">📸 Photo Preview & Management</h2>
+
+            <div class="preview-container">
+                <div id="photoPreviewWrapper" style="text-align: center; margin-bottom: 1.5rem; position: relative;">
+                    <img id="photoPreview" 
+                         src="/preview-photo" 
+                         alt="No photo prepared yet" 
+                         style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain; border: 2px solid #eee;"
+                         onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
+
+                    <!-- Status Badge -->
+                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: none;"></div>
+
+                    <div id="noPreviewMessage" style="display: none; padding: 2rem; background: #f0f0f0; border-radius: 8px; color: #666;">
+                        <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">📷 No photo prepared yet</p>
+                        <p style="margin: 0; font-size: 0.9rem;">Click "Prepare New Photo" to fetch and prepare an image</p>
+                    </div>
+                </div>
+
+                <!-- Status Info -->
+                <div id="photoInfo" style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem; color: #666; display: none;">
+                    <span id="photoTimestamp"></span>
+                </div>
+
+                <button type="button" class="prepare-photo-btn" onclick="prepareNewPhoto()">
+                    🔄 Prepare New Photo
+                </button>
+
+                <div id="prepareStatus" style="margin-top: 1rem; text-align: center; display: none;">
+                    <span style="color: #4361EE;">⏳ Preparing photo...</span>
+                </div>
+            </div>
+        </div>
+
         </div>
 
         <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
@@ -643,6 +714,96 @@
                     showNotification('Error: ' + error.message);
                 });
         }
+    
+        // ====================================================================
+        // Photo Preview & Management Functions
+        // ====================================================================
+        function updatePhotoStatus() {
+            fetch('/preview-status')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('photoStatusBadge');
+                    const info = document.getElementById('photoInfo');
+                    const timestamp = document.getElementById('photoTimestamp');
+                    const preview = document.getElementById('photoPreview');
+                    const noPreviewMsg = document.getElementById('noPreviewMessage');
+
+                    if (data.exists) {
+                        preview.style.display = 'block';
+                        preview.src = '/preview-photo?' + new Date().getTime();
+                        noPreviewMsg.style.display = 'none';
+
+                        // Show status badge
+                        badge.style.display = 'block';
+                        if (data.status === 'new') {
+                            badge.textContent = '✨ Ready to deliver';
+                            badge.style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+                            badge.style.color = 'white';
+                        } else {
+                            badge.textContent = '✓ Already delivered';
+                            badge.style.background = '#6c757d';
+                            badge.style.color = 'white';
+                        }
+
+                        // Show timestamp
+                        info.style.display = 'block';
+                        timestamp.textContent = '📅 Prepared: ' + data.formatted_time;
+                    } else {
+                        preview.style.display = 'none';
+                        badge.style.display = 'none';
+                        info.style.display = 'none';
+                        noPreviewMsg.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching photo status:', error);
+                });
+        }
+
+        function prepareNewPhoto() {
+            const statusDiv = document.getElementById('prepareStatus');
+            const button = document.querySelector('.prepare-photo-btn');
+
+            statusDiv.style.display = 'block';
+            button.disabled = true;
+            button.style.opacity = '0.6';
+
+            fetch('/prepare-photo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.style.display = 'none';
+                button.disabled = false;
+                button.style.opacity = '1';
+
+                if (data.success) {
+                    showNotification('✅ Photo prepared successfully!', 'success');
+                    updatePhotoStatus();  // Refresh status
+                } else {
+                    showNotification('❌ Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                statusDiv.style.display = 'none';
+                button.disabled = false;
+                button.style.opacity = '1';
+                showNotification('❌ Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Auto-update photo status on page load and periodically
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePhotoStatus();
+
+            // Auto-refresh status every 30 seconds
+            setInterval(updatePhotoStatus, 30000);
+        });
+
+
     </script>
 </body>
 
