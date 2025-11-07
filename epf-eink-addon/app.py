@@ -6,6 +6,9 @@
 # Full-featured Flask Server with Cython Optimization
 # ==============================================================================
 
+BUILD_TIMESTAMP = "2025-11-07 16:29:29 CET"
+BUILD_VERSION = "1.0.2"
+
 from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for, Blueprint
 import yaml
 import requests
@@ -81,7 +84,7 @@ img_contrast = current_config['immich']['contrast']
 strength = current_config['immich']['strength']
 display_mode = current_config['immich']['display_mode']
 image_order = current_config['immich']['image_order']
-dithering_method = current_config['immich']['dithering_method']
+dithering_method = current_config['immich'].get('dithering_method', 'atkinson')
 sleep_start_hour = current_config['immich']['sleep_start_hour']
 sleep_start_minute = current_config['immich']['sleep_start_minute']
 sleep_end_hour = current_config['immich']['sleep_end_hour']
@@ -115,13 +118,22 @@ register_heif_opener()
 # ==============================================================================
 # E-Ink Palette (WaveShare 7.5inch Spectra-E6)
 # ==============================================================================
+#palette = [
+#    (0, 0, 0),        # Black
+#    (255, 255, 255),  # White
+#    (255, 243, 56),   # Yellow
+#    (191, 0, 0),      # Deep Red
+#    (100, 64, 255),   # Blue
+#    (67, 138, 28)     # Green
+#]
+
 palette = [
-    (0, 0, 0),        # Black
-    (255, 255, 255),  # White
-    (255, 243, 56),   # Yellow
-    (191, 0, 0),      # Deep Red
-    (100, 64, 255),   # Blue
-    (67, 138, 28)     # Green
+    (0, 0, 0),       # Black
+    (255, 255, 255), # White
+    (255, 255, 0),   # Yellow - CORRECTED for ESP32
+    (255, 0, 0),     # Red - CORRECTED for ESP32
+    (0, 0, 255),     # Blue - CORRECTED for ESP32
+    (0, 255, 0)      # Green - CORRECTED for ESP32
 ]
 
 # ==============================================================================
@@ -330,19 +342,41 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     pal_image = Image.new("P", (1, 1))
     pal_image.putpalette(palette_list)
     
-    # Dither    
+    # Dither with selected method
     if CYTHON_AVAILABLE:
         if dithering_method == 'floyd-steinberg':
-           output_img = convert_image(enhanced_img, dithering_strength=strength)
+            output_img = floyd_steinberg_dither(enhanced_img, palette)
         else:  # atkinson (default)
             output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
-        output_img = Image.fromarray(output_img, mode='RGB')
+            output_img = Image.fromarray(output_img, mode="RGB")
     else:
-        # Pure Python fallback
         if dithering_method == 'floyd-steinberg':
             output_img = floyd_steinberg_dither(enhanced_img, palette)
-        else:  # atkinson
+        else:
             output_img = atkinson_dither_pure_python(enhanced_img, palette)
+    
+    # ============================================================================
+    # CRITICAL: Convert to palette-indexed BMP for ESP32
+    # ESP32 E-Ink expects 4-bit indexed BMP, not 24-bit RGB!
+    # ============================================================================
+    
+    # Ensure RGB mode
+    if output_img.mode != 'RGB':
+        output_img = output_img.convert('RGB')
+    
+    # Create palette list (768 bytes)
+    palette_list = []
+    for color in palette:
+        palette_list.extend(color)
+    palette_list.extend([0] * (768 - len(palette_list)))
+    
+    # Create palette image
+    pal_image = Image.new('P', (1, 1))
+    pal_image.putpalette(palette_list)
+    
+    # Convert RGB to palette-indexed (dither=0 since already dithered!)
+    output_img = output_img.quantize(palette=pal_image, dither=0)
+
 
     # Add date if available
     if date_time:
@@ -447,7 +481,7 @@ def update_app_config(new_config):
     strength = new_config['immich']['strength']
     display_mode = new_config['immich']['display_mode']
     image_order = new_config['immich']['image_order']
-    dithering_method = new_config['immich']['dithering_method']
+    dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -513,7 +547,7 @@ def settings():
                 'strength': float(request.form.get('strength', current_config['immich']['strength'])),
                 'display_mode': request.form.get('display_mode', current_config['immich']['display_mode']),
                 'image_order': request.form.get('image_order', current_config['immich']['image_order']),
-                'dithering_method': request.form.get('dithering_method', current_config['immich']['dithering_method']),
+                'dithering_method': request.form.get('dithering_method', current_config['immich'].get('dithering_method', 'atkinson')),
                 'sleep_start_hour': int(request.form.get('sleep_start_hour', current_config['immich']['sleep_start_hour'])),
                 'sleep_start_minute': int(request.form.get('sleep_start_minute', current_config['immich']['sleep_start_minute'])),
                 'sleep_end_hour': int(request.form.get('sleep_end_hour', current_config['immich']['sleep_end_hour'])),
@@ -534,7 +568,7 @@ def settings():
             return f"Error saving config: {str(e)}", 500
     
     return render_template('settings.html',
-                           config=current_config,
+                           config=current_config if current_config else DEFAULT_CONFIG,
                            battery_voltage=battery_voltage,
                            battery_percentage=battery_percentage,
                            addon_version=BUILD_VERSION,
@@ -558,9 +592,9 @@ def health():
 
 @bp.route('/download', methods=['GET'])
 def process_and_download():
-    """Download image for ESP32 (with status tracking and fallback)"""
-    global last_battery_voltage, last_battery_update
-
+    """Download and process image from Immich"""
+    global url, albumname, last_battery_voltage, last_battery_update
+    
     # Battery tracking
     try:
         battery_voltage = float(request.headers.get('batteryCap', '0'))
@@ -569,30 +603,24 @@ def process_and_download():
             last_battery_update = time.time()
     except:
         pass
-
-    # ====================================================================
+    
     # Check if pre-prepared photo exists AND is marked as NEW
-    # ====================================================================
     preview_bmp_path = os.path.join(photodir, 'latest.bmp')
     status_file = os.path.join(photodir, 'latest.status')
-
+    
     if os.path.exists(preview_bmp_path) and os.path.exists(status_file):
         try:
             with open(status_file, 'r') as f:
                 status = f.read().strip()
-
+            
             if status == 'new':
-                logger.info("📤 Serving pre-prepared photo to ESP32 (marking as DELIVERED)")
-
-                # Mark as DELIVERED
+                logger.info("📤 Serving pre-prepared photo to ESP32")
                 with open(status_file, 'w') as f:
                     f.write('delivered')
-
+                
                 return send_file(preview_bmp_path, mimetype='image/bmp', download_name='frame.bmp')
-            else:
-                logger.info("⏭️ Pre-prepared photo already delivered, fetching new one")
         except Exception as e:
-            logger.warning(f"⚠️ Error reading status file: {e}")
+            logger.warning(f"⚠️ Error reading status: {e}")
 
     # ====================================================================
     # No NEW photo available - fetch and prepare on-the-fly
@@ -867,6 +895,150 @@ def preview_status():
         "formatted_time": datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     })
 
+# ==============================================================================
+# Photo Preview & Management Routes (v1.0.2)
+# ==============================================================================
+
+@bp.route('/prepare-photo', methods=['POST'])
+def prepare_photo():
+    """Manually fetch and prepare a new photo from Immich"""
+    try:
+        logger.info("📸 Manual photo preparation requested")
+        
+        immich_url = current_config['immich']['url']
+        album_name = current_config['immich']['album']
+        
+        if not immich_url or not album_name:
+            return jsonify({"error": "Immich not configured", "success": False}), 500
+        
+        logger.info(f"🔍 Fetching albums from {immich_url}")
+        
+        response = requests.get(f"{immich_url}/api/albums", headers=headers, timeout=10)
+        if response.status_code != 200:
+            return jsonify({"error": f"Failed to fetch albums: {response.status_code}", "success": False}), 500
+        
+        data = response.json()
+        album_id = next((item['id'] for item in data if item.get('albumName') == album_name), None)
+        
+        if not album_id:
+            return jsonify({"error": f"Album '{album_name}' not found", "success": False}), 404
+        
+        logger.info(f"✅ Found album: {album_name} (ID: {album_id})")
+        
+        response = requests.get(f"{immich_url}/api/albums/{album_id}", headers=headers, timeout=10)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch album assets", "success": False}), 500
+        
+        data = response.json()
+        if 'assets' not in data or not data['assets']:
+            return jsonify({"error": "No images in album", "success": False}), 404
+        
+        logger.info(f"📷 Found {len(data['assets'])} photos in album")
+        
+        image_order_config = current_config['immich']['image_order']
+        downloaded_images = load_downloaded_images()
+        
+        if image_order_config == 'newest':
+            sorted_assets = sorted(data['assets'],
+                key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
+                reverse=True)
+            remaining_images = sorted_assets
+        else:
+            remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
+            if not remaining_images:
+                reset_tracking_file()
+                remaining_images = data['assets']
+        
+        selected_image = remaining_images[0]
+        asset_id = selected_image['id']
+        save_downloaded_image(asset_id)
+        
+        response = requests.get(f"{immich_url}/api/assets/{asset_id}/original", 
+                               headers=headers, stream=True, timeout=30)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to download image", "success": False}), 500
+        
+        image_data = io.BytesIO(response.content)
+        original_path = selected_image.get('originalPath', '').lower()
+        
+        if original_path.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
+            with rawpy.imread(image_data) as raw:
+                rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
+                image = Image.fromarray(rgb)
+        elif original_path.endswith('.heic'):
+            image = Image.open(image_data).convert("RGB")
+        else:
+            image = Image.open(image_data)
+        
+        processed_image = scale_img_in_memory(image)
+        
+        preview_bmp_path = os.path.join(photodir, 'latest.bmp')
+        with open(preview_bmp_path, 'wb') as f:
+            f.write(processed_image.getvalue())
+        
+        processed_image.seek(0)
+        bmp_image = Image.open(processed_image)
+        preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
+        bmp_image.save(preview_jpg_path, 'JPEG', quality=85)
+        
+        status_file = os.path.join(photodir, 'latest.status')
+        with open(status_file, 'w') as f:
+            f.write('new')
+        
+        logger.info(f"✅ Photo prepared manually (marked as NEW): {asset_id}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Photo prepared successfully",
+            "asset_id": asset_id,
+            "preview_url": f"./preview-photo?t={int(time.time())}"
+        }), 200
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ Network error: {e}")
+        return jsonify({"error": f"Network error: {str(e)}", "success": False}), 500
+    except Exception as e:
+        logger.error(f"❌ Error preparing photo: {e}", exc_info=True)
+        return jsonify({"error": str(e), "success": False}), 500
+
+
+@bp.route('/preview-photo', methods=['GET'])
+def preview_photo():
+    """Serve the latest prepared photo as preview"""
+    preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
+    
+    if not os.path.exists(preview_jpg_path):
+        return jsonify({"error": "No preview available"}), 404
+    
+    return send_file(preview_jpg_path, mimetype='image/jpeg')
+
+
+@bp.route('/preview-status', methods=['GET'])
+def preview_status():
+    """Get the status of the current preview photo"""
+    status_file = os.path.join(photodir, 'latest.status')
+    preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
+    
+    if not os.path.exists(preview_jpg_path):
+        return jsonify({
+            "exists": False,
+            "status": None,
+            "timestamp": None
+        })
+    
+    status = "delivered"
+    if os.path.exists(status_file):
+        with open(status_file, 'r') as f:
+            status = f.read().strip()
+    
+    timestamp = os.path.getmtime(preview_jpg_path)
+    
+    return jsonify({
+        "exists": True,
+        "status": status,
+        "timestamp": timestamp,
+        "formatted_time": datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 @bp.route('/sleep', methods=['GET'])
 def get_sleep_duration():
