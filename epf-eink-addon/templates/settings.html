@@ -504,6 +504,19 @@
                             Newest First</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="dithering_method">🎨 Dithering Method:</label>
+                    <select id="dithering_method" name="dithering_method">
+                        <option value="atkinson" {% if config.immich.dithering_method == 'atkinson' %}selected{% endif %}>
+                            Atkinson (Softer, cleaner - better for graphics)
+                        </option>
+                        <option value="floyd-steinberg" {% if config.immich.dithering_method == 'floyd-steinberg' %}selected{% endif %}>
+                            Floyd-Steinberg (More detail - better for photos)
+                        </option>
+                    </select>
+                    <small>Choose the dithering algorithm for image processing</small>
+                </div>
             </div>
 
             <div class="card">
