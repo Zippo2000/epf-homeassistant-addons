@@ -44,12 +44,12 @@ logger = logging.getLogger(__name__)
 # Cython Optimization
 # ==============================================================================
 try:
-    from cpy import convert_image_atkinson, load_scaled
+    from cpy import convert_image, convert_image_atkinson, load_scaled
     CYTHON_AVAILABLE = True
-    logger.info("✅ Cython optimization available")
-except ImportError:
+    logger.info("✅ Cython optimization available (Atkinson + Floyd-Steinberg)")
+except ImportError as e:
     CYTHON_AVAILABLE = False
-    logger.warning("⚠️ Cython not available - using pure Python (slower)")
+    logger.error(f"❌ Cython not available: {e}")
 
 # ==============================================================================
 # Default Configuration
@@ -114,30 +114,6 @@ ALLOWED_EXTENSIONS = {'.jpeg', '.raw', '.jpg', '.bmp', '.dng', '.heic', '.arw', 
 # Set up directory for downloaded images
 os.makedirs(photodir, exist_ok=True)
 register_heif_opener()
-
-# ==============================================================================
-# E-Ink Palette (WaveShare 7.5inch Spectra-E6) - für Cython
-# ==============================================================================
-#palette = [
-#    (0, 0, 0),        # Black
-#    (255, 255, 255),  # White
-#    (255, 243, 56),   # Yellow
-#    (191, 0, 0),      # Deep Red
-#    (100, 64, 255),   # Blue
-#    (67, 138, 28)     # Green
-#]
-
-# ==============================================================================
-# E-Ink Palette (WaveShare 7.5inch Spectra-E6) - Standard RGB Werte
-# ==============================================================================
-palette = [
-    (0, 0, 0),       # Black
-    (255, 255, 255), # White
-    (255, 255, 0),   # Yellow - Standard RGB
-    (255, 0, 0),     # Red - Standard RGB
-    (0, 0, 255),     # Blue - Standard RGB
-    (0, 255, 0)      # Green - Standard RGB
-]
 
 # ==============================================================================
 # Battery Tracking (Lithium Battery)
@@ -221,10 +197,10 @@ def reset_tracking_file():
 
 def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
     """
-    Process image in memory - SIMPLIFIED VERSION using Cython
-    Same as app_standalone.py but with logging
+    Process image in memory using Cython
+    Supports both Atkinson and Floyd-Steinberg dithering
     """
-    global rotation
+    global rotation, dithering_method
     rotation = rotationAngle
     
     # Extract EXIF date
@@ -240,57 +216,38 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     image = ImageOps.exif_transpose(image)
     
     # ========================================================================
-    # CRITICAL: Use Cython load_scaled (like app_standalone.py)
+    # CRITICAL: Use Cython load_scaled
     # ========================================================================
-    if CYTHON_AVAILABLE:
-        logger.info(f"✅ Using Cython load_scaled(rotation={rotation}, mode={display_mode})")
-        img = load_scaled(image, rotation, display_mode)
-    else:
+    if not CYTHON_AVAILABLE:
         logger.error("❌ Cython not available - image processing will fail!")
         raise RuntimeError("Cython module 'cpy' is required but not available")
     
+    logger.info(f"✅ Using Cython load_scaled(rotation={rotation}, mode={display_mode})")
+    img = load_scaled(image, rotation, display_mode)
     logger.info(f"📐 Image after load_scaled: size={img.size}, mode={img.mode}")
     
-    # Enhance
+    # Enhancement
     enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
     enhanced_img = ImageEnhance.Contrast(enhanced_img).enhance(img_contrast)
+    logger.info(f"🎨 Enhanced: color={img_enhanced}, contrast={img_contrast}")
     
     # ========================================================================
-    # Palette definition (flat list for Cython/pal_image)
+    # Dithering with selected method
     # ========================================================================
-    palette = [
-        0, 0, 0,      # Black
-        255, 255, 255,  # White
-        255, 255, 0,    # Yellow
-        255, 0, 0,      # Red
-        0, 0, 255,      # Blue
-        0, 255, 0       # Green
-    ]
-    
-    # Prepare palette image (like app_standalone.py)
-    e = len(palette)
-    assert e > 0, "Palette unexpectedly short"
-    assert e <= 768, "Palette unexpectedly long"
-    assert e % 3 == 0, "Palette not multiple of 3, so not RGB"
-    
-    pal_image = Image.new("P", (1, 1))
-    palette += (768 - e) * [0]
-    pal_image.putpalette(palette)
-    
-    # ========================================================================
-    # CRITICAL: Use Cython convert_image_atkinson (like app_standalone.py)
-    # ========================================================================
-    if CYTHON_AVAILABLE:
-        logger.info(f"✅ Using Cython convert_image_atkinson(strength={strength})")
+    if dithering_method == 'floyd-steinberg':
+        logger.info(f"✅ Using Cython Floyd-Steinberg dithering (strength={strength})")
+        output_img = convert_image(enhanced_img, dithering_strength=strength)
+        output_img = Image.fromarray(output_img, mode="RGB")
+    else:  # atkinson (default)
+        logger.info(f"✅ Using Cython Atkinson dithering (strength={strength})")
         output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
         output_img = Image.fromarray(output_img, mode="RGB")
-    else:
-        logger.error("❌ Cython not available - dithering will fail!")
-        raise RuntimeError("Cython module 'cpy' is required but not available")
     
     logger.info(f"🎨 Image after dithering: size={output_img.size}, mode={output_img.mode}")
     
+    # ========================================================================
     # Add date overlay if available
+    # ========================================================================
     if date_time:
         draw = ImageDraw.Draw(output_img)
         try:
@@ -324,7 +281,9 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
         draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
         logger.info(f"📅 Date overlay: {formatted_time}")
     
+    # ========================================================================
     # Save BMP
+    # ========================================================================
     logger.info(f"💾 Saving BMP: mode={output_img.mode}, size={output_img.size}")
     
     img_io = io.BytesIO()
@@ -337,6 +296,7 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     if bmp_size < expected_size * 0.9:
         logger.warning(f"⚠️ BMP smaller than expected")
     
+    # Save JPEG preview
     preview_jpg_path = os.path.join(photodir, 'latest_preview.jpg')
     output_img.save(preview_jpg_path, 'JPEG', quality=85)
     logger.info(f"🖼️ Preview saved")

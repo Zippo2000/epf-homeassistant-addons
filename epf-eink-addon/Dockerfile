@@ -31,6 +31,15 @@ COPY requirements.txt /app/
 RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip \
     && pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
+# Copy Cython source
+COPY cpy.pyx /app/
+COPY setup.py /app/
+
+# BUILD CYTHON MODULE während Docker Build!
+RUN python3 setup.py build_ext --inplace && \
+    ls -la /app/*.so && \
+    echo "✅ Cython module compiled successfully"
+
 COPY app.py /app/
 COPY templates/ /app/templates/
 
