@@ -43,12 +43,46 @@ logger = logging.getLogger(__name__)
 # ==============================================================================
 # Cython Optimization
 # ==============================================================================
+# ==============================================================================
+# Cython Optimization - KORRIGIERT
+# ==============================================================================
 try:
-    from cpy import convert_image, convert_image_atkinson, load_scaled
-    CYTHON_AVAILABLE = True
-    logger.info("✅ Cython optimization available (Atkinson + Floyd-Steinberg)")
+    import cpy
+    
+    # Log verfügbare Funktionen
+    logger.info(f"📋 Cython functions: {[f for f in dir(cpy) if not f.startswith('_')]}")
+    
+    # Load scaled ist definitiv vorhanden
+    load_scaled = cpy.load_scaled
+    
+    # Prüfe welche Dithering-Funktionen verfügbar sind
+    if hasattr(cpy, 'convert_image'):
+        # Floyd-Steinberg (mit preview_path Parameter)
+        def convert_image_floyd(img, strength):
+            return cpy.convert_image(img, "", strength)
+        FLOYD_AVAILABLE = True
+    else:
+        FLOYD_AVAILABLE = False
+    
+    if hasattr(cpy, 'convert_image_atkinson'):
+        # Atkinson (mit preview_path Parameter)
+        def convert_image_atkinson(img, strength):
+            return cpy.convert_image_atkinson(img, "", strength)
+        ATKINSON_AVAILABLE = True
+    else:
+        ATKINSON_AVAILABLE = False
+    
+    CYTHON_AVAILABLE = ATKINSON_AVAILABLE or FLOYD_AVAILABLE
+    
+    if CYTHON_AVAILABLE:
+        logger.info(f"✅ Cython available: Floyd={FLOYD_AVAILABLE}, Atkinson={ATKINSON_AVAILABLE}")
+    else:
+        logger.error("❌ No dithering functions found in Cython module")
+        
 except ImportError as e:
     CYTHON_AVAILABLE = False
+    FLOYD_AVAILABLE = False
+    ATKINSON_AVAILABLE = False
     logger.error(f"❌ Cython not available: {e}")
 
 # ==============================================================================
@@ -234,14 +268,23 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     # ========================================================================
     # Dithering with selected method
     # ========================================================================
-    if dithering_method == 'floyd-steinberg':
-        logger.info(f"✅ Using Cython Floyd-Steinberg dithering (strength={strength})")
-        output_img = convert_image(enhanced_img, dithering_strength=strength)
+    if dithering_method == 'floyd-steinberg' and FLOYD_AVAILABLE:
+        logger.info(f"✅ Using Floyd-Steinberg dithering (strength={strength})")
+        output_img = convert_image_floyd(enhanced_img, strength)
         output_img = Image.fromarray(output_img, mode="RGB")
-    else:  # atkinson (default)
-        logger.info(f"✅ Using Cython Atkinson dithering (strength={strength})")
-        output_img = convert_image_atkinson(enhanced_img, dithering_strength=strength)
+    elif dithering_method == 'atkinson' and ATKINSON_AVAILABLE:
+        logger.info(f"✅ Using Atkinson dithering (strength={strength})")
+        output_img = convert_image_atkinson(enhanced_img, strength)
         output_img = Image.fromarray(output_img, mode="RGB")
+    else:
+        # Fallback zu Floyd-Steinberg wenn verfügbar
+        if FLOYD_AVAILABLE:
+            logger.warning(f"⚠️ {dithering_method} not available, using Floyd-Steinberg")
+            output_img = convert_image_floyd(enhanced_img, strength)
+            output_img = Image.fromarray(output_img, mode="RGB")
+        else:
+            raise RuntimeError("No dithering method available")
+
     
     logger.info(f"🎨 Image after dithering: size={output_img.size}, mode={output_img.mode}")
     
