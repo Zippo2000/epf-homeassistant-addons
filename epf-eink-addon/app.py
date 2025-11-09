@@ -236,7 +236,7 @@ def depalette_image(pixels, palette):
     indices = np.argmin(diffs, axis=2)
     
     # Simulate special case from C code (index 3 becomes 1)
-    indices[indices == 3] = 1
+    indices[indices > 3] += 1
     
     return indices
 
