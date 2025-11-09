@@ -172,17 +172,17 @@ def load_downloaded_images():
     global album_name
     try:
         if not os.path.exists(tracking_file):
-            open(tracking_file, 'w').close()
+            with open(tracking_file, 'w') as f:
+                pass  # Leere Datei erstellen
         
         os.chmod(tracking_file, 0o666)
         
-        with open(tracking_file, 'r') as f:
+        with open(tracking_file, 'r') as f:  # ← FIX: 'with open'
             lines = f.readlines()
         
         if not lines or lines[0].strip() != album_name:
-            f.seek(0)
-            f.truncate()
-            f.write(f"{album_name}\n")
+            with open(tracking_file, 'w') as f:  # ← FIX: Neue 'with open'
+                f.write(f"{album_name}\n")
             return set()
         
         return {line.strip() for line in lines[1:] if line.strip()}
@@ -196,20 +196,20 @@ def save_downloaded_image(asset_id):
     global album_name
     try:
         if not os.path.exists(tracking_file):
-            open(tracking_file, 'w').close()
+            with open(tracking_file, 'w') as f:
+                pass
         
         os.chmod(tracking_file, 0o666)
         
-        with open(tracking_file, 'r') as f:
+        with open(tracking_file, 'r') as f:  # ← FIX: 'with open'
             lines = f.readlines()
         
         if not lines or lines[0].strip() != album_name:
-            f.seek(0)
-            f.truncate()
-            f.write(f"{album_name}\n")
+            with open(tracking_file, 'w') as f:  # ← FIX: Neue 'with open'
+                f.write(f"{album_name}\n")
         
-        f.seek(0, 2)
-        f.write(f"{asset_id}\n")
+        with open(tracking_file, 'a') as f:  # ← FIX: Append mode
+            f.write(f"{asset_id}\n")
     
     except Exception as e:
         logger.error(f"Error writing to tracking file: {e}")
@@ -436,7 +436,12 @@ class ConfigFileHandler(FileSystemEventHandler):
     def load_config(self):
         try:
             with open(self.config_path, 'r') as f:
-                return yaml.safe_load(f)
+                config = yaml.safe_load(f)
+                # ← FIX: Rückfall auf Default-Config
+                if config is None or 'immich' not in config:
+                    logger.warning("Invalid YAML, using default config")
+                    return DEFAULT_CONFIG
+                return config
         except Exception as e:
             logger.error(f"Error reading config: {e}")
             return DEFAULT_CONFIG
@@ -445,6 +450,11 @@ def update_app_config(new_config):
     """Update configuration"""
     global current_config, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
+    
+    # ← FIX: Validierung hinzufügen!
+    if new_config is None or 'immich' not in new_config:
+        logger.warning("Invalid config received, ignoring update")
+        return
     
     current_config = new_config
     url = new_config['immich']['url']
@@ -490,6 +500,11 @@ bp = Blueprint('main', __name__)
 def settings():
     """Settings page - ROOT ROUTE"""
     global current_config, last_battery_voltage, last_battery_update
+    
+    # ← FIX: Fallback auf DEFAULT_CONFIG
+    if current_config is None:
+        current_config = DEFAULT_CONFIG.copy()
+        logger.warning("current_config was None, reset to default")
     
     current_time = time.time()
     if current_time - last_battery_update < 3600:
@@ -635,19 +650,33 @@ def process_and_download():
         downloaded_images = load_downloaded_images()
         
         if image_order_config == 'newest':
+            # Sortiere absteigend nach Datum (neueste zuerst)
             sorted_assets = sorted(data['assets'],
                 key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
                 reverse=True)
-            remaining_images = sorted_assets
-            selected_image = remaining_images[0]  # Neuestes Bild
+            
+            # ← FIX: Verwende auch Tracking im "newest" Modus!
+            downloaded_images = load_downloaded_images()
+            remaining_images = [img for img in sorted_assets if img['id'] not in downloaded_images]
+            
+            if not remaining_images:
+                reset_tracking_file()
+                remaining_images = sorted_assets
+            
+            # Nimm das erste noch nicht gezeigte Bild aus der sortierten Liste
+            selected_image = remaining_images[0]
+
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = data['assets']
+            
+            # ← Verwende random.choice für echte Zufallsauswahl
             selected_image = random.choice(remaining_images)
+
         asset_id = selected_image['id']
-        save_downloaded_image(asset_id)
+        save_downloaded_image(asset_id)  # Markiere als gesehen
         
         # Download image
         response = requests.get(
@@ -806,19 +835,33 @@ def prepare_photo():
         downloaded_images = load_downloaded_images()
         
         if image_order_config == 'newest':
+            # Sortiere absteigend nach Datum (neueste zuerst)
             sorted_assets = sorted(data['assets'],
                 key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
                 reverse=True)
-            remaining_images = sorted_assets
-            selected_image = remaining_images[0]  # Neuestes Bild
+            
+            # ← FIX: Verwende auch Tracking im "newest" Modus!
+            downloaded_images = load_downloaded_images()
+            remaining_images = [img for img in sorted_assets if img['id'] not in downloaded_images]
+            
+            if not remaining_images:
+                reset_tracking_file()
+                remaining_images = sorted_assets
+            
+            # Nimm das erste noch nicht gezeigte Bild aus der sortierten Liste
+            selected_image = remaining_images[0]
+
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = data['assets']
-            selected_image = random.choice(remaining_images)  # ← KORREKTUR!
+            
+            # ← Verwende random.choice für echte Zufallsauswahl
+            selected_image = random.choice(remaining_images)
+
         asset_id = selected_image['id']
-        save_downloaded_image(asset_id)
+        save_downloaded_image(asset_id)  # Markiere als gesehen
         
         # Download image
         response = requests.get(
