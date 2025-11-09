@@ -778,8 +778,8 @@ def battery_status():
     
     current_time = time.time()
     
-    # Return cached value if recent (< 10 minutes)
-    if current_time - last_battery_update < 600:
+    # Return cached value if recent (< ~1d)
+    if current_time - last_battery_update < 90000:
         battery_voltage = last_battery_voltage
     else:
         battery_voltage = 0
