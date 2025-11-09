@@ -24,12 +24,19 @@ options:
   immich_api_key: ""
   immich_url: ""
   album_name: "eink"
-  rotation_angle: 0
-  color_enhance: 1.0
-  contrast: 1.0
-  sleep_duration: 3600
+  rotation_angle: 270                    # ← Geändert von 0 zu 270
+  color_enhance: 1.8                     # ← Geändert von 1.0 zu 1.8
+  contrast: 0.9                          # ← Geändert von 1.0 zu 0.9
+  dithering_strength: 1.0                # ← NEU hinzugefügt
+  display_mode: "fill"                   # ← NEU hinzugefügt
+  image_order: "random"                  # ← NEU hinzugefügt
+  dithering_method: "atkinson"           # ← NEU hinzugefügt
+  wakeup_interval: 1440                  # ← NEU hinzugefügt (24h in Minuten)
+  sleep_start_hour: 23                   # ← NEU hinzugefügt
+  sleep_start_minute: 0                  # ← NEU hinzugefügt
+  sleep_end_hour: 6                      # ← NEU hinzugefügt
+  sleep_end_minute: 0                    # ← NEU hinzugefügt
   log_level: "info"
-  image_quality: 85
 schema:
   immich_api_key: "str"
   immich_url: "url"
