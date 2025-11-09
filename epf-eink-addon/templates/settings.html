@@ -812,6 +812,35 @@
         });
 
     </script>
+
+    <script>
+        // Auto-update battery info every 30 seconds
+        function updateBatteryInfo() {
+            fetch('./api/battery-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.voltage > 0) {
+                        // Update voltage
+                        const voltageElements = document.querySelectorAll('.info-value');
+                        if (voltageElements[0]) {
+                            voltageElements[0].textContent = `${data.voltage} mV`;
+                        }
+                        // Update percentage
+                        if (voltageElements[1]) {
+                            voltageElements[1].innerHTML = `Charge Level: ${data.percentage.toFixed(1)}%`;
+                        }
+                    }
+                })
+                .catch(error => console.error('Battery update failed:', error));
+        }
+
+        // Update every 30 seconds
+        setInterval(updateBatteryInfo, 30000);
+        
+        // Initial update after 2 seconds
+        setTimeout(updateBatteryInfo, 2000);
+    </script>
+
 </body>
 
 </html>

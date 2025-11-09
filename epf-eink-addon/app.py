@@ -635,19 +635,17 @@ def process_and_download():
         downloaded_images = load_downloaded_images()
         
         if image_order_config == 'newest':
-            sorted_assets = sorted(
-                data['assets'],
+            sorted_assets = sorted(data['assets'],
                 key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
-                reverse=True
-            )
+                reverse=True)
             remaining_images = sorted_assets
+            selected_image = remaining_images[0]  # Neuestes Bild
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = data['assets']
-        
-        selected_image = remaining_images[0]
+            selected_image = random.choice(remaining_images)
         asset_id = selected_image['id']
         save_downloaded_image(asset_id)
         
@@ -744,6 +742,27 @@ def preview_status():
         'formatted_time': datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     })
 
+@bp.route('/api/battery-status', methods=['GET'])
+def battery_status():
+    """Get current battery status"""
+    global last_battery_voltage, last_battery_update
+    
+    current_time = time.time()
+    
+    if current_time - last_battery_update < 600:
+        battery_voltage = last_battery_voltage
+    else:
+        battery_voltage = 0
+    
+    battery_percentage = calculate_battery_percentage(battery_voltage) if battery_voltage > 0 else 0
+    
+    return jsonify({
+        'voltage': int(battery_voltage),
+        'percentage': battery_percentage,
+        'last_update': last_battery_update,
+        'age_seconds': int(current_time - last_battery_update) if last_battery_update > 0 else None
+    })
+
 @bp.route('/prepare-photo', methods=['POST'])
 def prepare_photo():
     """Manually fetch and prepare a new photo from Immich"""
@@ -787,19 +806,17 @@ def prepare_photo():
         downloaded_images = load_downloaded_images()
         
         if image_order_config == 'newest':
-            sorted_assets = sorted(
-                data['assets'],
+            sorted_assets = sorted(data['assets'],
                 key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
-                reverse=True
-            )
+                reverse=True)
             remaining_images = sorted_assets
+            selected_image = remaining_images[0]  # Neuestes Bild
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = data['assets']
-        
-        selected_image = remaining_images[0]
+            selected_image = random.choice(remaining_images)  # ← KORREKTUR!
         asset_id = selected_image['id']
         save_downloaded_image(asset_id)
         
