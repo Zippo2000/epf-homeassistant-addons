@@ -278,6 +278,11 @@
             margin-bottom: 1rem;
         }
 
+        .battery-charge span {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
         .battery-bar {
             width: 100%;
             height: 16px;
@@ -407,8 +412,11 @@
 
         <div class="card">
             <div class="battery-info">
-                <h2 class="battery-title">Battery Consumption</h2>
-                <p class="battery-charge">Charge Level: {{ "%.1f"|format(battery_percentage) }}%</p>
+                <h2 class="battery-title">🔋 Batteriestatus</h2>
+                <p class="battery-charge">
+                    Ladezustand: <span id="batteryPercentage">{{ "%.1f"|format(battery_percentage) }}%</span> 
+                    (<span id="batteryVoltage">{{ "%.2f"|format(battery_voltage / 1000) }}</span> V)
+                </p>
                 <div class="battery-bar">
                     <div id="batteryLevel" class="battery-level" style="width: {{ battery_percentage }}%"></div>
                 </div>
@@ -814,31 +822,116 @@
     </script>
 
     <script>
-        // Auto-update battery info every 30 seconds
+        // ============================================================================
+        // Battery Status Auto-Update (alle 10 Sekunden)
+        // ============================================================================
         function updateBatteryInfo() {
             fetch('./api/battery-status')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Battery API not available');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Battery update:', data);
+                    
+                    if (data.voltage > 0) {
+                        // Update Batteriespannung in Volt (2 Dezimalstellen)
+                        const voltageElement = document.getElementById('batteryVoltage');
+                        if (voltageElement) {
+                            const voltageInVolts = (data.voltage / 1000).toFixed(2);
+                            voltageElement.textContent = voltageInVolts;
+                        }
+                        
+                        // Update Ladezustand in Prozent
+                        const percentageElement = document.getElementById('batteryPercentage');
+                        if (percentageElement) {
+                            percentageElement.textContent = data.percentage.toFixed(1) + '%';
+                        }
+                        
+                        // Update Battery Bar
+                        const batteryBar = document.getElementById('batteryLevel');
+                        if (batteryBar) {
+                            batteryBar.style.width = data.percentage + '%';
+                        }
+                    } else {
+                        console.warn('No battery data available');
+                    }
+                })
+                .catch(error => {
+                    console.error('Battery update failed:', error);
+                });
+        }
+
+        // Initial update nach 1 Sekunde
+        setTimeout(updateBatteryInfo, 1000);
+
+        // Dann alle 10 Sekunden aktualisieren
+        setInterval(updateBatteryInfo, 10000);
+
+        // ============================================================================
+        // Photo Preview Auto-Refresh
+        // ============================================================================
+        function updatePhotoPreview() {
+            fetch('./preview-status')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.voltage > 0) {
-                        // Update voltage
-                        const voltageElements = document.querySelectorAll('.info-value');
-                        if (voltageElements[0]) {
-                            voltageElements[0].textContent = `${data.voltage} mV`;
+                    if (data.exists) {
+                        const previewImg = document.getElementById('photo-preview');
+                        if (previewImg) {
+                            previewImg.src = `./preview-photo?t=${Date.now()}`;
                         }
-                        // Update percentage
-                        if (voltageElements[1]) {
-                            voltageElements[1].innerHTML = `Charge Level: ${data.percentage.toFixed(1)}%`;
+                        
+                        const statusBadge = document.querySelector('.status-badge');
+                        if (statusBadge) {
+                            statusBadge.textContent = data.status === 'new' ? '🆕 New' : '✅ Delivered';
+                            statusBadge.style.background = data.status === 'new' ? '#28a745' : '#6c757d';
+                        }
+                        
+                        const timestamp = document.querySelector('.photo-timestamp');
+                        if (timestamp) {
+                            timestamp.textContent = `Last updated: ${data.formatted_time}`;
                         }
                     }
                 })
-                .catch(error => console.error('Battery update failed:', error));
+                .catch(error => console.error('Preview update failed:', error));
         }
 
-        // Update every 30 seconds
-        setInterval(updateBatteryInfo, 30000);
-        
-        // Initial update after 2 seconds
-        setTimeout(updateBatteryInfo, 2000);
+        // Photo preview update alle 30 Sekunden
+        setInterval(updatePhotoPreview, 30000);
+
+        // ============================================================================
+        // Prepare Photo Button Handler
+        // ============================================================================
+        document.getElementById('prepare-photo-btn')?.addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Preparing...';
+            
+            fetch('./prepare-photo', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updatePhotoPreview();
+                        btn.textContent = '✅ Done!';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }, 2000);
+                    } else {
+                        alert(`Error: ${data.error}`);
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    alert(`Error: ${error.message}`);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+        });
     </script>
 
 </body>

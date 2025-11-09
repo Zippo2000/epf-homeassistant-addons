@@ -77,18 +77,18 @@ DEFAULT_CONFIG = {
     'immich': {
         'url': os.getenv('IMMICH_URL', 'http://192.168.1.10'),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
-        'rotation': int(os.getenv('ROTATION_ANGLE', '270')),
-        'enhanced': float(os.getenv('COLOR_ENHANCE', '1.3')),
-        'contrast': float(os.getenv('CONTRAST', '0.9')),
-        'strength': float(os.getenv('DITHERING_STRENGTH', '0.8')),
-        'display_mode': os.getenv('DISPLAY_MODE', 'fill'),
-        'image_order': os.getenv('IMAGE_ORDER', 'random'),
+        'rotation': int(os.getenv('ROTATION_ANGLE', '270')),           # ✓ Bereits 270
+        'enhanced': float(os.getenv('COLOR_ENHANCE', '1.8')),         # ← Geändert von 1.3 zu 1.8
+        'contrast': float(os.getenv('CONTRAST', '0.9')),              # ✓ Bereits 0.9
+        'strength': float(os.getenv('DITHERING_STRENGTH', '1.0')),    # ← Geändert von 0.8 zu 1.0
+        'display_mode': os.getenv('DISPLAY_MODE', 'fill'),            # ✓ Bereits 'fill'
+        'image_order': os.getenv('IMAGE_ORDER', 'random'),            # ✓ Bereits 'random'
         'dithering_method': os.getenv('DITHERING_METHOD', 'atkinson'),
         'sleep_start_hour': int(os.getenv('SLEEP_START_HOUR', '23')),
         'sleep_start_minute': int(os.getenv('SLEEP_START_MINUTE', '0')),
         'sleep_end_hour': int(os.getenv('SLEEP_END_HOUR', '6')),
         'sleep_end_minute': int(os.getenv('SLEEP_END_MINUTE', '0')),
-        'wakeup_interval': int(os.getenv('WAKEUP_INTERVAL', '60')),
+        'wakeup_interval': int(os.getenv('WAKEUP_INTERVAL', '1440')), # ← Geändert von 60 zu 1440 (24h)
     }
 }
 
@@ -773,11 +773,12 @@ def preview_status():
 
 @bp.route('/api/battery-status', methods=['GET'])
 def battery_status():
-    """Get current battery status"""
+    """Get current battery status for JavaScript polling"""
     global last_battery_voltage, last_battery_update
     
     current_time = time.time()
     
+    # Return cached value if recent (< 10 minutes)
     if current_time - last_battery_update < 600:
         battery_voltage = last_battery_voltage
     else:
@@ -786,9 +787,10 @@ def battery_status():
     battery_percentage = calculate_battery_percentage(battery_voltage) if battery_voltage > 0 else 0
     
     return jsonify({
-        'voltage': int(battery_voltage),
+        'voltage': int(battery_voltage),  # in mV
+        'voltage_v': round(battery_voltage / 1000, 2),  # in V
         'percentage': battery_percentage,
-        'last_update': last_battery_update,
+        'last_update': int(last_battery_update),
         'age_seconds': int(current_time - last_battery_update) if last_battery_update > 0 else None
     })
 
