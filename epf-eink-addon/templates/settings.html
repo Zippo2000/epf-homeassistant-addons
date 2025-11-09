@@ -1,24 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-paper Photo Frame Settings</title>
     <style>
         :root {
-            --primary-color: #4361EE;
-            --primary-light: #4895EF;
-            --accent-color: #3F37C9;
-            --error-color: #e63946;
-            --success-color: #2a9d8f;
-            --text-color: #2b2d42;
-            --text-light: #8d99ae;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
+            /* Light Mode Colors */
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --primary-light: #38bdf8;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #94a3b8;
+            
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.18);
+        }
+
+        [data-theme="dark"] {
+            --primary: #38bdf8;
+            --primary-dark: #0ea5e9;
+            --primary-light: #7dd3fc;
+            --accent: #a78bfa;
+            
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #64748b;
+            
+            --border: #334155;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+            
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -28,56 +64,171 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
-            padding: 0;
-            margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
+        /* Animated Background Gradient */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            opacity: 0.05;
+            z-index: -1;
         }
 
+        /* Header */
         header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1.5rem 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            margin-bottom: 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
         }
 
-        header h1 {
-            max-width: 800px;
+        .header-content {
+            max-width: 900px;
             margin: 0 auto;
-            padding: 0 2rem;
-            font-weight: 500;
-            font-size: 1.8rem;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Battery Status in Header */
+        .battery-status-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .battery-icon {
+            font-size: 1rem;
+        }
+
+        .battery-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .battery-percentage {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .battery-voltage {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: var(--bg-tertiary);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            margin-left: 1rem;
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(20deg) scale(1.1);
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1.5rem 2rem;
+        }
+
+        /* Glass Card */
         .card {
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
             padding: 2rem;
-            margin-bottom: 2rem;
-            transition: var(--transition);
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
         }
 
         .card:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
         }
 
         .card-title {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            margin-bottom: 1.2rem;
-            font-weight: 500;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
         }
 
+        .card-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        /* Form Elements */
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -86,32 +237,36 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
-            color: var(--text-color);
+            color: var(--text-primary);
+            font-size: 0.95rem;
         }
 
         input[type="text"],
         select {
             width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
             font-size: 1rem;
-            transition: var(--transition);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus,
         select:focus {
-            border-color: var(--primary-light);
+            border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
         }
 
         .small-text {
             font-size: 0.85rem;
-            color: var(--text-light);
+            color: var(--text-tertiary);
             margin-top: 0.5rem;
         }
 
+        /* Slider */
         .slider-container {
             display: flex;
             align-items: center;
@@ -122,45 +277,83 @@
             flex-grow: 1;
             height: 6px;
             -webkit-appearance: none;
-            background: #eee;
+            background: var(--bg-tertiary);
             border-radius: 3px;
             outline: none;
         }
 
         .slider-container input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             cursor: pointer;
-            transition: var(--transition);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
         }
 
         .slider-container input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
+            transform: scale(1.2);
         }
 
         .slider-value {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
-            width: 50px;
-            height: 30px;
+            min-width: 55px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 15px;
+            border-radius: 16px;
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: var(--shadow-md);
         }
 
-        .error {
-            color: var(--error-color);
-            background-color: rgba(230, 57, 70, 0.1);
-            padding: 1rem;
-            border-radius: var(--border-radius);
-            margin-bottom: 1.5rem;
+        /* Buttons */
+        button,
+        input[type="submit"] {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            padding: 0.875rem 1.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before,
+        input[type="submit"]::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        button:hover::before,
+        input[type="submit"]:hover::before {
+            left: 100%;
+        }
+
+        button:hover,
+        input[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        button:active,
+        input[type="submit"]:active {
+            transform: translateY(0);
         }
 
         .button-group {
@@ -169,95 +362,64 @@
             margin-top: 2rem;
         }
 
-        button,
-        input[type="submit"] {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        button:hover,
-        input[type="submit"]:hover {
-            background-color: var(--accent-color);
-        }
-
         .reset-btn {
-            background-color: #f8f9fa;
-            color: var(--text-color);
-            border: 1px solid #ddd;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .reset-btn::before {
+            display: none;
         }
 
         .reset-btn:hover {
-            background-color: #e9ecef;
-            color: var(--text-color);
+            background: var(--bg-secondary);
+            border-color: var(--primary);
         }
 
-        .confirm-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Photo Preview */
+        .prepare-photo-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            position: relative;
         }
 
-        .confirm-content {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--border-radius);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
+        .prepare-photo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        .confirm-content h2 {
-            margin-bottom: 1rem;
-            color: var(--text-color);
+        #photoPreview {
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
         }
 
-        .confirm-content p {
-            margin-bottom: 1.5rem;
+        #photoPreview:hover {
+            transform: scale(1.02);
         }
 
-        .confirm-content button {
-            padding: 0.7rem 1.2rem;
-            margin: 0 0.5rem;
+        #photoStatusBadge {
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-lg);
         }
 
-        #notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--success-color);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            display: none;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+        #noPreviewMessage {
+            background: var(--bg-tertiary);
+            border: 2px dashed var(--border);
         }
 
-        #notification.show {
-            opacity: 1;
-        }
-
+        /* Time Input */
         .time-input {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .time-input select {
@@ -265,72 +427,102 @@
             padding: 0.6rem;
         }
 
-        .battery-title {
-            font-size: 1.6rem;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 0.5rem;
+        /* Notification */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            animation: slideIn 0.3s ease;
         }
 
-        .battery-charge {
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 1rem;
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
         }
 
-        .battery-charge span {
-            font-weight: 600;
-            color: var(--primary-color);
+        #notification.show {
+            opacity: 1;
         }
 
-        .battery-bar {
+        /* Modal */
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 16px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .battery-level {
             height: 100%;
-            background-color: #ff6347;
-            /* Tomato red color as shown in image */
-            border-radius: 8px;
-            transition: width 1s ease;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        .battery-level.high,
-        .battery-level.medium,
-        .battery-level.low,
-        .battery-level.critical {
-            background-color: #ff6347;
-            animation: none;
+        .confirm-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--glass-border);
         }
 
-        .section-divider {
-            height: 1px;
-            background-color: #eee;
-            margin: 2rem 0;
+        .confirm-content h2 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
         }
 
+        .confirm-content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
         footer {
             text-align: center;
-            padding: 1.5rem 0;
+            padding: 2rem 0;
             margin-top: 2rem;
             font-size: 0.9rem;
-            color: var(--text-light);
+            color: var(--text-tertiary);
+            border-top: 1px solid var(--border);
         }
 
-        /* Responsive adjustments */
+        .footer-version {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .container {
-                padding: 1rem;
+                padding: 0 1rem 2rem;
             }
 
-            header h1 {
+            .header-content {
                 padding: 0 1rem;
-                font-size: 1.5rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 1.25rem;
             }
 
             .card {
@@ -346,104 +538,87 @@
                 width: 100%;
             }
 
-            .time-input {
-                flex-wrap: wrap;
+            .battery-status-header {
+                flex-direction: column;
+                text-align: center;
             }
         }
-    
-        /* Photo Preview Styles */
-        .prepare-photo-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        .prepare-photo-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-
-        .prepare-photo-btn:active {
-            transform: translateY(0);
-        }
-
-        .prepare-photo-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .preview-container {
-            padding: 1rem 0;
-        }
-
-        #photoPreview {
-            display: block;
-            margin: 0 auto;
-        }
-
     </style>
 </head>
 
-<body>
+<body data-theme="light">
     <div id="notification"></div>
 
+    <!-- Header with Battery Status -->
     <header>
-        <h1>E-paper Photo Frame Settings</h1>
-    
-            <div style="text-align: right; font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;">
-                v{{ addon_version }} ({{ build_timestamp }})
+        <div class="header-content">
+            <div class="header-title">
+                <div class="header-icon">🖼️</div>
+                <h1>E-Paper Photo Frame</h1>
             </div>
-        </header>
+            
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="battery-status-header">
+                    <span class="battery-icon">🔋</span>
+                    <div class="battery-text">
+                        <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
+                        <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) }} V</span>
+                    </div>
+                </div>
+                
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+                    <span id="themeIcon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </header>
 
     <div class="container">
         {% if error %}
-        <div class="error">
-            {{ error }}
+        <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border-color: var(--error);">
+            <strong>⚠️ {{ error }}</strong>
         </div>
         {% endif %}
 
+        <!-- Photo Preview Card -->
         <div class="card">
-            <div class="battery-info">
-                <h2 class="battery-title">🔋 Batteriestatus</h2>
-                <p class="battery-charge">
-                    Ladezustand: <span id="batteryPercentage">{{ "%.1f"|format(battery_percentage) }}%</span> 
-                    (<span id="batteryVoltage">{{ "%.2f"|format(battery_voltage / 1000) }}</span> V)
-                </p>
-                <div class="battery-bar">
-                    <div id="batteryLevel" class="battery-level" style="width: {{ battery_percentage }}%"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Photo Preview & Management Card -->
-        <div class="card">
-            <h2 class="card-title">📸 Photo Preview & Management</h2>
+            <h2 class="card-title">
+                <span class="card-icon">📸</span>
+                Photo Preview & Management
+            </h2>
             
             <div class="preview-container">
                 <div id="photoPreviewWrapper" style="text-align: center; margin-bottom: 1.5rem; position: relative;">
                     <img id="photoPreview" 
                          src="./preview-photo" 
                          alt="No photo prepared yet" 
-                         style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: contain; border: 2px solid #eee;"
+                         style="max-width: 100%; max-height: 400px; object-fit: contain;"
                          onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
                     
-                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
+                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; display: none;"></div>
                     
-                    <div id="noPreviewMessage" style="display: none; padding: 2rem; background: #f0f0f0; border-radius: 8px; color: #666;">
+                    <div id="noPreviewMessage" style="display: none; padding: 2rem; border-radius: 12px; color: var(--text-secondary);">
                         <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">📷 No photo prepared yet</p>
                         <p style="margin: 0; font-size: 0.9rem;">Click "Prepare New Photo" to fetch and prepare an image</p>
                     </div>
                 </div>
                 
-                <div id="photoInfo" style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem; color: #666; display: none;">
+                <div id="photoInfo" style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
                     <span id="photoTimestamp"></span>
                 </div>
                 
@@ -452,86 +627,81 @@
                 </button>
                 
                 <div id="prepareStatus" style="margin-top: 1rem; text-align: center; display: none;">
-                    <span style="color: #4361EE;">⏳ Preparing photo...</span>
+                    <span style="color: var(--primary);"><span class="loading"></span> Preparing photo...</span>
                 </div>
             </div>
         </div>
 
-
+        <!-- Settings Form -->
         <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
+            <!-- Server Connection -->
             <div class="card">
-                <h2 class="card-title">Server Connection</h2>
+                <h2 class="card-title">
+                    <span class="card-icon">🔌</span>
+                    Server Connection
+                </h2>
                 <div class="form-group">
                     <label for="url">Immich Server URL:</label>
-                    <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}"
-                        placeholder="http://localhost" required>
+                    <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
                 </div>
-
                 <div class="form-group">
                     <label for="album">Album Name:</label>
-                    <input type="text" id="album" name="album" value="{{ config['immich']['album'] }}"
-                        placeholder="default_album" required>
+                    <input type="text" id="album" name="album" value="{{ config['immich']['album'] }}" placeholder="default_album" required>
                 </div>
             </div>
 
+            <!-- Display Settings -->
             <div class="card">
-                <h2 class="card-title">Display Settings</h2>
+                <h2 class="card-title">
+                    <span class="card-icon">🖥️</span>
+                    Display Settings
+                </h2>
                 <div class="form-group">
                     <label for="rotation">Image Rotation:</label>
                     <select id="rotation" name="rotation">
                         <option value="0" {% if config['immich']['rotation']==0 %}selected{% endif %}>0 degrees</option>
-                        <option value="90" {% if config['immich']['rotation']==90 %}selected{% endif %}>90 degrees
-                        </option>
-                        <option value="180" {% if config['immich']['rotation']==180 %}selected{% endif %}>180 degrees
-                        </option>
-                        <option value="270" {% if config['immich']['rotation']==270 %}selected{% endif %}>270 degrees
-                        </option>
+                        <option value="90" {% if config['immich']['rotation']==90 %}selected{% endif %}>90 degrees</option>
+                        <option value="180" {% if config['immich']['rotation']==180 %}selected{% endif %}>180 degrees</option>
+                        <option value="270" {% if config['immich']['rotation']==270 %}selected{% endif %}>270 degrees</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="display_mode">Display Mode:</label>
                     <select id="display_mode" name="display_mode">
-                        <option value="fit" {% if config['immich']['display_mode']=='fit' %}selected{% endif %}>Fit
-                            Width
-                        </option>
-                        <option value="fill" {% if config['immich']['display_mode']=='fill' %}selected{% endif %}>Fill
-                            Screen
-                        </option>
+                        <option value="fit" {% if config['immich']['display_mode']=='fit' %}selected{% endif %}>Fit Width</option>
+                        <option value="fill" {% if config['immich']['display_mode']=='fill' %}selected{% endif %}>Fill Screen</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="image_order">Image Display Order:</label>
                     <select id="image_order" name="image_order">
-                        <option value="random" {% if config['immich']['image_order']=='random' %}selected{% endif %}>
-                            Random</option>
-                        <option value="newest" {% if config['immich']['image_order']=='newest' %}selected{% endif %}>
-                            Newest First</option>
+                        <option value="random" {% if config['immich']['image_order']=='random' %}selected{% endif %}>Random</option>
+                        <option value="newest" {% if config['immich']['image_order']=='newest' %}selected{% endif %}>Newest First</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="dithering_method">🎨 Dithering Method:</label>
                     <select id="dithering_method" name="dithering_method">
-                        <option value="atkinson" {% if config.immich.dithering_method == 'atkinson' %}selected{% endif %}>
-                            Atkinson (Softer, cleaner - better for graphics)
-                        </option>
-                        <option value="floyd-steinberg" {% if config.immich.dithering_method == 'floyd-steinberg' %}selected{% endif %}>
-                            Floyd-Steinberg (More detail - better for photos)
-                        </option>
+                        <option value="atkinson" {% if config['immich']['dithering_method'] == 'atkinson' %}selected{% endif %}>
+                        <option value="floyd-steinberg" {% if config['immich']['dithering_method'] == 'floyd-steinberg' %}selected{% endif %}>
                     </select>
-                    <small>Choose the dithering algorithm for image processing</small>
+                    <small class="small-text">Choose the dithering algorithm for image processing</small>
                 </div>
             </div>
 
+            <!-- Image Enhancement -->
             <div class="card">
-                <h2 class="card-title">Image Enhancement</h2>
+                <h2 class="card-title">
+                    <span class="card-icon">✨</span>
+                    Image Enhancement
+                </h2>
                 <div class="form-group">
                     <label for="enhanced">Color Enhancement:</label>
                     <div class="slider-container">
-                        <input type="range" id="enhanced" name="enhanced" min="0.0" max="2.0" step="0.1"
-                            value="{{ config['immich']['enhanced']|default('1.0') }}" oninput="updateSliderValue(this)">
+                        <input type="range" id="enhanced" name="enhanced" min="0.0" max="2.0" step="0.1" value="{{ config['immich']['enhanced']|default('1.0') }}" oninput="updateSliderValue(this)">
                         <output class="slider-value">{{ config['immich']['enhanced']|default('1.0') }}</output>
                     </div>
                 </div>
@@ -539,8 +709,7 @@
                 <div class="form-group">
                     <label for="contrast">Contrast:</label>
                     <div class="slider-container">
-                        <input type="range" id="contrast" name="contrast" min="0.0" max="2.0" step="0.1"
-                            value="{{ config['immich']['contrast']|default('1.0') }}" oninput="updateSliderValue(this)">
+                        <input type="range" id="contrast" name="contrast" min="0.0" max="2.0" step="0.1" value="{{ config['immich']['contrast']|default('1.0') }}" oninput="updateSliderValue(this)">
                         <output class="slider-value">{{ config['immich']['contrast']|default('1.0') }}</output>
                     </div>
                 </div>
@@ -548,51 +717,42 @@
                 <div class="form-group">
                     <label for="strength">Dithering Strength:</label>
                     <div class="slider-container">
-                        <input type="range" id="strength" name="strength" min="0.0" max="1.0" step="0.1"
-                            value="{{ config['immich']['strength']|default('0.8') }}" oninput="updateSliderValue(this)">
+                        <input type="range" id="strength" name="strength" min="0.0" max="1.0" step="0.1" value="{{ config['immich']['strength']|default('0.8') }}" oninput="updateSliderValue(this)">
                         <output class="slider-value">{{ config['immich']['strength']|default('0.8') }}</output>
                     </div>
                 </div>
             </div>
 
+            <!-- Power Management -->
             <div class="card">
-                <h2 class="card-title">Power Management</h2>
+                <h2 class="card-title">
+                    <span class="card-icon">⚡</span>
+                    Power Management
+                </h2>
                 <div class="form-group">
                     <label for="sleep_time">Sleep Time Range:</label>
                     <div class="time-input">
                         <select id="sleep_start_hour" name="sleep_start_hour">
                             {% for hour in range(24) %}
-                            <option value="{{ hour }}" {% if config['immich']['sleep_start_hour']==hour %}selected{%
-                                endif %}>
-                                {{ '%02d'|format(hour) }}
-                            </option>
+                            <option value="{{ hour }}" {% if config['immich']['sleep_start_hour']==hour %}selected{% endif %}>{{ '%02d'|format(hour) }}</option>
                             {% endfor %}
                         </select>
                         :
                         <select id="sleep_start_minute" name="sleep_start_minute">
                             {% for minute in range(0, 60, 1) %}
-                            <option value="{{ minute }}" {% if config['immich']['sleep_start_minute']==minute
-                                %}selected{% endif %}>
-                                {{ '%02d'|format(minute) }}
-                            </option>
+                            <option value="{{ minute }}" {% if config['immich']['sleep_start_minute']==minute %}selected{% endif %}>{{ '%02d'|format(minute) }}</option>
                             {% endfor %}
                         </select>
                         <span style="margin: 0 10px;">to</span>
                         <select id="sleep_end_hour" name="sleep_end_hour">
                             {% for hour in range(24) %}
-                            <option value="{{ hour }}" {% if config['immich']['sleep_end_hour']==hour %}selected{% endif
-                                %}>
-                                {{ '%02d'|format(hour) }}
-                            </option>
+                            <option value="{{ hour }}" {% if config['immich']['sleep_end_hour']==hour %}selected{% endif %}>{{ '%02d'|format(hour) }}</option>
                             {% endfor %}
                         </select>
                         :
                         <select id="sleep_end_minute" name="sleep_end_minute">
                             {% for minute in range(0, 60, 1) %}
-                            <option value="{{ minute }}" {% if config['immich']['sleep_end_minute']==minute %}selected{%
-                                endif %}>
-                                {{ '%02d'|format(minute) }}
-                            </option>
+                            <option value="{{ minute }}" {% if config['immich']['sleep_end_minute']==minute %}selected{% endif %}>{{ '%02d'|format(minute) }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -602,55 +762,89 @@
                 <div class="form-group">
                     <label for="wakeup_interval">Wake Up Interval (Outside Sleep Time):</label>
                     <select id="wakeup_interval" name="wakeup_interval">
-                        <option value="30" {% if config['immich']['wakeup_interval']==30 %}selected{% endif %}>30
-                            minutes
-                        </option>
-                        <option value="60" {% if config['immich']['wakeup_interval']==60 %}selected{% endif %}>1 hour
-                        </option>
-                        <option value="120" {% if config['immich']['wakeup_interval']==120 %}selected{% endif %}>2 hours
-                        </option>
-                        <option value="180" {% if config['immich']['wakeup_interval']==180 %}selected{% endif %}>3 hours
-                        </option>
-                        <option value="240" {% if config['immich']['wakeup_interval']==240 %}selected{% endif %}>4 hours
-                        </option>
-                        <option value="360" {% if config['immich']['wakeup_interval']==360 %}selected{% endif %}>6 hours
-                        </option>
-                        <option value="480" {% if config['immich']['wakeup_interval']==480 %}selected{% endif %}>8 hours
-                        </option>
-                        <option value="720" {% if config['immich']['wakeup_interval']==720 %}selected{% endif %}>12
-                            hours
-                        </option>
-                        <option value="1440" {% if config['immich']['wakeup_interval']==1440 %}selected{% endif %}>24
-                            hours
-                        </option>
+                        <option value="30" {% if config['immich']['wakeup_interval']==30 %}selected{% endif %}>30 minutes</option>
+                        <option value="60" {% if config['immich']['wakeup_interval']==60 %}selected{% endif %}>1 hour</option>
+                        <option value="120" {% if config['immich']['wakeup_interval']==120 %}selected{% endif %}>2 hours</option>
+                        <option value="180" {% if config['immich']['wakeup_interval']==180 %}selected{% endif %}>3 hours</option>
+                        <option value="240" {% if config['immich']['wakeup_interval']==240 %}selected{% endif %}>4 hours</option>
+                        <option value="360" {% if config['immich']['wakeup_interval']==360 %}selected{% endif %}>6 hours</option>
+                        <option value="480" {% if config['immich']['wakeup_interval']==480 %}selected{% endif %}>8 hours</option>
+                        <option value="720" {% if config['immich']['wakeup_interval']==720 %}selected{% endif %}>12 hours</option>
+                        <option value="1440" {% if config['immich']['wakeup_interval']==1440 %}selected{% endif %}>24 hours</option>
                     </select>
                 </div>
             </div>
 
             <div class="button-group">
-                <input type="submit" value="Save Configuration">
-                <button type="button" class="reset-btn" onclick="showResetConfirmation()">Reset to Default</button>
+                <input type="submit" value="💾 Save Configuration">
+                <button type="button" class="reset-btn" onclick="showResetConfirmation()">🔄 Reset to Default</button>
             </div>
         </form>
 
         <footer>
-            E-paper Photo Frame &copy; 2025
+            <div>E-Paper Photo Frame © 2025</div>
+            <div class="footer-version">Version {{ addon_version }} • Build {{ build_timestamp }}</div>
         </footer>
     </div>
 
+    <!-- Confirmation Modal -->
     <div id="confirmModal" class="confirm-modal">
         <div class="confirm-content">
             <h2>Reset to Default Settings</h2>
             <p>Are you sure you want to reset all settings to default?</p>
-            <button onclick="confirmReset()">Confirm</button>
-            <button onclick="cancelReset()" class="reset-btn">Cancel</button>
+            <button onclick="confirmReset()">✓ Confirm</button>
+            <button onclick="cancelReset()" class="reset-btn">✕ Cancel</button>
         </div>
     </div>
 
     <script>
-        function showNotification(message) {
+        // ============================================================================
+        // Theme Toggle
+        // ============================================================================
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            body.setAttribute('data-theme', newTheme);
+            themeIcon.textContent = newTheme === 'light' ? '🌙' : '☀️';
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+        });
+
+        // ============================================================================
+        // Battery Status Auto-Update
+        // ============================================================================
+        function updateBatteryInfo() {
+            fetch('./api/battery-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.voltage > 0) {
+                        const voltageInVolts = (data.voltage / 1000).toFixed(2);
+                        document.getElementById('batteryPercentageHeader').textContent = data.percentage.toFixed(1) + '%';
+                        document.getElementById('batteryVoltageHeader').textContent = voltageInVolts + ' V';
+                    }
+                })
+                .catch(error => console.error('Battery update failed:', error));
+        }
+
+        setTimeout(updateBatteryInfo, 1000);
+        setInterval(updateBatteryInfo, 10000);
+
+        // ============================================================================
+        // Notification System
+        // ============================================================================
+        function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
+            notification.style.background = type === 'success' ? 'var(--success)' : 'var(--error)';
             notification.style.display = 'block';
 
             setTimeout(() => {
@@ -665,31 +859,45 @@
             }, 3000);
         }
 
+        // ============================================================================
+        // Slider Value Update
+        // ============================================================================
         function updateSliderValue(slider) {
             const value = parseFloat(slider.value);
             const output = slider.nextElementSibling;
             output.textContent = value.toFixed(1);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Update battery level visualization
-            const batteryPercentage = {{ battery_percentage|default (0)
-        }};
-        const batteryLevel = document.getElementById('batteryLevel');
+        // ============================================================================
+        // Form Submission
+        // ============================================================================
+        function handleSubmit(event) {
+            event.preventDefault();
 
-        if (batteryPercentage > 0) {
-            batteryLevel.style.width = batteryPercentage + '%';
-            // Remove color classes if using consistent red
-            batteryLevel.className = 'battery-level';
+            fetch(window.location.href, {
+                method: 'POST',
+                body: new FormData(document.getElementById('settingsForm'))
+            })
+            .then(response => {
+                if (response.ok) {
+                    showNotification('✅ Settings saved successfully!', 'success');
+                    return;
+                }
+                throw new Error('Failed to save settings');
+            })
+            .catch(error => {
+                showNotification('❌ Error: ' + error.message, 'error');
+            });
         }
-    });
 
+        // ============================================================================
+        // Reset Confirmation
+        // ============================================================================
         function showResetConfirmation() {
             document.getElementById('confirmModal').style.display = 'flex';
         }
 
         function confirmReset() {
-            // Reset settings to default
             document.getElementById('url').value = 'http://localhost';
             document.getElementById('album').value = 'default_album';
             document.getElementById('rotation').selectedIndex = 0;
@@ -697,9 +905,9 @@
             document.getElementById('image_order').selectedIndex = 0;
 
             const sliders = [
-                { id: 'enhanced', defaultValue: 1.0 },
-                { id: 'contrast', defaultValue: 1.0 },
-                { id: 'strength', defaultValue: 0.8 }
+                { id: 'enhanced', defaultValue: 1.8 },
+                { id: 'contrast', defaultValue: 0.9 },
+                { id: 'strength', defaultValue: 1.0 }
             ];
 
             sliders.forEach(slider => {
@@ -713,9 +921,9 @@
             document.getElementById('sleep_start_minute').value = '0';
             document.getElementById('sleep_end_hour').value = '6';
             document.getElementById('sleep_end_minute').value = '0';
-            document.getElementById('wakeup_interval').value = '30';
+            document.getElementById('wakeup_interval').value = '1440';
 
-            showNotification('Settings reset to default successfully!');
+            showNotification('🔄 Settings reset to default!', 'success');
             document.getElementById('confirmModal').style.display = 'none';
         }
 
@@ -723,29 +931,9 @@
             document.getElementById('confirmModal').style.display = 'none';
         }
 
-        function handleSubmit(event) {
-            event.preventDefault();
-
-            // Submit the form using fetch
-            fetch(window.location.href, {
-                method: 'POST',
-                body: new FormData(document.getElementById('settingsForm'))
-            })
-                .then(response => {
-                    if (response.ok) {
-                        showNotification('Settings saved successfully!');
-                        return;
-                    }
-                    throw new Error('Failed to save settings');
-                })
-                .catch(error => {
-                    showNotification('Error: ' + error.message);
-                });
-        }
-
-        // ====================================================================
-        // Photo Preview & Management Functions
-        // ====================================================================
+        // ============================================================================
+        // Photo Preview Management
+        // ============================================================================
         function updatePhotoStatus() {
             fetch('./preview-status')
                 .then(response => response.json())
@@ -764,12 +952,12 @@
                         badge.style.display = 'block';
                         if (data.status === 'new') {
                             badge.textContent = '✨ Ready to deliver';
-                            badge.style.background = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+                            badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                             badge.style.color = 'white';
                         } else {
                             badge.textContent = '✓ Already delivered';
-                            badge.style.background = '#6c757d';
-                            badge.style.color = 'white';
+                            badge.style.background = 'var(--bg-tertiary)';
+                            badge.style.color = 'var(--text-secondary)';
                         }
                         
                         info.style.display = 'block';
@@ -818,122 +1006,6 @@
             updatePhotoStatus();
             setInterval(updatePhotoStatus, 30000);
         });
-
     </script>
-
-    <script>
-        // ============================================================================
-        // Battery Status Auto-Update (alle 10 Sekunden)
-        // ============================================================================
-        function updateBatteryInfo() {
-            fetch('./api/battery-status')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Battery API not available');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Battery update:', data);
-                    
-                    if (data.voltage > 0) {
-                        // Update Batteriespannung in Volt (2 Dezimalstellen)
-                        const voltageElement = document.getElementById('batteryVoltage');
-                        if (voltageElement) {
-                            const voltageInVolts = (data.voltage / 1000).toFixed(2);
-                            voltageElement.textContent = voltageInVolts;
-                        }
-                        
-                        // Update Ladezustand in Prozent
-                        const percentageElement = document.getElementById('batteryPercentage');
-                        if (percentageElement) {
-                            percentageElement.textContent = data.percentage.toFixed(1) + '%';
-                        }
-                        
-                        // Update Battery Bar
-                        const batteryBar = document.getElementById('batteryLevel');
-                        if (batteryBar) {
-                            batteryBar.style.width = data.percentage + '%';
-                        }
-                    } else {
-                        console.warn('No battery data available');
-                    }
-                })
-                .catch(error => {
-                    console.error('Battery update failed:', error);
-                });
-        }
-
-        // Initial update nach 1 Sekunde
-        setTimeout(updateBatteryInfo, 1000);
-
-        // Dann alle 10 Sekunden aktualisieren
-        setInterval(updateBatteryInfo, 10000);
-
-        // ============================================================================
-        // Photo Preview Auto-Refresh
-        // ============================================================================
-        function updatePhotoPreview() {
-            fetch('./preview-status')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        const previewImg = document.getElementById('photo-preview');
-                        if (previewImg) {
-                            previewImg.src = `./preview-photo?t=${Date.now()}`;
-                        }
-                        
-                        const statusBadge = document.querySelector('.status-badge');
-                        if (statusBadge) {
-                            statusBadge.textContent = data.status === 'new' ? '🆕 New' : '✅ Delivered';
-                            statusBadge.style.background = data.status === 'new' ? '#28a745' : '#6c757d';
-                        }
-                        
-                        const timestamp = document.querySelector('.photo-timestamp');
-                        if (timestamp) {
-                            timestamp.textContent = `Last updated: ${data.formatted_time}`;
-                        }
-                    }
-                })
-                .catch(error => console.error('Preview update failed:', error));
-        }
-
-        // Photo preview update alle 30 Sekunden
-        setInterval(updatePhotoPreview, 30000);
-
-        // ============================================================================
-        // Prepare Photo Button Handler
-        // ============================================================================
-        document.getElementById('prepare-photo-btn')?.addEventListener('click', function() {
-            const btn = this;
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '⏳ Preparing...';
-            
-            fetch('./prepare-photo', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updatePhotoPreview();
-                        btn.textContent = '✅ Done!';
-                        setTimeout(() => {
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                        }, 2000);
-                    } else {
-                        alert(`Error: ${data.error}`);
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    alert(`Error: ${error.message}`);
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                });
-        });
-    </script>
-
 </body>
-
 </html>

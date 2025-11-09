@@ -42,10 +42,15 @@ schema:
   immich_url: "url"
   album_name: "str"
   rotation_angle: "list(0|90|180|270)"
-  color_enhance: "float"
-  contrast: "float"
-  sleep_duration: "int"
-  log_level: "list(debug|info|warning|error)"
-  image_quality: "int(1,100)"
+  color_enhance: "float(0,3)"            # ← Range erweitert
+  contrast: "float(0,2)"
+  dithering_strength: "float(0,1)"       # ← NEU hinzugefügt
+  display_mode: "list(fit|fill)"         # ← NEU hinzugefügt
   image_order: "list(random|newest)"
   dithering_method: "list(atkinson|floyd-steinberg)"
+  wakeup_interval: "int(30,1440)"        # ← NEU: 30min - 24h
+  sleep_start_hour: "int(0,23)"          # ← NEU hinzugefügt
+  sleep_start_minute: "int(0,59)"        # ← NEU hinzugefügt
+  sleep_end_hour: "int(0,23)"            # ← NEU hinzugefügt
+  sleep_end_minute: "int(0,59)"          # ← NEU hinzugefügt
+  log_level: "list(debug|info|warning|error)"
