@@ -6,7 +6,6 @@
     <title>E-paper Photo Frame Settings</title>
     <style>
         :root {
-            /* Light Mode Colors */
             --primary: #0ea5e9;
             --primary-dark: #0284c7;
             --primary-light: #38bdf8;
@@ -71,7 +70,6 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        /* Animated Background Gradient */
         body::before {
             content: '';
             position: fixed;
@@ -97,7 +95,7 @@
         }
 
         .header-content {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 1.5rem;
             display: flex;
@@ -185,7 +183,7 @@
 
         /* Container */
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 2rem auto;
             padding: 0 1.5rem 2rem;
         }
@@ -203,7 +201,6 @@
         }
 
         .card:hover {
-            transform: translateY(-2px);
             box-shadow: var(--shadow-xl);
         }
 
@@ -226,6 +223,88 @@
             align-items: center;
             justify-content: center;
             font-size: 0.9rem;
+        }
+
+        /* 3-Column Preview Grid */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preview-column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .preview-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .preview-wrapper {
+            position: relative;
+            aspect-ratio: 5/3;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .preview-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .preview-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-wrapper img:hover {
+            transform: scale(1.05);
+        }
+
+        .preview-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-tertiary);
+        }
+
+        .preview-placeholder span {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.3;
+        }
+
+        .preview-placeholder p {
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0 1rem;
+        }
+
+        .preview-caption {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            text-align: center;
+            padding: 0.25rem;
         }
 
         /* Form Elements */
@@ -297,6 +376,16 @@
             transform: scale(1.2);
         }
 
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow-md);
+        }
+
         .slider-value {
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
@@ -356,6 +445,11 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .button-group {
             display: flex;
             gap: 1rem;
@@ -377,41 +471,9 @@
             border-color: var(--primary);
         }
 
-        /* Photo Preview */
         .prepare-photo-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             width: 100%;
-            position: relative;
-        }
-
-        .prepare-photo-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        #photoPreview {
-            border-radius: 12px;
-            box-shadow: var(--shadow-xl);
-            border: 2px solid var(--border);
-            transition: all 0.3s ease;
-        }
-
-        #photoPreview:hover {
-            transform: scale(1.02);
-        }
-
-        #photoStatusBadge {
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            box-shadow: var(--shadow-lg);
-        }
-
-        #noPreviewMessage {
-            background: var(--bg-tertiary);
-            border: 2px dashed var(--border);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         /* Time Input */
@@ -445,12 +507,8 @@
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-            }
-            to {
-                transform: translateX(0);
-            }
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
         }
 
         #notification.show {
@@ -498,15 +556,30 @@
             text-align: center;
             padding: 2rem 0;
             margin-top: 2rem;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-tertiary);
             border-top: 1px solid var(--border);
         }
 
         .footer-version {
             margin-top: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Responsive */
@@ -517,8 +590,7 @@
 
             .header-content {
                 padding: 0 1rem;
-                flex-direction: column;
-                gap: 1rem;
+                flex-wrap: wrap;
             }
 
             h1 {
@@ -538,25 +610,9 @@
                 width: 100%;
             }
 
-            .battery-status-header {
-                flex-direction: column;
-                text-align: center;
+            .preview-grid {
+                grid-template-columns: 1fr;
             }
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -564,7 +620,7 @@
 <body data-theme="light">
     <div id="notification"></div>
 
-    <!-- Header with Battery Status -->
+    <!-- Header -->
     <header>
         <div class="header-content">
             <div class="header-title">
@@ -595,40 +651,75 @@
         </div>
         {% endif %}
 
-        <!-- Photo Preview Card -->
+        <!-- Photo Preview Card with 3-Column Grid -->
         <div class="card">
             <h2 class="card-title">
                 <span class="card-icon">📸</span>
                 Photo Preview & Management
             </h2>
             
-            <div class="preview-container">
-                <div id="photoPreviewWrapper" style="text-align: center; margin-bottom: 1.5rem; position: relative;">
-                    <img id="photoPreview" 
-                         src="./preview-photo" 
-                         alt="No photo prepared yet" 
-                         style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                         onerror="this.style.display='none'; document.getElementById('noPreviewMessage').style.display='block';">
-                    
-                    <div id="photoStatusBadge" style="position: absolute; top: 10px; right: 10px; display: none;"></div>
-                    
-                    <div id="noPreviewMessage" style="display: none; padding: 2rem; border-radius: 12px; color: var(--text-secondary);">
-                        <p style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">📷 No photo prepared yet</p>
-                        <p style="margin: 0; font-size: 0.9rem;">Click "Prepare New Photo" to fetch and prepare an image</p>
-                    </div>
-                </div>
-                
-                <div id="photoInfo" style="text-align: center; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
-                    <span id="photoTimestamp"></span>
-                </div>
-                
+            <div style="margin-bottom: 1.5rem;">
                 <button type="button" class="prepare-photo-btn" onclick="prepareNewPhoto()">
                     🔄 Prepare New Photo
                 </button>
-                
                 <div id="prepareStatus" style="margin-top: 1rem; text-align: center; display: none;">
                     <span style="color: var(--primary);"><span class="loading"></span> Preparing photo...</span>
                 </div>
+            </div>
+            
+            <!-- 3-Column Preview Grid -->
+            <div class="preview-grid">
+                <!-- Column 1: Delivered to ESP32 -->
+                <div class="preview-column">
+                    <div class="preview-title">📤 Delivered to ESP32</div>
+                    <div class="preview-wrapper">
+                        <img id="previewDelivered" 
+                             src="./preview-delivered" 
+                             alt="No image delivered yet"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="preview-placeholder" style="display: none;">
+                            <span>📭</span>
+                            <p>No image delivered yet</p>
+                        </div>
+                    </div>
+                    <div class="preview-caption">Last image sent to display</div>
+                </div>
+                
+                <!-- Column 2: Original from Immich -->
+                <div class="preview-column">
+                    <div class="preview-title">🖼️ Original from Immich</div>
+                    <div class="preview-wrapper">
+                        <img id="previewOriginal" 
+                             src="./preview-original" 
+                             alt="No original available"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="preview-placeholder" style="display: none;">
+                            <span>📷</span>
+                            <p>No image fetched yet</p>
+                        </div>
+                    </div>
+                    <div class="preview-caption">Unprocessed source image</div>
+                </div>
+                
+                <!-- Column 3: Processed for ESP32 -->
+                <div class="preview-column">
+                    <div class="preview-title">⚙️ Processed (Ready for ESP32)</div>
+                    <div class="preview-wrapper">
+                        <img id="previewProcessed" 
+                             src="./preview-processed" 
+                             alt="No processed image"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="preview-placeholder" style="display: none;">
+                            <span>🔧</span>
+                            <p>No processed image</p>
+                        </div>
+                    </div>
+                    <div class="preview-caption">Rotated + dithered (next delivery)</div>
+                </div>
+            </div>
+            
+            <div id="photoInfo" style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
+                <span id="photoTimestamp"></span>
             </div>
         </div>
 
@@ -690,7 +781,6 @@
                     </select>
                     <small class="small-text">Choose the dithering algorithm for image processing</small>
                 </div>
-
             </div>
 
             <!-- Image Enhancement -->
@@ -788,7 +878,7 @@
         </footer>
     </div>
 
-    <!-- Confirmation Modal -->
+    <!-- Modal -->
     <div id="confirmModal" class="confirm-modal">
         <div class="confirm-content">
             <h2>Reset to Default Settings</h2>
@@ -799,9 +889,9 @@
     </div>
 
     <script>
-        // ============================================================================
+        // ========================================================================
         // Theme Toggle
-        // ============================================================================
+        // ========================================================================
         function toggleTheme() {
             const body = document.body;
             const themeIcon = document.getElementById('themeIcon');
@@ -818,11 +908,19 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+            
+            // Initial updates
+            updatePhotoStatus();
+            updateBatteryInfo();
+            
+            // Auto-updates
+            setInterval(updatePhotoStatus, 30000);
+            setInterval(updateBatteryInfo, 10000);
         });
 
-        // ============================================================================
+        // ========================================================================
         // Battery Status Auto-Update
-        // ============================================================================
+        // ========================================================================
         function updateBatteryInfo() {
             fetch('./api/battery-status')
                 .then(response => response.json())
@@ -836,42 +934,106 @@
                 .catch(error => console.error('Battery update failed:', error));
         }
 
-        setTimeout(updateBatteryInfo, 1000);
-        setInterval(updateBatteryInfo, 10000);
+        // ========================================================================
+        // Photo Preview Updates (3-Column Grid)
+        // ========================================================================
+        function updatePhotoStatus() {
+            const timestamp = Date.now();
+            
+            // Update all three previews
+            const previewDelivered = document.getElementById('previewDelivered');
+            const previewOriginal = document.getElementById('previewOriginal');
+            const previewProcessed = document.getElementById('previewProcessed');
+            
+            if (previewDelivered) {
+                previewDelivered.src = './preview-delivered?t=' + timestamp;
+                previewDelivered.style.display = 'block';
+            }
+            
+            if (previewOriginal) {
+                previewOriginal.src = './preview-original?t=' + timestamp;
+                previewOriginal.style.display = 'block';
+            }
+            
+            if (previewProcessed) {
+                previewProcessed.src = './preview-processed?t=' + timestamp;
+                previewProcessed.style.display = 'block';
+            }
+            
+            // Get status info
+            fetch('./preview-status')
+                .then(response => response.json())
+                .then(data => {
+                    const info = document.getElementById('photoInfo');
+                    const timestamp = document.getElementById('photoTimestamp');
+                    
+                    if (data.exists) {
+                        info.style.display = 'block';
+                        const statusIcon = data.status === 'new' ? '🆕' : '✅';
+                        timestamp.textContent = `${statusIcon} Last prepared: ${data.formatted_time}`;
+                    }
+                })
+                .catch(error => console.error('Status update failed:', error));
+        }
 
-        // ============================================================================
+        function prepareNewPhoto() {
+            const statusDiv = document.getElementById('prepareStatus');
+            const button = document.querySelector('.prepare-photo-btn');
+            
+            statusDiv.style.display = 'block';
+            button.disabled = true;
+            
+            fetch('./prepare-photo', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.style.display = 'none';
+                button.disabled = false;
+                
+                if (data.success) {
+                    showNotification('✅ Photo prepared successfully!', 'success');
+                    setTimeout(updatePhotoStatus, 500);
+                } else {
+                    showNotification('❌ Error: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                statusDiv.style.display = 'none';
+                button.disabled = false;
+                showNotification('❌ Network error: ' + error.message, 'error');
+            });
+        }
+
+        // ========================================================================
         // Notification System
-        // ============================================================================
+        // ========================================================================
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.style.background = type === 'success' ? 'var(--success)' : 'var(--error)';
             notification.style.display = 'block';
 
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 10);
-
+            setTimeout(() => notification.classList.add('show'), 10);
             setTimeout(() => {
                 notification.classList.remove('show');
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 300);
+                setTimeout(() => notification.style.display = 'none', 300);
             }, 3000);
         }
 
-        // ============================================================================
+        // ========================================================================
         // Slider Value Update
-        // ============================================================================
+        // ========================================================================
         function updateSliderValue(slider) {
             const value = parseFloat(slider.value);
             const output = slider.nextElementSibling;
             output.textContent = value.toFixed(1);
         }
 
-        // ============================================================================
+        // ========================================================================
         // Form Submission
-        // ============================================================================
+        // ========================================================================
         function handleSubmit(event) {
             event.preventDefault();
 
@@ -891,9 +1053,9 @@
             });
         }
 
-        // ============================================================================
+        // ========================================================================
         // Reset Confirmation
-        // ============================================================================
+        // ========================================================================
         function showResetConfirmation() {
             document.getElementById('confirmModal').style.display = 'flex';
         }
@@ -901,9 +1063,10 @@
         function confirmReset() {
             document.getElementById('url').value = 'http://localhost';
             document.getElementById('album').value = 'default_album';
-            document.getElementById('rotation').selectedIndex = 0;
-            document.getElementById('display_mode').selectedIndex = 0;
-            document.getElementById('image_order').selectedIndex = 0;
+            document.getElementById('rotation').value = '270';
+            document.getElementById('display_mode').value = 'fill';
+            document.getElementById('image_order').value = 'random';
+            document.getElementById('dithering_method').value = 'atkinson';
 
             const sliders = [
                 { id: 'enhanced', defaultValue: 1.8 },
@@ -931,82 +1094,7 @@
         function cancelReset() {
             document.getElementById('confirmModal').style.display = 'none';
         }
-
-        // ============================================================================
-        // Photo Preview Management
-        // ============================================================================
-        function updatePhotoStatus() {
-            fetch('./preview-status')
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('photoStatusBadge');
-                    const info = document.getElementById('photoInfo');
-                    const timestamp = document.getElementById('photoTimestamp');
-                    const preview = document.getElementById('photoPreview');
-                    const noPreviewMsg = document.getElementById('noPreviewMessage');
-                    
-                    if (data.exists) {
-                        preview.style.display = 'block';
-                        preview.src = './preview-photo?' + new Date().getTime();
-                        noPreviewMsg.style.display = 'none';
-                        
-                        badge.style.display = 'block';
-                        if (data.status === 'new') {
-                            badge.textContent = '✨ Ready to deliver';
-                            badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                            badge.style.color = 'white';
-                        } else {
-                            badge.textContent = '✓ Already delivered';
-                            badge.style.background = 'var(--bg-tertiary)';
-                            badge.style.color = 'var(--text-secondary)';
-                        }
-                        
-                        info.style.display = 'block';
-                        timestamp.textContent = '📅 Prepared: ' + data.formatted_time;
-                    } else {
-                        preview.style.display = 'none';
-                        badge.style.display = 'none';
-                        info.style.display = 'none';
-                        noPreviewMsg.style.display = 'block';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-
-        function prepareNewPhoto() {
-            const statusDiv = document.getElementById('prepareStatus');
-            const button = document.querySelector('.prepare-photo-btn');
-            
-            statusDiv.style.display = 'block';
-            button.disabled = true;
-            
-            fetch('./prepare-photo', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            })
-            .then(response => response.json())
-            .then(data => {
-                statusDiv.style.display = 'none';
-                button.disabled = false;
-                
-                if (data.success) {
-                    showNotification('✅ Photo prepared successfully!', 'success');
-                    updatePhotoStatus();
-                } else {
-                    showNotification('❌ Error: ' + (data.error || 'Unknown error'), 'error');
-                }
-            })
-            .catch(error => {
-                statusDiv.style.display = 'none';
-                button.disabled = false;
-                showNotification('❌ Network error: ' + error.message, 'error');
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            updatePhotoStatus();
-            setInterval(updatePhotoStatus, 30000);
-        });
     </script>
 </body>
 </html>
+
