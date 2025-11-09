@@ -77,18 +77,18 @@ DEFAULT_CONFIG = {
     'immich': {
         'url': os.getenv('IMMICH_URL', 'http://192.168.1.10'),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
-        'rotation': int(os.getenv('ROTATION_ANGLE', '270')),           # ✓ Bereits 270
-        'enhanced': float(os.getenv('COLOR_ENHANCE', '1.8')),         # ← Geändert von 1.3 zu 1.8
-        'contrast': float(os.getenv('CONTRAST', '0.9')),              # ✓ Bereits 0.9
-        'strength': float(os.getenv('DITHERING_STRENGTH', '1.0')),    # ← Geändert von 0.8 zu 1.0
-        'display_mode': os.getenv('DISPLAY_MODE', 'fill'),            # ✓ Bereits 'fill'
-        'image_order': os.getenv('IMAGE_ORDER', 'random'),            # ✓ Bereits 'random'
+        'rotation': int(os.getenv('ROTATION_ANGLE', '270')),
+        'enhanced': float(os.getenv('COLOR_ENHANCE', '1.8')),
+        'contrast': float(os.getenv('CONTRAST', '0.9')),
+        'strength': float(os.getenv('DITHERING_STRENGTH', '1.0')),
+        'display_mode': os.getenv('DISPLAY_MODE', 'fill'),
+        'image_order': os.getenv('IMAGE_ORDER', 'random'),
         'dithering_method': os.getenv('DITHERING_METHOD', 'atkinson'),
         'sleep_start_hour': int(os.getenv('SLEEP_START_HOUR', '23')),
         'sleep_start_minute': int(os.getenv('SLEEP_START_MINUTE', '0')),
         'sleep_end_hour': int(os.getenv('SLEEP_END_HOUR', '6')),
         'sleep_end_minute': int(os.getenv('SLEEP_END_MINUTE', '0')),
-        'wakeup_interval': int(os.getenv('WAKEUP_INTERVAL', '1440')), # ← Geändert von 60 zu 1440 (24h)
+        'wakeup_interval': int(os.getenv('WAKEUP_INTERVAL', '1440')),
     }
 }
 
@@ -379,6 +379,93 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     preview_jpg_path = os.path.join(photo_dir, 'latest_preview.jpg')
     output_img.save(preview_jpg_path, 'JPEG', quality=85)
     logger.info(f"Preview saved")
+    
+    return output_img
+
+def scale_img_for_preview(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
+    """
+    Process image for preview WITHOUT rotation.
+    Only enhancement and dithering, no rotation applied.
+    """
+    global dithering_method
+    
+    # Extract EXIF date
+    try:
+        exif = image.getexif()
+        datetime_str = exif.get(36867) if exif else None
+        if not datetime_str and exif:
+            datetime_str = exif.get(306)
+    except:
+        datetime_str = None
+    
+    # Auto-rotate based on EXIF
+    image = ImageOps.exif_transpose(image)
+    
+    # Check Cython availability
+    if not CYTHON_AVAILABLE:
+        logger.error("Cython not available - image processing will fail!")
+        raise RuntimeError("Cython module 'cpy' is required but not available")
+    
+    # KEINE ROTATION für Preview! Nur skalieren
+    logger.info(f"Preview: load_scaled(rotation=0, mode={display_mode})")
+    img = load_scaled(image, 0, display_mode)  # ← rotation=0 für Preview!
+    
+    # Enhancement
+    enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
+    enhanced_img = ImageEnhance.Contrast(enhanced_img).enhance(img_contrast)
+    
+    # Dithering
+    if dithering_method == 'floyd-steinberg' and FLOYD_AVAILABLE:
+        output_img = convert_image_floyd(enhanced_img, strength)
+        output_img = Image.fromarray(output_img, mode='RGB')
+    elif dithering_method == 'atkinson' and ATKINSON_AVAILABLE:
+        output_img = convert_image_atkinson(enhanced_img, strength)
+        output_img = Image.fromarray(output_img, mode='RGB')
+    else:
+        if FLOYD_AVAILABLE:
+            output_img = convert_image_floyd(enhanced_img, strength)
+            output_img = Image.fromarray(output_img, mode='RGB')
+        else:
+            raise RuntimeError("No dithering method available")
+    
+    # Add date overlay
+    if datetime_str:
+        draw = ImageDraw.Draw(output_img)
+        try:
+            font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 20)
+        except:
+            font = ImageFont.load_default()
+        
+        try:
+            try:
+                dt = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
+                formatted_time = dt.strftime('%Y-%m-%d')
+            except ValueError:
+                dt = datetime.strptime(datetime_str, '%Y.%m.%d')
+                formatted_time = dt.strftime('%Y-%m-%d')
+        except:
+            formatted_time = datetime_str
+        
+        text_bbox = draw.textbbox((0, 0), formatted_time, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        padding = 5
+        position = (target_width - text_width - 40, target_height - text_height - 40)
+        rect_coords = (
+            position[0] - padding,
+            position[1] - padding,
+            position[0] + text_width + padding,
+            position[1] + text_height + padding
+        )
+        
+        draw.rectangle(rect_coords, fill=(0, 0, 0))
+        draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
+    
+    # Save preview as JPEG (ohne Rotation!)
+    preview_jpg_path = os.path.join(photo_dir, 'latest_preview.jpg')
+    output_img.save(preview_jpg_path, 'JPEG', quality=85)
+    logger.info(f"Preview saved (rotation=0)")
     
     return output_img
 
@@ -888,22 +975,25 @@ def prepare_photo():
         else:
             image = Image.open(image_data)
         
-        # Process image
+        # Process image WITH rotation for ESP32
         processed_image = scale_img_in_memory(image)
         
-        # Save as BMP
+        # Save as BMP for ESP32
         preview_bmp_path = os.path.join(photo_dir, 'latest.bmp')
         bmp_io = io.BytesIO()
         processed_image.save(bmp_io, 'BMP')
         with open(preview_bmp_path, 'wb') as f:
             f.write(bmp_io.getvalue())
+
+        # Process image WITHOUT rotation for preview
+        scale_img_for_preview(image)  # Ohne Rotation! Speichert latest_preview.jpg    
         
         # Save status
         status_file = os.path.join(photo_dir, 'latest.status')
         with open(status_file, 'w') as f:
             f.write('new')
         
-        logger.info(f"Photo prepared manually, marked as NEW: {asset_id}")
+        logger.info(f"Photo prepared manually (ESP32=rotated, Preview=original): {asset_id}")
         
         return jsonify({
             'success': True,

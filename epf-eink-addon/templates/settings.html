@@ -685,11 +685,12 @@
                 <div class="form-group">
                     <label for="dithering_method">🎨 Dithering Method:</label>
                     <select id="dithering_method" name="dithering_method">
-                        <option value="atkinson" {% if config['immich']['dithering_method'] == 'atkinson' %}selected{% endif %}>
-                        <option value="floyd-steinberg" {% if config['immich']['dithering_method'] == 'floyd-steinberg' %}selected{% endif %}>
+                        <option value="atkinson" {% if config['immich'].get('dithering_method', 'atkinson') == 'atkinson' %}selected{% endif %}>Atkinson (Softer, cleaner)</option>
+                        <option value="floyd-steinberg" {% if config['immich'].get('dithering_method', 'atkinson') == 'floyd-steinberg' %}selected{% endif %}>Floyd-Steinberg (More detail)</option>
                     </select>
                     <small class="small-text">Choose the dithering algorithm for image processing</small>
                 </div>
+
             </div>
 
             <!-- Image Enhancement -->
