@@ -382,92 +382,35 @@ def scale_img_in_memory(image, target_width=800, target_height=480, bg_color=(25
     
     return output_img
 
-def scale_img_for_preview(image, target_width=800, target_height=480, bg_color=(255, 255, 255)):
+def save_three_previews(image_original):
     """
-    Process image for preview WITHOUT rotation.
-    Only enhancement and dithering, no rotation applied.
+    Save three preview versions:
+    1. latest_original.jpg - Original (unprocessed, only resized)
+    2. latest_processed.jpg - Processed (rotated + dithered, ready for ESP32)
+    3. latest.bmp - BMP for ESP32 download
     """
-    global dithering_method
+    # 1. Save original unprocessed (only resize to fit display)
+    original_path = os.path.join(photo_dir, 'latest_original.jpg')
+    image_resized = image_original.copy()
+    image_resized.thumbnail((800, 480), Image.LANCZOS)
+    image_resized.save(original_path, 'JPEG', quality=95)
+    logger.info(f"Saved original preview: {original_path}")
     
-    # Extract EXIF date
-    try:
-        exif = image.getexif()
-        datetime_str = exif.get(36867) if exif else None
-        if not datetime_str and exif:
-            datetime_str = exif.get(306)
-    except:
-        datetime_str = None
+    # 2. Process with rotation + dithering for ESP32
+    processed_rotated = scale_img_in_memory(image_original)
+    processed_path = os.path.join(photo_dir, 'latest_processed.jpg')
+    processed_rotated.save(processed_path, 'JPEG', quality=95)
+    logger.info(f"Saved processed preview (rotated + dithered): {processed_path}")
     
-    # Auto-rotate based on EXIF
-    image = ImageOps.exif_transpose(image)
+    # 3. Save as BMP for ESP32 download
+    bmp_path = os.path.join(photo_dir, 'latest.bmp')
+    bmp_io = io.BytesIO()
+    processed_rotated.save(bmp_io, 'BMP')
+    with open(bmp_path, 'wb') as f:
+        f.write(bmp_io.getvalue())
+    logger.info(f"Saved BMP for ESP32: {bmp_path}")
     
-    # Check Cython availability
-    if not CYTHON_AVAILABLE:
-        logger.error("Cython not available - image processing will fail!")
-        raise RuntimeError("Cython module 'cpy' is required but not available")
-    
-    # KEINE ROTATION für Preview! Nur skalieren
-    logger.info(f"Preview: load_scaled(rotation=0, mode={display_mode})")
-    img = load_scaled(image, 0, display_mode)  # ← rotation=0 für Preview!
-    
-    # Enhancement
-    enhanced_img = ImageEnhance.Color(img).enhance(img_enhanced)
-    enhanced_img = ImageEnhance.Contrast(enhanced_img).enhance(img_contrast)
-    
-    # Dithering
-    if dithering_method == 'floyd-steinberg' and FLOYD_AVAILABLE:
-        output_img = convert_image_floyd(enhanced_img, strength)
-        output_img = Image.fromarray(output_img, mode='RGB')
-    elif dithering_method == 'atkinson' and ATKINSON_AVAILABLE:
-        output_img = convert_image_atkinson(enhanced_img, strength)
-        output_img = Image.fromarray(output_img, mode='RGB')
-    else:
-        if FLOYD_AVAILABLE:
-            output_img = convert_image_floyd(enhanced_img, strength)
-            output_img = Image.fromarray(output_img, mode='RGB')
-        else:
-            raise RuntimeError("No dithering method available")
-    
-    # Add date overlay
-    if datetime_str:
-        draw = ImageDraw.Draw(output_img)
-        try:
-            font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 20)
-        except:
-            font = ImageFont.load_default()
-        
-        try:
-            try:
-                dt = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
-                formatted_time = dt.strftime('%Y-%m-%d')
-            except ValueError:
-                dt = datetime.strptime(datetime_str, '%Y.%m.%d')
-                formatted_time = dt.strftime('%Y-%m-%d')
-        except:
-            formatted_time = datetime_str
-        
-        text_bbox = draw.textbbox((0, 0), formatted_time, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        
-        padding = 5
-        position = (target_width - text_width - 40, target_height - text_height - 40)
-        rect_coords = (
-            position[0] - padding,
-            position[1] - padding,
-            position[0] + text_width + padding,
-            position[1] + text_height + padding
-        )
-        
-        draw.rectangle(rect_coords, fill=(0, 0, 0))
-        draw.text(position, formatted_time, fill=(255, 255, 255), font=font)
-    
-    # Save preview as JPEG (ohne Rotation!)
-    preview_jpg_path = os.path.join(photo_dir, 'latest_preview.jpg')
-    output_img.save(preview_jpg_path, 'JPEG', quality=85)
-    logger.info(f"Preview saved (rotation=0)")
-    
-    return output_img
+    return processed_rotated
 
 # =============== RAW/HEIC CONVERTERS ===============
 def convert_raw_or_dng_to_jpg(input_file_path, output_dir):
@@ -693,6 +636,14 @@ def process_and_download():
                 bmp_image = Image.open(preview_bmp_path)
                 hex_data = convert_to_hex_format(bmp_image)
                 
+                # ✅ NEU: Copy processed.jpg to delivered.jpg
+                from shutil import copy2
+                processed_path = os.path.join(photo_dir, 'latest_processed.jpg')
+                delivered_path = os.path.join(photo_dir, 'latest_delivered.jpg')
+                if os.path.exists(processed_path):
+                    copy2(processed_path, delivered_path)
+                    logger.info("✅ Copied processed → delivered")
+                
                 with open(status_file, 'w') as f:
                     f.write('delivered')
                 
@@ -702,6 +653,7 @@ def process_and_download():
                     as_attachment=True,
                     download_name='frame.txt'
                 )
+            
         except Exception as e:
             logger.warning(f"Error reading status: {e}")
     
@@ -789,24 +741,29 @@ def process_and_download():
         else:
             image = Image.open(image_data)
         
-        # Process image
-        processed_image = scale_img_in_memory(image)
-        
-        # CHANGED: Convert to hex format instead of BMP
-        hex_data = convert_to_hex_format(processed_image)
-        
-        # Save BMP for web preview (but send hex to ESP32)
-        preview_bmp_path = os.path.join(photo_dir, 'latest.bmp')
-        bmp_io = io.BytesIO()
-        processed_image.save(bmp_io, 'BMP')
-        with open(preview_bmp_path, 'wb') as f:
-            f.write(bmp_io.getvalue())
-        
+        # ✅ Save all three preview versions
+        save_three_previews(image)
+
+        # ✅ Copy processed to delivered immediately
+        from shutil import copy2
+        processed_path = os.path.join(photo_dir, 'latest_processed.jpg')
+        delivered_path = os.path.join(photo_dir, 'latest_delivered.jpg')
+        if os.path.exists(processed_path):
+            copy2(processed_path, delivered_path)
+            logger.info("✅ Copied processed → delivered (on-the-fly)")
+
+        # ✅ Mark as delivered
+        status_file = os.path.join(photo_dir, 'latest.status')
         with open(status_file, 'w') as f:
             f.write('delivered')
-        
-        logger.info(f"Photo prepared on-the-fly and delivered (hex format): {asset_id}")
-        
+
+        # ✅ Convert to hex and return
+        preview_bmp_path = os.path.join(photo_dir, 'latest.bmp')
+        bmp_image = Image.open(preview_bmp_path)
+        hex_data = convert_to_hex_format(bmp_image)
+
+        logger.info(f"Photo delivered on-the-fly (hex format): {asset_id}")
+
         return send_file(
             hex_data,
             mimetype='text/plain',
@@ -823,33 +780,33 @@ def process_and_download():
 
 @bp.route('/preview-photo', methods=['GET'])
 def preview_photo():
-    """Serve the latest prepared photo as preview"""
-    preview_jpg_path = os.path.join(photo_dir, 'latest_preview.jpg')
+    """Serve the latest prepared photo as preview (backwards compatibility)"""
+    # Try processed first, fall back to original
+    processed_path = os.path.join(photo_dir, 'latest_processed.jpg')
+    original_path = os.path.join(photo_dir, 'latest_original.jpg')
     
-    if not os.path.exists(preview_jpg_path):
+    if os.path.exists(processed_path):
+        return send_file(processed_path, mimetype='image/jpeg')
+    elif os.path.exists(original_path):
+        return send_file(original_path, mimetype='image/jpeg')
+    else:
         return jsonify({'error': 'No preview available'}), 404
-    
-    return send_file(preview_jpg_path, mimetype='image/jpeg')
 
 @bp.route('/preview-status', methods=['GET'])
 def preview_status():
     """Get the status of the current preview photo"""
     status_file = os.path.join(photo_dir, 'latest.status')
-    preview_jpg_path = os.path.join(photo_dir, 'latest_preview.jpg')
+    processed_path = os.path.join(photo_dir, 'latest_processed.jpg')  # ✅ RICHTIG!
     
-    if not os.path.exists(preview_jpg_path):
-        return jsonify({
-            'exists': False,
-            'status': None,
-            'timestamp': None
-        })
+    if not os.path.exists(processed_path):
+        return jsonify({'exists': False, 'status': None, 'timestamp': None})
     
     status = 'delivered'
     if os.path.exists(status_file):
         with open(status_file, 'r') as f:
             status = f.read().strip()
     
-    timestamp = os.path.getmtime(preview_jpg_path)
+    timestamp = os.path.getmtime(processed_path)
     
     return jsonify({
         'exists': True,
@@ -857,6 +814,30 @@ def preview_status():
         'timestamp': timestamp,
         'formatted_time': datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     })
+
+@bp.route('/preview-original', methods=['GET'])
+def preview_original():
+    """Serve original unprocessed image"""
+    original_path = os.path.join(photo_dir, 'latest_original.jpg')
+    if not os.path.exists(original_path):
+        return jsonify({'error': 'No original available'}), 404
+    return send_file(original_path, mimetype='image/jpeg')
+
+@bp.route('/preview-processed', methods=['GET'])
+def preview_processed():
+    """Serve processed image (ready for ESP32 with rotation + dithering)"""
+    processed_path = os.path.join(photo_dir, 'latest_processed.jpg')
+    if not os.path.exists(processed_path):
+        return jsonify({'error': 'No processed image available'}), 404
+    return send_file(processed_path, mimetype='image/jpeg')
+
+@bp.route('/preview-delivered', methods=['GET'])
+def preview_delivered():
+    """Serve last delivered image to ESP32"""
+    delivered_path = os.path.join(photo_dir, 'latest_delivered.jpg')
+    if not os.path.exists(delivered_path):
+        return jsonify({'error': 'No delivered image available'}), 404
+    return send_file(delivered_path, mimetype='image/jpeg')
 
 @bp.route('/api/battery-status', methods=['GET'])
 def battery_status():
@@ -885,72 +866,66 @@ def battery_status():
 def prepare_photo():
     """Manually fetch and prepare a new photo from Immich"""
     try:
-        logger.info("Manual photo preparation requested")
-        
+        logger.info("📸 Manual photo preparation requested")
         immich_url = current_config['immich']['url']
         album_name = current_config['immich']['album']
+        image_order_config = current_config['immich']['image_order']
         
         if not immich_url or not album_name:
             return jsonify({'error': 'Immich not configured', 'success': False}), 500
         
-        logger.info(f"Fetching albums from {immich_url}")
+        api_key = os.getenv('IMMICH_API_KEY')
+        if not api_key:
+            return jsonify({'error': 'IMMICH_API_KEY not configured', 'success': False}), 500
         
-        # Fetch albums
-        response = requests.get(f'{immich_url}/api/albums', headers=headers, timeout=10)
+        headers = {'x-api-key': api_key}
+        
+        # Get albums
+        response = requests.get(f'{immich_url}/api/albums', headers=headers)
         if response.status_code != 200:
             return jsonify({'error': f'Failed to fetch albums: {response.status_code}', 'success': False}), 500
         
-        data = response.json()
-        album_id = next((item['id'] for item in data if item.get('albumName') == album_name), None)
+        albums = response.json()
+        target_album = next((a for a in albums if a['albumName'] == album_name), None)
         
-        if not album_id:
-            return jsonify({'error': f'Album {album_name} not found', 'success': False}), 404
+        if not target_album:
+            return jsonify({'error': f'Album "{album_name}" not found', 'success': False}), 404
         
-        logger.info(f"Found album '{album_name}' (ID: {album_id})")
+        album_id = target_album['id']
         
-        # Fetch album assets
-        response = requests.get(f'{immich_url}/api/albums/{album_id}', headers=headers, timeout=10)
+        # Get album assets
+        response = requests.get(f'{immich_url}/api/albums/{album_id}', headers=headers)
         if response.status_code != 200:
             return jsonify({'error': 'Failed to fetch album assets', 'success': False}), 500
         
         data = response.json()
-        if 'assets' not in data or not data['assets']:
-            return jsonify({'error': 'No images in album', 'success': False}), 404
         
-        logger.info(f"Found {len(data['assets'])} photos in album")
+        if not data.get('assets') or len(data['assets']) == 0:
+            return jsonify({'error': 'No assets in album', 'success': False}), 404
         
-        # Select image
-        image_order_config = current_config['immich']['image_order']
+        # Image selection based on order
         downloaded_images = load_downloaded_images()
         
         if image_order_config == 'newest':
-            # Sortiere absteigend nach Datum (neueste zuerst)
             sorted_assets = sorted(data['assets'],
                 key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
                 reverse=True)
-            
-            # ← FIX: Verwende auch Tracking im "newest" Modus!
-            downloaded_images = load_downloaded_images()
             remaining_images = [img for img in sorted_assets if img['id'] not in downloaded_images]
             
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = sorted_assets
             
-            # Nimm das erste noch nicht gezeigte Bild aus der sortierten Liste
             selected_image = remaining_images[0]
-
         else:  # random
             remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
             if not remaining_images:
                 reset_tracking_file()
                 remaining_images = data['assets']
-            
-            # ← Verwende random.choice für echte Zufallsauswahl
             selected_image = random.choice(remaining_images)
-
+        
         asset_id = selected_image['id']
-        save_downloaded_image(asset_id)  # Markiere als gesehen
+        save_downloaded_image(asset_id)
         
         # Download image
         response = requests.get(
@@ -969,44 +944,30 @@ def prepare_photo():
         if original_path.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
             with rawpy.imread(image_data) as raw:
                 rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
-            image = Image.fromarray(rgb)
+                image = Image.fromarray(rgb)
         elif original_path.endswith('.heic'):
             image = Image.open(image_data).convert('RGB')
         else:
             image = Image.open(image_data)
         
-        # Process image WITH rotation for ESP32
-        processed_image = scale_img_in_memory(image)
+        # ✅ Save all three preview versions
+        save_three_previews(image)
         
-        # Save as BMP for ESP32
-        preview_bmp_path = os.path.join(photo_dir, 'latest.bmp')
-        bmp_io = io.BytesIO()
-        processed_image.save(bmp_io, 'BMP')
-        with open(preview_bmp_path, 'wb') as f:
-            f.write(bmp_io.getvalue())
-
-        # Process image WITHOUT rotation for preview
-        scale_img_for_preview(image)  # Ohne Rotation! Speichert latest_preview.jpg    
-        
-        # Save status
+        # Save status as 'new'
         status_file = os.path.join(photo_dir, 'latest.status')
         with open(status_file, 'w') as f:
             f.write('new')
         
-        logger.info(f"Photo prepared manually (ESP32=rotated, Preview=original): {asset_id}")
+        logger.info(f"✅ Photo prepared with 3 previews: {asset_id}")
         
         return jsonify({
             'success': True,
             'message': 'Photo prepared successfully',
-            'asset_id': asset_id,
-            'preview_url': f'/preview-photo?t={int(time.time())}'
+            'asset_id': asset_id
         }), 200
     
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Network error: {e}")
-        return jsonify({'error': f'Network error: {str(e)}', 'success': False}), 500
     except Exception as e:
-        logger.error(f"Error preparing photo: {e}", exc_info=True)
+        logger.error(f"❌ Error preparing photo: {e}", exc_info=True)
         return jsonify({'error': str(e), 'success': False}), 500
 
 @bp.route('/sleep', methods=['GET'])
