@@ -168,6 +168,14 @@ photos/
 .dockerignore
 docker-compose.override.yml
 
+# Local test files (not for HA production)
+Dockerfile.test
+run.test.sh
+
+# Local test files (not for HA production)
+Dockerfile.test
+run.test.sh
+
 
 # ==========================================
 # DEVELOPMENT

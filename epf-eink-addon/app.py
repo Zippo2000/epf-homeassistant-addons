@@ -536,13 +536,14 @@ def settings():
         current_config = DEFAULT_CONFIG.copy()
         logger.warning("current_config was None, reset to default")
     
-    current_time = time.time()
-    if current_time - last_battery_update < 3600:
-        battery_voltage = last_battery_voltage
-    else:
-        battery_voltage = 0
-    
+    # Always return last known battery value with timestamp
+    battery_voltage = last_battery_voltage
     battery_percentage = calculate_battery_percentage(battery_voltage) if battery_voltage > 0 else 0
+    
+    if last_battery_update > 0:
+        battery_last_read = datetime.fromtimestamp(last_battery_update).strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        battery_last_read = None
     
     if battery_voltage > 0:
         logger.info(f"Battery: {battery_voltage:.0f}mV ({battery_percentage:.1f}%)")
@@ -583,6 +584,7 @@ def settings():
         config=current_config if current_config else DEFAULT_CONFIG,
         battery_voltage=battery_voltage,
         battery_percentage=battery_percentage,
+        battery_last_read=battery_last_read,
         addon_version=BUILD_VERSION,
         build_timestamp=BUILD_TIMESTAMP
     )
@@ -846,19 +848,23 @@ def battery_status():
     
     current_time = time.time()
     
-    # Return cached value if recent (< ~1d)
-    if current_time - last_battery_update < 90000:
-        battery_voltage = last_battery_voltage
-    else:
-        battery_voltage = 0
-    
+    # Always return last known value, regardless of age
+    battery_voltage = last_battery_voltage
     battery_percentage = calculate_battery_percentage(battery_voltage) if battery_voltage > 0 else 0
     
+    # Format timestamp when battery was last read
+    if last_battery_update > 0:
+        last_read_time = datetime.fromtimestamp(last_battery_update)
+        formatted_timestamp = last_read_time.strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        formatted_timestamp = None
+    
     return jsonify({
-        'voltage': int(battery_voltage),  # in mV
-        'voltage_v': round(battery_voltage / 1000, 2),  # in V
+        'voltage': int(battery_voltage),
+        'voltage_v': round(battery_voltage / 1000, 2),
         'percentage': battery_percentage,
         'last_update': int(last_battery_update),
+        'formatted_timestamp': formatted_timestamp,
         'age_seconds': int(current_time - last_battery_update) if last_battery_update > 0 else None
     })
 

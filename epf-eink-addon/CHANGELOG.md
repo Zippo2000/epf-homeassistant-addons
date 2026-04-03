@@ -121,3 +121,12 @@ Neue Dateien in /photos/:
 - Image filters
 - Statistics dashboard
 - Battery level visualization
+
+## [1.0.3] - 2026-04-03
+
+### Changed
+- **FR-018 Battery Status**: Removed 90000-second expiry for battery readings. The last known battery value is now retained indefinitely and displayed with a timestamp showing when the reading was taken (date + time). This ensures users can always see the last reported battery status, even if the ESP32 hasn't reported in a while.
+
+### Modified Files
+- `app.py`: Removed timeout logic in `/api/battery-status` and settings route; added `formatted_timestamp` field to API response
+- `templates/settings.html`: Added timestamp display below battery percentage/voltage in header; updated JavaScript to refresh timestamp on polling
