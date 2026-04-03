@@ -333,11 +333,23 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **ID** | FR-023 |
 | **Title** | Perform daily NTP synchronization |
 | **Priority** | Low |
-| **Description** | The system SHALL run a background thread that synchronizes the system clock with `pool.ntp.org` daily at 04:00. Failed sync attempts SHALL be retried after 3600 seconds. |
+| **Description** | The system SHALL run a background thread that synchronizes the system clock with `pool.ntp.org` daily at 04:00. Failed sync attempts SHALL be retried after 3600 seconds. The thread SHALL support graceful shutdown via a stop event signal. |
 | **Input** | NTP server response |
 | **Output** | System clock adjustment |
 | **Verification** | Test |
-| **Traceability** | `app.py:run_daily_ntp_sync` |
+| **Traceability** | `app.py:run_daily_ntp_sync, _ntp_stop_event` |
+
+#### FR-024: Preview Cleanup
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-024 |
+| **Title** | Automatic and manual preview file cleanup |
+| **Priority** | Medium |
+| **Description** | The system SHALL provide a cleanup function that removes stale preview files (latest_original_*.jpg, latest_processed_*.jpg, latest_delivered_*.jpg) based on two criteria: (1) age-based eviction for files older than 7 days, and (2) count-based eviction when more than 50 files match a pattern (oldest removed first). The cleanup SHALL be triggerable via POST `/cleanup-previews` endpoint and SHALL return the number of removed files. |
+| **Input** | POST request to /cleanup-previews |
+| **Output** | JSON response with files_removed count |
+| **Verification** | Test |
+| **Traceability** | `app.py:cleanup_old_previews, trigger_cleanup route` |
 
 ---
 
@@ -422,6 +434,16 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Description** | The settings web interface SHALL support both light and dark themes with CSS custom properties. The theme preference SHALL be persisted in localStorage. |
 | **Verification** | Test |
 | **Traceability** | `templates/settings.html` |
+
+#### NFR-009: Type Annotations
+| Attribute | Value |
+|-----------|-------|
+| **ID** | NFR-009 |
+| **Title** | Code type hints |
+| **Priority** | Medium |
+| **Description** | All public functions, class methods, and module-level variables in `app.py` SHALL have Python type annotations. The `from __future__ import annotations` directive SHALL be used for forward reference support. Type hints SHALL cover all parameters, return types, and global state variables using the `typing` module (Optional, Dict, Any, Set, Tuple, Callable, List). |
+| **Verification** | Inspection |
+| **Traceability** | `app.py` |
 
 ---
 
@@ -589,6 +611,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-021 | app.py, settings.html | Test | Implemented |
 | FR-022 | app.py | Test | Implemented |
 | FR-023 | app.py | Test | Implemented |
+| FR-024 | app.py | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |
@@ -597,6 +620,8 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | NFR-006 | cpy.pyx, run.sh | Test | Implemented |
 | NFR-007 | cpy.pyx | Analysis | Implemented |
 | NFR-008 | settings.html | Test | Implemented |
+| NFR-009 | app.py | Inspection | Implemented |
+| NFR-009 | app.py | Inspection | Implemented |
 | IFR-001 | app.py | Test | Implemented |
 | IFR-002 | app.py | Test | Implemented |
 | IFR-003 | config.yaml, app.py | Test | Implemented |
@@ -618,9 +643,9 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 |----|-------------|----------|------------|
 | OI-001 | `cpy.so` binary is committed to the repository; it is architecture-specific and will not work on non-amd64 platforms without recompilation during Docker build. | Medium | The Dockerfile recompiles the Cython module during build, overriding the committed .so. The committed file should be in .gitignore. |
 | OI-002 | No TLS/HTTPS enforcement for ESP32 communication; images are served over plain HTTP on the local network. | Low | Acceptable for isolated LAN deployments; document in security guidance. |
-| OI-003 | The `color_enhance` slider in settings.html is capped at 2.0 while the config.yaml schema allows up to 3.0. | Low | UI inconsistency; slider max should match schema. |
-| OI-004 | The `contrast` slider in settings.html is capped at 2.0 while the config.yaml schema allows up to 2.0 (matches). The `color_enhance` schema allows 0-3 but the slider only goes to 2.0. | Low | Align slider range with schema. |
-| OI-005 | NTP sync runs in a daemon thread with no graceful shutdown mechanism on container stop. | Low | Acceptable for container lifecycle; OS handles cleanup. |
+| OI-003 | ~~The `color_enhance` slider in settings.html is capped at 2.0 while the config.yaml schema allows up to 3.0.~~ | ~~Low~~ | ~~UI inconsistency; slider max should match schema.~~ | **RESOLVED (v1.0.4)**: Slider max updated to 3.0. |
+| OI-004 | ~~The `contrast` slider in settings.html is capped at 2.0 while the config.yaml schema allows up to 2.0 (matches). The `color_enhance` schema allows 0-3 but the slider only goes to 2.0.~~ | ~~Low~~ | ~~Align slider range with schema.~~ | **RESOLVED (v1.0.4)**: Slider range aligned with schema. |
+| OI-005 | ~~NTP sync runs in a daemon thread with no graceful shutdown mechanism on container stop.~~ | ~~Low~~ | ~~Acceptable for container lifecycle; OS handles cleanup.~~ | **RESOLVED (v1.0.4)**: Graceful shutdown via threading.Event implemented. |
 | OI-006 | No rate limiting on the `/download` endpoint; an ESP32 could trigger repeated Immich API calls. | Medium | ESP32 firmware controls call frequency; document expected behavior. |
 
 ---
@@ -634,4 +659,4 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 
 ---
 
-*Document generated from codebase analysis of repository state at commit 52 on main branch. All requirements reflect implemented functionality, not planned features.*
+*Document generated from codebase analysis of repository state at commit 52 on main branch + v1.0.4 enhancements. All requirements reflect implemented functionality, not planned features.*

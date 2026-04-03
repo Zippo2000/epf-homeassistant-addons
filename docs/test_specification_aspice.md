@@ -17,7 +17,7 @@ This document specifies the software test cases for verifying the EPF (E-Paper P
 
 ### 1.2 Scope
 The scope encompasses all functional, non-functional, interface, security, and performance requirements for the `epf-eink-addon`. This includes:
-- 23 Functional Requirements (FR-001 to FR-023)
+- 24 Functional Requirements (FR-001 to FR-024)
 - 8 Non-Functional Requirements (NFR-001 to NFR-008)
 - 5 Interface Requirements (IFR-001 to IFR-005)
 - 4 Security Requirements (SEC-001 to SEC-004)
@@ -555,6 +555,38 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Actual Result** | _To be filled during execution_ |
 | **Status** | Not Executed |
 
+#### TC-FR-024: Preview Cleanup
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-024 |
+| **Requirement** | FR-024 |
+| **Title** | Verify preview file cleanup functionality |
+| **Priority** | Medium |
+| **Preconditions** | SUT running; multiple preview files exist in photo directory |
+| **Test Input** | POST request to /cleanup-previews |
+| **Test Steps** | 1. Create multiple preview files with varying ages<br>2. Verify files exist before cleanup<br>3. Send POST to /cleanup-previews<br>4. Verify response contains files_removed count<br>5. Verify old files (>7 days) are removed<br>6. Verify count-based eviction works when >50 files exist<br>7. Verify cleanup does not remove current preview files (latest_original.jpg, latest_processed.jpg, latest.bmp) |
+| **Expected Result** | Old/excess preview files are removed; response contains accurate count; current previews are preserved |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
+#### TC-NFR-009: Type Annotations
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-NFR-009 |
+| **Requirement** | NFR-009 |
+| **Title** | Verify type annotations throughout codebase |
+| **Priority** | Medium |
+| **Preconditions** | app.py source code available |
+| **Test Input** | Static analysis of app.py |
+| **Test Steps** | 1. Verify `from __future__ import annotations` is present<br>2. Verify all function signatures have parameter and return type hints<br>3. Verify global variables have type annotations<br>4. Verify class attributes have type annotations<br>5. Verify typing module imports (Optional, Dict, Any, Set, Tuple, Callable, List) |
+| **Expected Result** | All public functions, class methods, and module-level variables have type annotations |
+| **Verification Method** | Inspection |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
 ---
 
 ### 3.2 Non-Functional Requirements Test Cases
@@ -925,6 +957,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-FR-021 | FR-021 | Test | Not Executed |
 | TC-FR-022 | FR-022 | Test | Not Executed |
 | TC-FR-023 | FR-023 | Test | Not Executed |
+| TC-FR-024 | FR-024 | Test | Not Executed |
 | TC-NFR-001 | NFR-001 | Inspection, Test | Not Executed |
 | TC-NFR-002 | NFR-002 | Inspection | Not Executed |
 | TC-NFR-003 | NFR-003 | Test | Not Executed |
@@ -933,6 +966,8 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-006 | NFR-006 | Test | Not Executed |
 | TC-NFR-007 | NFR-007 | Analysis | Not Executed |
 | TC-NFR-008 | NFR-008 | Test | Not Executed |
+| TC-NFR-009 | NFR-009 | Inspection | Not Executed |
+| TC-NFR-009 | NFR-009 | Inspection | Not Executed |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
 | TC-IFR-002 | IFR-002 | Test | Not Executed |
 | TC-IFR-003 | IFR-003 | Test | Not Executed |

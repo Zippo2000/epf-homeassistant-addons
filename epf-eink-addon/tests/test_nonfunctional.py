@@ -445,3 +445,68 @@ class TestPER003ConfigReloadLatency:
 
         assert elapsed < 2.0, f"Config reload took {elapsed:.3f}s"
         assert app_module.url == 'http://reload-test.local'
+
+
+# ============================================================
+# TC-NFR-009: Type Annotations
+# ============================================================
+
+class TestNFR009TypeAnnotations:
+    """TC-NFR-009: Verify type annotations throughout codebase."""
+
+    def test_future_annotations_import(self, app_module):
+        """from __future__ import annotations is present."""
+        import ast
+        with open(app_module.__file__, 'r') as f:
+            source = f.read()
+        tree = ast.parse(source)
+        has_future = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.module == '__future__':
+                    for alias in node.names:
+                        if alias.name == 'annotations':
+                            has_future = True
+        assert has_future, "Missing 'from __future__ import annotations'"
+
+    def test_typing_module_imported(self, app_module):
+        """typing module is imported."""
+        assert hasattr(app_module, 'Optional') or 'typing' in str(dir(app_module))
+
+    def test_functions_have_annotations(self, app_module):
+        """Key functions have type annotations."""
+        annotated_functions = [
+            'calculate_battery_percentage',
+            'load_downloaded_images',
+            'save_downloaded_image',
+            'reset_tracking_file',
+            'cleanup_old_previews',
+            'convert_to_hex_format',
+            'scale_img_in_memory',
+            'save_three_previews',
+            'convert_raw_or_dng_to_jpg',
+            'convert_heic_to_jpg',
+            'update_app_config',
+            'start_config_watcher',
+            'run_daily_ntp_sync',
+            'stop_ntp_sync',
+        ]
+        import inspect
+        for func_name in annotated_functions:
+            func = getattr(app_module, func_name, None)
+            if func is not None:
+                sig = inspect.signature(func)
+                has_hints = any(
+                    p.annotation != inspect.Parameter.empty
+                    for p in sig.parameters.values()
+                ) or sig.return_annotation != inspect.Signature.empty
+                assert has_hints, f"{func_name} lacks type annotations"
+
+    def test_global_variables_have_types(self, app_module):
+        """Key global variables have type annotations in source."""
+        with open(app_module.__file__, 'r') as f:
+            source = f.read()
+        assert 'BUILD_TIMESTAMP: str' in source or 'BUILD_TIMESTAMP =' in source
+        assert 'last_battery_voltage: float' in source
+        assert 'last_battery_update: float' in source
+

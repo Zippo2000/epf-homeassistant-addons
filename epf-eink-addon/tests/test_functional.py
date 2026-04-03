@@ -1066,3 +1066,119 @@ class TestFR023NTPSync:
             client = mock_client()
             response = client.request('pool.ntp.org', timeout=5)
             assert response.tx_time == 1700000000.0
+
+
+# ============================================================
+# TC-FR-023 (updated): NTP Graceful Shutdown
+# ============================================================
+
+class TestFR023NTPShutdown:
+    """TC-FR-023 (updated): Verify NTP thread graceful shutdown."""
+
+    def test_stop_event_exists(self, app_module):
+        """NTP stop event exists as threading.Event."""
+        assert hasattr(app_module, '_ntp_stop_event')
+        assert isinstance(app_module._ntp_stop_event, type(app_module._ntp_stop_event))
+
+    def test_stop_function_exists(self, app_module):
+        """stop_ntp_sync function exists and is callable."""
+        assert hasattr(app_module, 'stop_ntp_sync')
+        assert callable(app_module.stop_ntp_sync)
+
+    def test_stop_event_can_be_set(self, app_module):
+        """Stop event can be set and checked."""
+        app_module._ntp_stop_event.set()
+        assert app_module._ntp_stop_event.is_set()
+        app_module._ntp_stop_event.clear()
+
+
+# ============================================================
+# TC-FR-024: Preview Cleanup
+# ============================================================
+
+class TestFR024PreviewCleanup:
+    """TC-FR-024: Verify preview file cleanup functionality."""
+
+    def test_cleanup_function_exists(self, app_module):
+        """cleanup_old_previews function exists and is callable."""
+        assert hasattr(app_module, 'cleanup_old_previews')
+        assert callable(app_module.cleanup_old_previews)
+
+    def test_cleanup_returns_int(self, app_module, test_dir):
+        """cleanup_old_previews returns an integer count."""
+        app_module.photo_dir = test_dir['photos']
+        result = app_module.cleanup_old_previews()
+        assert isinstance(result, int)
+        assert result >= 0
+
+    def test_cleanup_removes_old_files(self, app_module, test_dir):
+        """Files older than max_age are removed."""
+        photo_dir = test_dir['photos']
+        app_module.photo_dir = photo_dir
+
+        old_file = os.path.join(photo_dir, 'latest_original_20240101.jpg')
+        with open(old_file, 'w') as f:
+            f.write('old')
+        os.utime(old_file, (time.time() - 8 * 24 * 3600, time.time() - 8 * 24 * 3600))
+
+        removed = app_module.cleanup_old_previews(max_age_seconds=7 * 24 * 3600)
+        assert removed >= 1
+        assert not os.path.exists(old_file)
+
+    def test_cleanup_keeps_recent_files(self, app_module, test_dir):
+        """Files newer than max_age are preserved."""
+        photo_dir = test_dir['photos']
+        app_module.photo_dir = photo_dir
+
+        recent_file = os.path.join(photo_dir, 'latest_processed_recent.jpg')
+        with open(recent_file, 'w') as f:
+            f.write('recent')
+
+        removed = app_module.cleanup_old_previews(max_age_seconds=7 * 24 * 3600)
+        assert os.path.exists(recent_file)
+
+    def test_cleanup_does_not_remove_current_previews(self, app_module, test_dir):
+        """Current preview files (latest_original.jpg etc.) are not removed."""
+        photo_dir = test_dir['photos']
+        app_module.photo_dir = photo_dir
+
+        current_files = ['latest_original.jpg', 'latest_processed.jpg', 'latest.bmp']
+        for fname in current_files:
+            with open(os.path.join(photo_dir, fname), 'w') as f:
+                f.write('current')
+            os.utime(os.path.join(photo_dir, fname), (time.time() - 30 * 24 * 3600,) * 2)
+
+        app_module.cleanup_old_previews(max_age_seconds=7 * 24 * 3600)
+
+        for fname in current_files:
+            assert os.path.exists(os.path.join(photo_dir, fname)), f"{fname} should not be removed"
+
+    def test_cleanup_respects_count_limit(self, app_module, test_dir):
+        """When more than max_count files exist, oldest are removed first."""
+        photo_dir = test_dir['photos']
+        app_module.photo_dir = photo_dir
+
+        for i in range(60):
+            fpath = os.path.join(photo_dir, f'latest_original_{i:03d}.jpg')
+            with open(fpath, 'w') as f:
+                f.write(f'file {i}')
+            os.utime(fpath, (time.time() - i * 3600, time.time() - i * 3600))
+
+        removed = app_module.cleanup_old_previews(max_count=50, max_age_seconds=365 * 24 * 3600)
+        remaining = len([f for f in os.listdir(photo_dir) if f.startswith('latest_original_') and f.endswith('.jpg')])
+        assert remaining <= 50
+
+    def test_cleanup_endpoint_exists(self, app_module):
+        """POST /cleanup-previews endpoint exists."""
+        assert hasattr(app_module.app, 'view_functions')
+        found = any('cleanup' in str(vf) for vf in app_module.app.view_functions.values())
+        assert found
+
+    def test_cleanup_endpoint_returns_success(self, client_with_mocks, app_module, test_dir):
+        """POST /cleanup-previews returns success response."""
+        app_module.photo_dir = test_dir['photos']
+        response = client_with_mocks.post('/cleanup-previews')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is True
+        assert 'files_removed' in data

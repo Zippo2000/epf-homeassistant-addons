@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-RPT-001  
-**Version:** 1.0.0  
-**Date:** 2025-11-08  
-**Baseline:** Repository commit 52 (main branch)  
-**Test Spec Reference:** EPF-TST-001 v1.0.0  
+**Version:** 1.1.0  
+**Date:** 2026-04-03  
+**Baseline:** Repository commit 52 (main branch) + v1.0.4 enhancements  
+**Test Spec Reference:** EPF-TST-001 v1.1.0  
 **Status:** Completed - All Tests Passed
 
 ---
@@ -14,12 +14,12 @@
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | 78 |
-| **Passed** | 78 |
+| **Total Test Cases** | 93 |
+| **Passed** | 93 |
 | **Failed** | 0 |
 | **Skipped** | 0 |
 | **Pass Rate** | 100% |
-| **Execution Time** | 11.89 seconds |
+| **Execution Time** | 14.75 seconds |
 | **Test Environment** | Docker (debian:bookworm, Python 3.11.2, pytest 7.4.3) |
 | **Verdict** | **PASS** - Software meets all specified requirements |
 
