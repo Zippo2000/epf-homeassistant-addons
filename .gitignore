@@ -69,6 +69,8 @@ env/
 .coverage.*
 .cache
 htmlcov/
+test-results.xml
+test-results.xml
 
 # PyBuilder
 target/
