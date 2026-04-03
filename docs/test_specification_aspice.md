@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 1.2.0  
+**Version:** 2.0.0  
 **Date:** 2026-04-03  
-**Baseline:** Repository commit 52 (main branch) + v1.0.5 UI enhancements  
+**Baseline:** Repository commit (main branch, v2.0.0)  
 **Status:** Released  
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
@@ -17,7 +17,7 @@ This document specifies the software test cases for verifying the EPF (E-Paper P
 
 ### 1.2 Scope
 The scope encompasses all functional, non-functional, interface, security, and performance requirements for the `epf-eink-addon`. This includes:
-- 26 Functional Requirements (FR-001 to FR-026)
+- 31 Functional Requirements (FR-001 to FR-031)
 - 8 Non-Functional Requirements (NFR-001 to NFR-008)
 - 5 Interface Requirements (IFR-001 to IFR-005)
 - 4 Security Requirements (SEC-001 to SEC-004)

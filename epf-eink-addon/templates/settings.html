@@ -7,752 +7,483 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>E-paper Photo Frame Settings</title>
     <style>
-        :root {
-            --primary: #0ea5e9;
-            --primary-dark: #0284c7;
-            --primary-light: #38bdf8;
-            --accent: #8b5cf6;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
-
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #f1f5f9;
-
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-tertiary: #94a3b8;
-
-            --border: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.18);
-        }
-
-        [data-theme="dark"] {
-            --primary: #38bdf8;
-            --primary-dark: #0ea5e9;
-            --primary-light: #7dd3fc;
-            --accent: #a78bfa;
-
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-tertiary: #64748b;
-
-            --border: #334155;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            opacity: 0.05;
-            z-index: -1;
-        }
-
-        /* Header */
-        header {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow-md);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .header-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Header Right Section */
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        /* Battery Status in Header */
-        .battery-status-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-tertiary);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .battery-icon {
-            font-size: 1rem;
-        }
-
-        .battery-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.2;
-        }
-
-        .battery-percentage {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .battery-voltage {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-        }
-
-        .battery-timestamp {
-            font-size: 0.65rem;
-            color: var(--text-tertiary);
-            margin-top: 2px;
-        }
-
-        /* Health Status Indicator */
-        .health-status {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            background: var(--bg-tertiary);
-            color: var(--text-tertiary);
-        }
-
-        .health-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-tertiary);
-            transition: background-color 0.3s ease;
-        }
-
-        .health-status.healthy .health-dot {
-            background: var(--success);
-            box-shadow: 0 0 6px var(--success);
-        }
-
-        .health-status.healthy {
-            color: var(--success);
-        }
-
-        .health-status.degraded .health-dot {
-            background: var(--error);
-            box-shadow: 0 0 6px var(--error);
-        }
-
-        .health-status.degraded {
-            color: var(--error);
-        }
-
-        /* Theme Toggle */
-        .theme-toggle {
-            background: var(--bg-tertiary);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .theme-toggle:hover {
-            transform: rotate(20deg) scale(1.1);
-        }
-
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1.5rem 2rem;
-        }
-
-        /* Glass Card */
-        .card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-lg);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: var(--shadow-xl);
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-primary);
-        }
-
-        .card-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-
-        /* Error Banner */
-        .error-banner {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-            border-color: var(--error);
-        }
-
-        /* 3-Column Preview Grid */
-        .preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .preview-column {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .preview-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0.75rem;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: var(--shadow-md);
-        }
-
-        .preview-wrapper {
-            position: relative;
-            aspect-ratio: 5/3;
-            background: var(--bg-tertiary);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid var(--border);
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s ease;
-        }
-
-        .preview-wrapper:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .preview-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            transition: transform 0.3s ease;
-        }
-
-        .preview-wrapper img:hover {
-            transform: scale(1.05);
-        }
-
-        .preview-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-tertiary);
-        }
-
-        .preview-placeholder span {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            opacity: 0.3;
-        }
-
-        .preview-placeholder p {
-            font-size: 0.85rem;
-            text-align: center;
-            padding: 0 1rem;
-        }
-
-        .preview-caption {
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-            text-align: center;
-            padding: 0.25rem;
-        }
-
-        /* Photo Actions */
-        .photo-actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .photo-actions button {
-            flex: 1;
-        }
-
-        .photo-info {
-            text-align: center;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .photo-info.hidden {
-            display: none;
-        }
-
-        .prepare-status {
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .prepare-status.hidden {
-            display: none;
-        }
-
-        .prepare-status.loading {
-            color: var(--primary);
-        }
-
-        .prepare-status.success {
-            color: var(--success);
-        }
-
-        .prepare-status.error {
-            color: var(--error);
-        }
-
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-        }
-
-        input[type="text"],
-        select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 1rem;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"]:focus,
-        select:focus {
-            border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-        }
-
-        .small-text {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            margin-top: 0.5rem;
-        }
-
-        /* Slider */
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .slider-container input[type="range"] {
-            flex-grow: 1;
-            height: 6px;
-            -webkit-appearance: none;
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .slider-container input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            cursor: pointer;
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s ease;
-        }
-
-        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        .slider-container input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            cursor: pointer;
-            border: none;
-            box-shadow: var(--shadow-md);
-        }
-
-        .slider-value {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            min-width: 55px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 16px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Buttons */
-        button,
-        input[type="submit"] {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            border: none;
-            padding: 0.875rem 1.75rem;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-
-        button::before,
-        input[type="submit"]::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-
-        button:hover::before,
-        input[type="submit"]:hover::before {
-            left: 100%;
-        }
-
-        button:hover,
-        input[type="submit"]:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        button:active,
-        input[type="submit"]:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .reset-btn {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 2px solid var(--border);
-        }
-
-        .reset-btn::before {
-            display: none;
-        }
-
-        .reset-btn:hover {
-            background: var(--bg-secondary);
-            border-color: var(--primary);
-        }
-
-        .prepare-photo-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .cleanup-btn {
-            background: linear-gradient(135deg, var(--warning), #d97706);
-        }
-
-        .cleanup-btn:hover {
-            background: linear-gradient(135deg, #d97706, var(--warning));
-        }
-
-        /* Time Input */
-        .time-input {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .time-input select {
-            width: 70px;
-            padding: 0.6rem;
-        }
-
-        /* Notification */
-        #notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--success);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow-xl);
-            display: none;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(400px); }
-            to { transform: translateX(0); }
-        }
-
-        #notification.show {
-            opacity: 1;
-        }
-
-        /* Modal */
-        .confirm-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .confirm-content {
-            background: var(--bg-secondary);
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: var(--shadow-xl);
-            border: 1px solid var(--glass-border);
-        }
-
-        .confirm-content h2 {
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-        }
-
-        .confirm-content p {
-            margin-bottom: 1.5rem;
-            color: var(--text-secondary);
-        }
-
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 2rem 0;
-            margin-top: 2rem;
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            border-top: 1px solid var(--border);
-        }
-
-        .footer-version {
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            opacity: 0.7;
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 1rem 2rem;
-            }
-
-            .header-content {
-                padding: 0 1rem;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .header-title {
-                justify-content: center;
-            }
-
-            .header-right {
-                justify-content: center;
-            }
-
-            h1 {
-                font-size: 1.25rem;
-            }
-
-            .card {
-                padding: 1.5rem;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            button,
-            input[type="submit"] {
-                width: 100%;
-            }
-
-            .preview-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .preview-column {
-                border-bottom: 1px solid var(--border);
-                padding-bottom: 1.5rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .preview-column:last-child {
-                border-bottom: none;
-                padding-bottom: 0;
-                margin-bottom: 0;
-            }
-
-            .photo-actions {
-                flex-direction: column;
-            }
-        }
+:root {
+    --primary: #0ea5e9;
+    --primary-dark: #0284c7;
+    --accent: #8b5cf6;
+    --success: #10b981;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --current-photo-bg: #ecfdf5;
+    --current-photo-border: #10b981;
+    --next-photo-bg: #eff6ff;
+    --next-photo-border: #3b82f6;
+}
+[data-theme="dark"] {
+    --primary: #38bdf8;
+    --primary-dark: #0ea5e9;
+    --accent: #a78bfa;
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #64748b;
+    --border: #334155;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+    --current-photo-bg: #064e3b;
+    --current-photo-border: #059669;
+    --next-photo-bg: #1e3a5f;
+    --next-photo-border: #2563eb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    opacity: 0.05;
+    z-index: -1;
+}
+header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+}
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.header-title { display: flex; align-items: center; gap: 0.75rem; }
+.header-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+}
+h1 {
+    font-size: 1.5rem; font-weight: 600;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.battery-status-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-tertiary);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+.battery-text { display: flex; flex-direction: column; line-height: 1.2; }
+.battery-percentage { font-weight: 600; color: var(--text-primary); }
+.battery-voltage { font-size: 0.7rem; color: var(--text-tertiary); }
+.battery-timestamp { font-size: 0.6rem; color: var(--text-tertiary); }
+.health-status {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem; font-weight: 500;
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+.health-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    transition: background-color 0.3s ease;
+}
+.health-status.healthy .health-dot {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+}
+.health-status.healthy { color: var(--success); }
+.health-status.degraded .health-dot {
+    background: var(--error);
+    box-shadow: 0 0 6px var(--error);
+}
+.health-status.degraded { color: var(--error); }
+.theme-toggle {
+    background: var(--bg-tertiary); border: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; transition: all 0.3s ease;
+}
+.theme-toggle:hover { transform: rotate(20deg) scale(1.1); }
+.container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1.5rem 2rem; }
+.card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-md);
+}
+.card-title {
+    font-size: 1.1rem; font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--text-primary);
+}
+.card-icon {
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+}
+/* Photo Preview Section */
+.photo-preview-section {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+.photo-panel {
+    flex: 1;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 2px solid;
+}
+.photo-panel.current {
+    background: var(--current-photo-bg);
+    border-color: var(--current-photo-border);
+}
+.photo-panel.next {
+    background: var(--next-photo-bg);
+    border-color: var(--next-photo-border);
+}
+.panel-title {
+    font-size: 1rem; font-weight: 700;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+.panel-title.current-title { color: var(--current-photo-border); }
+.panel-title.next-title { color: var(--next-photo-border); }
+.delivered-at {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+.delivered-at strong { color: var(--text-primary); }
+.preview-img-container {
+    width: 100%;
+    aspect-ratio: 5/3;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.preview-img-container img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.preview-img-container img:hover { transform: scale(1.03); }
+.preview-placeholder {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%;
+    color: var(--text-tertiary);
+    padding: 1rem;
+}
+.preview-placeholder span { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.5rem; }
+.preview-placeholder p { font-size: 0.8rem; text-align: center; }
+.next-photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+.next-photo-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 0.25rem;
+}
+/* Photo Actions */
+.photo-actions-bar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.btn {
+    color: white; border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-prepare { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.btn-cleanup { background: linear-gradient(135deg, var(--warning), #d97706); }
+.btn-gallery { background: linear-gradient(135deg, var(--accent), #6d28d9); }
+.btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
+/* Collapsible Config */
+.config-toggle {
+    width: 100%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    margin-bottom: 0;
+}
+.config-toggle:hover { box-shadow: var(--shadow-lg); }
+.config-toggle .arrow {
+    transition: transform 0.3s ease;
+    font-size: 1.2rem;
+}
+.config-toggle.open .arrow { transform: rotate(180deg); }
+.config-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+.config-content.open { max-height: 5000px; }
+.config-inner {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+/* Form */
+.form-group { margin-bottom: 1.25rem; }
+label { display: block; margin-bottom: 0.4rem; font-weight: 500; color: var(--text-primary); font-size: 0.9rem; }
+input[type="text"], select, textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color 0.3s ease;
+}
+input[type="text"]:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+textarea { resize: vertical; font-family: inherit; }
+.small-text { font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.35rem; }
+/* Slider */
+.slider-container { display: flex; align-items: center; gap: 0.75rem; }
+.slider-container input[type="range"] {
+    flex-grow: 1; height: 6px;
+    -webkit-appearance: none;
+    background: var(--bg-tertiary);
+    border-radius: 3px; outline: none;
+}
+.slider-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    cursor: pointer; box-shadow: var(--shadow-sm);
+}
+.slider-value {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    min-width: 50px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px; font-size: 0.85rem; font-weight: 600;
+}
+/* Buttons */
+.button-group { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+input[type="submit"] {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white; border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    cursor: pointer; font-size: 0.95rem; font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+}
+input[type="submit"]:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.reset-btn {
+    background: var(--bg-tertiary); color: var(--text-primary);
+    border: 2px solid var(--border);
+}
+.reset-btn:hover { background: var(--bg-primary); border-color: var(--primary); }
+.time-input { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.time-input select { width: 70px; padding: 0.5rem; }
+/* Notification */
+#notification {
+    position: fixed; top: 20px; right: 20px;
+    background: var(--success); color: white;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow-xl);
+    display: none; z-index: 1000;
+    opacity: 0; transition: opacity 0.3s ease;
+}
+#notification.show { opacity: 1; }
+/* Modal */
+.confirm-modal {
+    display: none; position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.confirm-content {
+    background: var(--bg-secondary);
+    padding: 2rem; border-radius: 16px;
+    text-align: center; max-width: 400px; width: 90%;
+    box-shadow: var(--shadow-xl); border: 1px solid var(--border);
+}
+.confirm-content h2 { margin-bottom: 1rem; color: var(--text-primary); }
+.confirm-content p { margin-bottom: 1.5rem; color: var(--text-secondary); }
+.confirm-buttons { display: flex; gap: 0.75rem; justify-content: center; }
+/* Gallery Modal */
+.gallery-modal {
+    display: none; position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1001;
+    overflow-y: auto;
+}
+.gallery-content {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+}
+.gallery-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+}
+.gallery-header h2 { color: white; font-size: 1.3rem; }
+.gallery-close {
+    background: rgba(255,255,255,0.2); color: white;
+    border: none; width: 40px; height: 40px;
+    border-radius: 50%; cursor: pointer;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+}
+.gallery-close:hover { background: rgba(255,255,255,0.3); }
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+.gallery-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.gallery-item img {
+    width: 100%; height: auto;
+    display: block;
+    cursor: pointer;
+}
+.gallery-item img:hover { opacity: 0.8; }
+.gallery-item-info {
+    padding: 0.5rem;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+}
+.gallery-empty {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    padding: 3rem;
+    font-size: 1.1rem;
+}
+/* Generation Status */
+.generation-status-bar {
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+.generation-status-bar.hidden { display: none; }
+/* Footer */
+footer {
+    text-align: center; padding: 1.5rem 0;
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    border-top: 1px solid var(--border);
+}
+.footer-version { margin-top: 0.3rem; font-size: 0.7rem; opacity: 0.7; }
+/* Responsive */
+@media (max-width: 768px) {
+    .container { padding: 0 1rem 2rem; }
+    .header-content { padding: 0 1rem; flex-direction: column; align-items: stretch; }
+    .header-title { justify-content: center; }
+    .header-right { justify-content: center; }
+    h1 { font-size: 1.25rem; }
+    .card { padding: 1rem; }
+    .button-group { flex-direction: column; }
+    input[type="submit"], .btn { width: 100%; justify-content: center; }
+    .photo-preview-section { flex-direction: column; }
+    .next-photo-grid { grid-template-columns: 1fr; }
+    .photo-actions-bar { flex-direction: column; }
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
     </style>
 </head>
-
 <body data-theme="light">
     <div id="notification"></div>
 
@@ -763,15 +494,13 @@
                 <div class="header-icon">&#128444;</div>
                 <h1>E-Paper Photo Frame</h1>
             </div>
-
             <div class="header-right">
-                <div class="health-status" id="healthStatus" title="Immich connection status">
+                <div class="health-status" id="healthStatus">
                     <span class="health-dot"></span>
                     <span id="healthText">Checking...</span>
                 </div>
-
                 <div class="battery-status-header">
-                    <span class="battery-icon">&#128267;</span>
+                    <span>&#128267;</span>
                     <div class="battery-text">
                         <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
                         <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) if battery_voltage > 0 else "0.00" }} V</span>
@@ -782,7 +511,6 @@
                         {% endif %}
                     </div>
                 </div>
-
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
                     <span id="themeIcon">&#9790;</span>
                 </button>
@@ -792,334 +520,388 @@
 
     <div class="container">
         {% if error %}
-        <div class="card error-banner">
+        <div class="card" style="border-color: var(--error); background: rgba(239,68,68,0.05);">
             <strong>&#9888;&#65039; {{ error }}</strong>
         </div>
         {% endif %}
 
-        <!-- Photo Preview Card with 3-Column Grid -->
-        <div class="card">
-            <h2 class="card-title">
+        <!-- Photo Preview & Management -->
+        <div class="card" style="padding: 1.25rem;">
+            <div class="card-title">
                 <span class="card-icon">&#128247;</span>
                 Photo Preview &amp; Management
-            </h2>
+            </div>
 
-            <div class="photo-actions">
-                <button type="button" class="prepare-photo-btn" id="prepareBtn" onclick="prepareNewPhoto()">
-                    &#128260; Prepare New Photo
+            <!-- Generation Status (ComfyUI only) -->
+            <div class="generation-status-bar hidden" id="generationInfo"></div>
+
+            <div class="photo-preview-section">
+                <!-- Current Photo -->
+                <div class="photo-panel current">
+                    <div class="panel-title current-title">Current Photo</div>
+                    <div class="delivered-at" id="deliveredAtInfo">
+                        Delivered at: <strong id="deliveredAtTime">--</strong>
+                    </div>
+                    <div class="preview-img-container">
+                        <img id="previewDelivered" src="./preview-delivered" alt="Delivered photo"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="preview-placeholder" style="display: none;">
+                            <span>&#128444;</span>
+                            <p>No delivered photo yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Photo -->
+                <div class="photo-panel next">
+                    <div class="panel-title next-title">Next Photo</div>
+                    <div class="next-photo-grid">
+                        <div>
+                            <div class="next-photo-label">Original</div>
+                            <div class="preview-img-container" style="aspect-ratio: 5/3;">
+                                <img id="previewOriginal" src="./preview-original" alt="Original photo"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="preview-placeholder" style="display: none;">
+                                    <span>&#128247;</span>
+                                    <p>No original yet</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="next-photo-label">Processed for e-ink frame</div>
+                            <div class="preview-img-container" style="aspect-ratio: 5/3;">
+                                <img id="previewProcessed" src="./preview-processed" alt="Processed photo"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="preview-placeholder" style="display: none;">
+                                    <span>&#9881;&#65039;</span>
+                                    <p>No processed photo yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="photo-actions-bar">
+                <button class="btn btn-prepare" onclick="prepareNewPhoto()" id="prepareBtn">
+                    &#128247; Prepare New Photo
                 </button>
-                <button type="button" class="cleanup-btn" id="cleanupBtn" onclick="cleanupPreviews()">
+                <button class="btn btn-cleanup btn-sm" onclick="cleanupPreviews()">
                     &#128465; Cleanup Old Previews
                 </button>
+                <button class="btn btn-gallery btn-sm" onclick="openGallery()">
+                    &#127744; View Old Previews
+                </button>
             </div>
 
-            <div id="prepareStatus" class="prepare-status hidden">
-                <span class="loading"></span> <span id="prepareStatusText">Preparing photo...</span>
-            </div>
+            <div class="prepare-status hidden" id="prepareStatus"></div>
+        </div>
 
-            <!-- 3-Column Preview Grid -->
-            <div class="preview-grid">
-                <!-- Column 1: Delivered to ESP32 -->
-                <div class="preview-column">
-                    <div class="preview-title">&#128229; Delivered to ESP32</div>
-                    <div class="preview-wrapper">
-                        <img id="previewDelivered"
-                             src="./preview-delivered"
-                             alt="No image delivered yet"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="preview-placeholder" style="display: none;">
-                            <span>&#128230;</span>
-                            <p>No image delivered yet</p>
+        <!-- Collapsible Config Section -->
+        <button class="config-toggle" id="configToggle" onclick="toggleConfig()">
+            <span>&#9881;&#65039; Configuration</span>
+            <span class="arrow">&#9660;</span>
+        </button>
+        <div class="config-content" id="configContent">
+            <div class="config-inner">
+                <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
+                    <!-- Image Source Selection -->
+                    <div class="card" style="margin-bottom: 1rem;">
+                        <div class="card-title"><span class="card-icon">&#128268;</span> Image Source</div>
+                        <div class="form-group">
+                            <label for="image_source">Source:</label>
+                            <select id="image_source" name="image_source" onchange="updateSourceVisibility()">
+                                <option value="immich" {% if config.get('image_source', 'immich')=='immich' %}selected{% endif %}>Immich (Photo Server)</option>
+                                <option value="comfyui_ha" {% if config.get('image_source')=='comfyui_ha' %}selected{% endif %}>ComfyUI via Home Assistant</option>
+                                <option value="comfyui_direct" {% if config.get('image_source')=='comfyui_direct' %}selected{% endif %}>ComfyUI Direct (Expert)</option>
+                            </select>
+                            <small class="small-text">Choose where to fetch or generate images from</small>
                         </div>
                     </div>
-                    <div class="preview-caption">Last image sent to display</div>
-                </div>
 
-                <!-- Column 2: Original from Immich -->
-                <div class="preview-column">
-                    <div class="preview-title">&#128444; Original from Immich</div>
-                    <div class="preview-wrapper">
-                        <img id="previewOriginal"
-                             src="./preview-original"
-                             alt="No original available"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="preview-placeholder" style="display: none;">
-                            <span>&#128247;</span>
-                            <p>No image fetched yet</p>
+                    <!-- Immich Config -->
+                    <div class="card" id="immichConfig">
+                        <div class="card-title"><span class="card-icon">&#128268;</span> Immich Server</div>
+                        <div class="form-group">
+                            <label for="url">Immich Server URL:</label>
+                            <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="album">Album Name:</label>
+                            <input type="text" id="album" name="album" value="{{ config['immich']['album'] }}" placeholder="eink" required>
                         </div>
                     </div>
-                    <div class="preview-caption">Unprocessed source image</div>
-                </div>
 
-                <!-- Column 3: Processed for ESP32 -->
-                <div class="preview-column">
-                    <div class="preview-title">&#9881;&#65039; Processed (Ready for ESP32)</div>
-                    <div class="preview-wrapper">
-                        <img id="previewProcessed"
-                             src="./preview-processed"
-                             alt="No processed image"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="preview-placeholder" style="display: none;">
-                            <span>&#128295;</span>
-                            <p>No processed image</p>
+                    <!-- ComfyUI HA Config -->
+                    <div class="card" id="comfyuiHAConfig" style="display: none;">
+                        <div class="card-title"><span class="card-icon">&#129302;</span> ComfyUI via Home Assistant</div>
+                        <div class="form-group">
+                            <label for="ha_url">Home Assistant URL:</label>
+                            <input type="text" id="ha_url" name="ha_url" value="{{ config.get('comfyui', {}).get('ha_url', '') }}" placeholder="http://homeassistant:8123">
+                            <small class="small-text">URL to your Home Assistant instance</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_prompt">Prompt:</label>
+                            <textarea id="comfyui_prompt" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape at {time_of_day}...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
+                            <small class="small-text">Variables: {time_of_day}, {weather}, {season}, {day_of_week}, {month}, {random_element}</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
+                            <textarea id="comfyui_negative_prompt" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text, watermark">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Dimensions:</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div>
+                                    <label for="comfyui_width" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
+                                    <input type="text" id="comfyui_width" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
+                                </div>
+                                <div>
+                                    <label for="comfyui_height" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
+                                    <input type="text" id="comfyui_height" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_seed">Seed (-1 = Random):</label>
+                            <input type="text" id="comfyui_seed" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_max_generations">Max Generations per Day:</label>
+                            <input type="text" id="comfyui_max_generations" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
                         </div>
                     </div>
-                    <div class="preview-caption">Rotated + dithered (next delivery)</div>
-                </div>
-            </div>
 
-            <div id="photoInfo" class="photo-info hidden">
-                <span id="photoTimestamp"></span>
+                    <!-- ComfyUI Direct Config -->
+                    <div class="card" id="comfyuiDirectConfig" style="display: none;">
+                        <div class="card-title"><span class="card-icon">&#9881;&#65039;</span> ComfyUI Direct (Expert)</div>
+                        <div class="form-group">
+                            <label for="comfyui_direct_url">ComfyUI Server URL:</label>
+                            <input type="text" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui:8188">
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_prompt">Prompt:</label>
+                            <textarea id="comfyui_prompt_direct" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
+                            <textarea id="comfyui_negative_prompt_direct" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Dimensions:</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div>
+                                    <label for="comfyui_width_direct" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
+                                    <input type="text" id="comfyui_width_direct" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
+                                </div>
+                                <div>
+                                    <label for="comfyui_height_direct" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
+                                    <input type="text" id="comfyui_height_direct" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_seed_direct">Seed (-1 = Random):</label>
+                            <input type="text" id="comfyui_seed_direct" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_max_generations_direct">Max Generations per Day:</label>
+                            <input type="text" id="comfyui_max_generations_direct" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_workflow_json">Workflow JSON (Optional):</label>
+                            <textarea id="comfyui_workflow_json" name="comfyui_workflow_json" rows="4" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ config.get('comfyui', {}).get('workflow_json', '') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Display Settings -->
+                    <div class="card">
+                        <div class="card-title"><span class="card-icon">&#128444;</span> Display Settings</div>
+                        <div class="form-group">
+                            <label for="rotation">Rotation:</label>
+                            <select id="rotation" name="rotation">
+                                {% for angle in [0, 90, 180, 270] %}
+                                <option value="{{ angle }}" {% if config['immich']['rotation']==angle %}selected{% endif %}>{{ angle }}&deg;</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="display_mode">Display Mode:</label>
+                            <select id="display_mode" name="display_mode">
+                                {% for mode in ['fill', 'fit'] %}
+                                <option value="{{ mode }}" {% if config['immich']['display_mode']==mode %}selected{% endif %}>{{ mode|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="image_order">Image Order (Immich):</label>
+                            <select id="image_order" name="image_order">
+                                {% for order in ['random', 'newest'] %}
+                                <option value="{{ order }}" {% if config['immich']['image_order']==order %}selected{% endif %}>{{ order|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dithering_method">Dithering Method:</label>
+                            <select id="dithering_method" name="dithering_method">
+                                {% for method in ['atkinson', 'floyd-steinberg'] %}
+                                <option value="{{ method }}" {% if config['immich'].get('dithering_method','atkinson')==method %}selected{% endif %}>{{ method|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Color Enhancement:</label>
+                            <div class="slider-container">
+                                <input type="range" id="enhanced" name="enhanced" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="enhancedValue">{{ config['immich']['enhanced'] }}</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Contrast:</label>
+                            <div class="slider-container">
+                                <input type="range" id="contrast" name="contrast" min="0" max="2" step="0.05" value="{{ config['immich']['contrast'] }}" oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="contrastValue">{{ config['immich']['contrast'] }}</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dithering Strength:</label>
+                            <div class="slider-container">
+                                <input type="range" id="strength" name="strength" min="0" max="1" step="0.05" value="{{ config['immich']['strength'] }}" oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="strengthValue">{{ config['immich']['strength'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Power Management -->
+                    <div class="card">
+                        <div class="card-title"><span class="card-icon">&#128267;</span> Power Management</div>
+                        <div class="form-group">
+                            <label for="wakeup_interval">Wake-up Interval (minutes):</label>
+                            <input type="text" id="wakeup_interval" name="wakeup_interval" value="{{ config['immich']['wakeup_interval'] }}">
+                            <small class="small-text">Range: 30 - 1440 (24h)</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Sleep Time Range:</label>
+                            <div class="time-input">
+                                <span>From:</span>
+                                <select id="sleep_start_hour" name="sleep_start_hour">
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if config['immich']['sleep_start_hour']==h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="sleep_start_minute" name="sleep_start_minute">
+                                    {% for m in [0, 15, 30, 45] %}
+                                    <option value="{{ m }}" {% if config['immich']['sleep_start_minute']==m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <span>to:</span>
+                                <select id="sleep_end_hour" name="sleep_end_hour">
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if config['immich']['sleep_end_hour']==h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="sleep_end_minute" name="sleep_end_minute">
+                                    {% for m in [0, 15, 30, 45] %}
+                                    <option value="{{ m }}" {% if config['immich']['sleep_end_minute']==m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="button-group">
+                        <input type="submit" value="&#128190; Save Settings">
+                        <button type="button" class="reset-btn" onclick="showResetConfirmation()">&#8634; Reset to Default</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- Settings Form -->
-        <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
-            <!-- Server Connection -->
-            <div class="card">
-                <h2 class="card-title">
-                    <span class="card-icon">&#128268;</span>
-                    Server Connection
-                </h2>
-                <div class="form-group">
-                    <label for="url">Immich Server URL:</label>
-                    <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
-                </div>
-                <div class="form-group">
-                    <label for="album">Album Name:</label>
-                    <input type="text" id="album" name="album" value="{{ config['immich']['album'] }}" placeholder="default_album" required>
-                </div>
-            </div>
-
-            <!-- Display Settings -->
-            <div class="card">
-                <h2 class="card-title">
-                    <span class="card-icon">&#128421;</span>
-                    Display Settings
-                </h2>
-                <div class="form-group">
-                    <label for="rotation">Image Rotation:</label>
-                    <select id="rotation" name="rotation">
-                        <option value="0" {% if config['immich']['rotation']==0 %}selected{% endif %}>0 degrees</option>
-                        <option value="90" {% if config['immich']['rotation']==90 %}selected{% endif %}>90 degrees</option>
-                        <option value="180" {% if config['immich']['rotation']==180 %}selected{% endif %}>180 degrees</option>
-                        <option value="270" {% if config['immich']['rotation']==270 %}selected{% endif %}>270 degrees</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="display_mode">Display Mode:</label>
-                    <select id="display_mode" name="display_mode">
-                        <option value="fit" {% if config['immich']['display_mode']=='fit' %}selected{% endif %}>Fit Width</option>
-                        <option value="fill" {% if config['immich']['display_mode']=='fill' %}selected{% endif %}>Fill Screen</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="image_order">Image Display Order:</label>
-                    <select id="image_order" name="image_order">
-                        <option value="random" {% if config['immich']['image_order']=='random' %}selected{% endif %}>Random</option>
-                        <option value="newest" {% if config['immich']['image_order']=='newest' %}selected{% endif %}>Newest First</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="dithering_method">&#127912; Dithering Method:</label>
-                    <select id="dithering_method" name="dithering_method">
-                        <option value="atkinson" {% if config['immich'].get('dithering_method', 'atkinson') == 'atkinson' %}selected{% endif %}>Atkinson (Softer, cleaner)</option>
-                        <option value="floyd-steinberg" {% if config['immich'].get('dithering_method', 'atkinson') == 'floyd-steinberg' %}selected{% endif %}>Floyd-Steinberg (More detail)</option>
-                    </select>
-                    <small class="small-text">Choose the dithering algorithm for image processing</small>
-                </div>
-            </div>
-
-            <!-- Image Enhancement -->
-            <div class="card">
-                <h2 class="card-title">
-                    <span class="card-icon">&#10024;</span>
-                    Image Enhancement
-                </h2>
-                <div class="form-group">
-                    <label for="enhanced">Color Enhancement:</label>
-                    <div class="slider-container">
-                        <input type="range" id="enhanced" name="enhanced" min="0.0" max="3.0" step="0.1" value="{{ config['immich']['enhanced']|default('1.0') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value" id="enhancedValue">{{ config['immich']['enhanced']|default('1.0') }}</output>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="contrast">Contrast:</label>
-                    <div class="slider-container">
-                        <input type="range" id="contrast" name="contrast" min="0.0" max="2.0" step="0.1" value="{{ config['immich']['contrast']|default('1.0') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value" id="contrastValue">{{ config['immich']['contrast']|default('1.0') }}</output>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="strength">Dithering Strength:</label>
-                    <div class="slider-container">
-                        <input type="range" id="strength" name="strength" min="0.0" max="1.0" step="0.1" value="{{ config['immich']['strength']|default('0.8') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value" id="strengthValue">{{ config['immich']['strength']|default('0.8') }}</output>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Power Management -->
-            <div class="card">
-                <h2 class="card-title">
-                    <span class="card-icon">&#9889;</span>
-                    Power Management
-                </h2>
-                <div class="form-group">
-                    <label for="sleep_time">Sleep Time Range:</label>
-                    <div class="time-input">
-                        <select id="sleep_start_hour" name="sleep_start_hour">
-                            {% for hour in range(24) %}
-                            <option value="{{ hour }}" {% if config['immich']['sleep_start_hour']==hour %}selected{% endif %}>{{ '%02d'|format(hour) }}</option>
-                            {% endfor %}
-                        </select>
-                        :
-                        <select id="sleep_start_minute" name="sleep_start_minute">
-                            {% for minute in range(0, 60, 1) %}
-                            <option value="{{ minute }}" {% if config['immich']['sleep_start_minute']==minute %}selected{% endif %}>{{ '%02d'|format(minute) }}</option>
-                            {% endfor %}
-                        </select>
-                        <span style="margin: 0 10px;">to</span>
-                        <select id="sleep_end_hour" name="sleep_end_hour">
-                            {% for hour in range(24) %}
-                            <option value="{{ hour }}" {% if config['immich']['sleep_end_hour']==hour %}selected{% endif %}>{{ '%02d'|format(hour) }}</option>
-                            {% endfor %}
-                        </select>
-                        :
-                        <select id="sleep_end_minute" name="sleep_end_minute">
-                            {% for minute in range(0, 60, 1) %}
-                            <option value="{{ minute }}" {% if config['immich']['sleep_end_minute']==minute %}selected{% endif %}>{{ '%02d'|format(minute) }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="small-text">Device will not wake up during this time period</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="wakeup_interval">Wake Up Interval (Outside Sleep Time):</label>
-                    <select id="wakeup_interval" name="wakeup_interval">
-                        <option value="30" {% if config['immich']['wakeup_interval']==30 %}selected{% endif %}>30 minutes</option>
-                        <option value="60" {% if config['immich']['wakeup_interval']==60 %}selected{% endif %}>1 hour</option>
-                        <option value="120" {% if config['immich']['wakeup_interval']==120 %}selected{% endif %}>2 hours</option>
-                        <option value="180" {% if config['immich']['wakeup_interval']==180 %}selected{% endif %}>3 hours</option>
-                        <option value="240" {% if config['immich']['wakeup_interval']==240 %}selected{% endif %}>4 hours</option>
-                        <option value="360" {% if config['immich']['wakeup_interval']==360 %}selected{% endif %}>6 hours</option>
-                        <option value="480" {% if config['immich']['wakeup_interval']==480 %}selected{% endif %}>8 hours</option>
-                        <option value="720" {% if config['immich']['wakeup_interval']==720 %}selected{% endif %}>12 hours</option>
-                        <option value="1440" {% if config['immich']['wakeup_interval']==1440 %}selected{% endif %}>24 hours</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="button-group">
-                <input type="submit" value="&#128190; Save Configuration">
-                <button type="button" class="reset-btn" onclick="showResetConfirmation()">&#128260; Reset to Default</button>
-            </div>
-        </form>
-
         <footer>
-            <div>E-Paper Photo Frame &copy; <span id="copyrightYear"></span></div>
-            <div class="footer-version">Version {{ addon_version }} &bull; Build {{ build_timestamp }}</div>
+            <div>&copy; <span id="copyrightYear"></span> E-Paper Photo Frame</div>
+            <div class="footer-version">v{{ addon_version }} | Built: {{ build_timestamp }}</div>
         </footer>
     </div>
 
-    <!-- Modal -->
-    <div id="confirmModal" class="confirm-modal">
+    <!-- Reset Confirmation Modal -->
+    <div class="confirm-modal" id="confirmModal">
         <div class="confirm-content">
-            <h2>Reset to Default Settings</h2>
-            <p>Are you sure you want to reset all settings to default?</p>
-            <button onclick="confirmReset()">&#10003; Confirm</button>
-            <button onclick="cancelReset()" class="reset-btn">&#10005; Cancel</button>
+            <h2>&#9888;&#65039; Reset Settings?</h2>
+            <p>This will reset all settings to their default values. You will need to click Save to apply them.</p>
+            <div class="confirm-buttons">
+                <button onclick="confirmReset()">&#9989; Yes, Reset</button>
+                <button class="reset-btn" onclick="cancelReset()">&#10060; Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div class="gallery-modal" id="galleryModal">
+        <div class="gallery-content">
+            <div class="gallery-header">
+                <h2>&#127744; Preview Gallery</h2>
+                <button class="gallery-close" onclick="closeGallery()">&#10005;</button>
+            </div>
+            <div id="galleryBody">
+                <div class="gallery-empty">Loading previews...</div>
+            </div>
         </div>
     </div>
 
     <script>
-        // ========================================================================
-        // Configuration Constants
-        // ========================================================================
-        var POLL_INTERVALS = {
-            PHOTO_STATUS: 30000,
-            BATTERY: 10000,
-            HEALTH: 60000
-        };
-        var NOTIFICATION_DURATION = 3000;
-        var SLIDER_DEFAULTS = {
-            enhanced: 1.8,
-            contrast: 0.9,
-            strength: 1.0
-        };
+        const POLL_INTERVALS = { HEALTH: 60000, PHOTO_STATUS: 10000, BATTERY: 30000 };
+        const NOTIFICATION_DURATION = 4000;
+        const SLIDER_DEFAULTS = { enhanced: '1.8', contrast: '0.9', strength: '1.0' };
 
-        // State flags for conditional polling
-        var photoLoaded = false;
-        var batteryLoaded = false;
-
-        // ========================================================================
-        // Safe DOM Helper
-        // ========================================================================
         function safeGet(id) {
             var el = document.getElementById(id);
-            if (!el) {
-                console.warn('Element not found: #' + id);
-            }
+            if (!el) console.warn('Element not found: #' + id);
             return el;
         }
 
-        // ========================================================================
+        // Config Toggle
+        function toggleConfig() {
+            var toggle = safeGet('configToggle');
+            var content = safeGet('configContent');
+            if (toggle && content) {
+                toggle.classList.toggle('open');
+                content.classList.toggle('open');
+            }
+        }
+
+        // Source Visibility
+        function updateSourceVisibility() {
+            var source = safeGet('image_source');
+            if (!source) return;
+            var immichConfig = safeGet('immichConfig');
+            var comfyuiHAConfig = safeGet('comfyuiHAConfig');
+            var comfyuiDirectConfig = safeGet('comfyuiDirectConfig');
+            if (immichConfig) immichConfig.style.display = source.value === 'immich' ? 'block' : 'none';
+            if (comfyuiHAConfig) comfyuiHAConfig.style.display = source.value === 'comfyui_ha' ? 'block' : 'none';
+            if (comfyuiDirectConfig) comfyuiDirectConfig.style.display = source.value === 'comfyui_direct' ? 'block' : 'none';
+        }
+
         // Theme Toggle
-        // ========================================================================
         function toggleTheme() {
             var body = document.body;
             var themeIcon = safeGet('themeIcon');
             if (!themeIcon) return;
             var currentTheme = body.getAttribute('data-theme');
             var newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
             body.setAttribute('data-theme', newTheme);
             themeIcon.textContent = newTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
             localStorage.setItem('theme', newTheme);
         }
 
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
-            var savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            var themeIcon = safeGet('themeIcon');
-            if (themeIcon) {
-                themeIcon.textContent = savedTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
-            }
-
-            // Dynamic copyright year
-            var yearEl = safeGet('copyrightYear');
-            if (yearEl) {
-                yearEl.textContent = new Date().getFullYear();
-            }
-
-            // Initial updates
-            checkHealth();
-            updatePhotoStatus();
-            updateBatteryInfo();
-
-            // Auto-updates
-            setInterval(checkHealth, POLL_INTERVALS.HEALTH);
-            setInterval(updatePhotoStatus, POLL_INTERVALS.PHOTO_STATUS);
-            setInterval(updateBatteryInfo, POLL_INTERVALS.BATTERY);
-        });
-
-        // ========================================================================
         // Health Check
-        // ========================================================================
         function checkHealth() {
             fetch('./health', { method: 'HEAD' })
                 .then(function(response) {
                     var healthStatus = safeGet('healthStatus');
                     var healthText = safeGet('healthText');
                     if (!healthStatus || !healthText) return;
-
                     if (response.ok) {
                         healthStatus.className = 'health-status healthy';
                         healthText.textContent = 'Connected';
@@ -1136,226 +918,220 @@
                 });
         }
 
-        // ========================================================================
-        // Battery Status Auto-Update
-        // ========================================================================
+        // Generation Status
+        function updateGenerationStatus() {
+            fetch('./api/generation-status')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    var genInfo = safeGet('generationInfo');
+                    if (genInfo && data.source && data.source !== 'Immich') {
+                        genInfo.classList.remove('hidden');
+                        var text = 'Generations today: ' + data.count_today + '/' + data.max_per_day;
+                        if (data.last_generation) text += ' | Last: ' + data.last_generation;
+                        genInfo.textContent = text;
+                    } else if (genInfo) {
+                        genInfo.classList.add('hidden');
+                    }
+                })
+                .catch(function() {});
+        }
+
+        // Battery Status
         function updateBatteryInfo() {
             fetch('./api/battery-status')
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    batteryLoaded = true;
-                    if (data.voltage > 0) {
-                        var voltageInVolts = (data.voltage / 1000).toFixed(2);
-                        var pct = safeGet('batteryPercentageHeader');
-                        var volt = safeGet('batteryVoltageHeader');
-                        if (pct) pct.textContent = data.percentage.toFixed(1) + '%';
-                        if (volt) volt.textContent = voltageInVolts + ' V';
-                    }
-                    if (data.formatted_timestamp) {
-                        var ts = safeGet('batteryTimestampHeader');
-                        if (ts) ts.textContent = data.formatted_timestamp;
-                    }
+                    var pct = safeGet('batteryPercentageHeader');
+                    var volt = safeGet('batteryVoltageHeader');
+                    var ts = safeGet('batteryTimestampHeader');
+                    if (pct) pct.textContent = data.percentage.toFixed(1) + '%';
+                    if (volt) volt.textContent = data.voltage_v.toFixed(2) + ' V';
+                    if (ts) ts.textContent = data.formatted_timestamp || 'No reading yet';
                 })
-                .catch(function(error) {
-                    console.error('Battery update failed:', error);
-                    if (batteryLoaded) {
-                        showNotification('Battery status update failed', 'error');
-                    }
-                });
+                .catch(function() {});
         }
 
-        // ========================================================================
-        // Photo Preview Updates (3-Column Grid)
-        // ========================================================================
+        // Photo Status (delivered time)
+        var lastPhotoStatus = null;
         function updatePhotoStatus() {
-            var timestamp = Date.now();
-
-            var previewDelivered = safeGet('previewDelivered');
-            var previewOriginal = safeGet('previewOriginal');
-            var previewProcessed = safeGet('previewProcessed');
-
-            if (previewDelivered) {
-                previewDelivered.src = './preview-delivered?t=' + timestamp;
-                previewDelivered.style.display = 'block';
-            }
-
-            if (previewOriginal) {
-                previewOriginal.src = './preview-original?t=' + timestamp;
-                previewOriginal.style.display = 'block';
-            }
-
-            if (previewProcessed) {
-                previewProcessed.src = './preview-processed?t=' + timestamp;
-                previewProcessed.style.display = 'block';
-            }
-
-            // Get status info
             fetch('./preview-status')
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    photoLoaded = true;
-                    var info = safeGet('photoInfo');
-                    var photoTs = safeGet('photoTimestamp');
-
-                    if (data.exists && info && photoTs) {
-                        info.classList.remove('hidden');
-                        var statusIcon = data.status === 'new' ? '\u{1F195}' : '\u2705';
-                        photoTs.textContent = statusIcon + ' Last prepared: ' + data.formatted_time;
+                    lastPhotoStatus = data;
+                    var deliveredAt = safeGet('deliveredAtTime');
+                    if (deliveredAt) {
+                        if (data.exists && data.timestamp) {
+                            deliveredAt.textContent = data.formatted_time;
+                        } else {
+                            deliveredAt.textContent = '--';
+                        }
                     }
+                    // Update preview images
+                    var delivered = safeGet('previewDelivered');
+                    var original = safeGet('previewOriginal');
+                    var processed = safeGet('previewProcessed');
+                    var ts = data.exists ? '?t=' + data.timestamp : '';
+                    if (delivered) delivered.src = './preview-delivered' + ts;
+                    if (original) original.src = './preview-original' + ts;
+                    if (processed) processed.src = './preview-processed' + ts;
                 })
-                .catch(function(error) {
-                    console.error('Status update failed:', error);
-                    if (photoLoaded) {
-                        showNotification('Photo status update failed', 'error');
+                .catch(function() {});
+        }
+
+        // Prepare New Photo
+        function prepareNewPhoto() {
+            var btn = safeGet('prepareBtn');
+            var status = safeGet('prepareStatus');
+            if (!btn || !status) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Preparing...';
+            status.className = 'prepare-status loading';
+            status.style.display = 'block';
+            status.textContent = 'Fetching/generating new photo...';
+
+            fetch('./prepare-photo', { method: 'POST' })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        status.className = 'prepare-status success';
+                        status.textContent = 'Photo prepared successfully! (' + data.source + ')';
+                        updatePhotoStatus();
+                    } else {
+                        status.className = 'prepare-status error';
+                        status.textContent = 'Error: ' + (data.error || 'Unknown error');
                     }
+                    btn.disabled = false;
+                    btn.innerHTML = '&#128247; Prepare New Photo';
+                    setTimeout(function() { status.style.display = 'none'; }, 5000);
+                })
+                .catch(function(err) {
+                    status.className = 'prepare-status error';
+                    status.textContent = 'Error: ' + err.message;
+                    btn.disabled = false;
+                    btn.innerHTML = '&#128247; Prepare New Photo';
+                    setTimeout(function() { status.style.display = 'none'; }, 5000);
                 });
         }
 
-        // ========================================================================
-        // Prepare New Photo
-        // ========================================================================
-        function prepareNewPhoto() {
-            var statusDiv = safeGet('prepareStatus');
-            var statusText = safeGet('prepareStatusText');
-            var button = safeGet('prepareBtn');
-
-            if (!statusDiv || !button) return;
-
-            statusDiv.className = 'prepare-status loading';
-            if (statusText) statusText.textContent = 'Preparing photo...';
-            statusDiv.classList.remove('hidden');
-            button.disabled = true;
-
-            fetch('./prepare-photo', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                button.disabled = false;
-
-                if (data.success) {
-                    statusDiv.className = 'prepare-status success';
-                    if (statusText) statusText.textContent = 'Photo prepared successfully!';
-                    showNotification('Photo prepared successfully!', 'success');
-                    setTimeout(updatePhotoStatus, 500);
-                } else {
-                    statusDiv.className = 'prepare-status error';
-                    if (statusText) statusText.textContent = 'Error: ' + (data.error || 'Unknown error');
-                    showNotification('Error: ' + (data.error || 'Unknown error'), 'error');
-                }
-
-                setTimeout(function() {
-                    statusDiv.classList.add('hidden');
-                }, 5000);
-            })
-            .catch(function(error) {
-                button.disabled = false;
-                statusDiv.className = 'prepare-status error';
-                if (statusText) statusText.textContent = 'Network error: ' + error.message;
-                showNotification('Network error: ' + error.message, 'error');
-                setTimeout(function() {
-                    statusDiv.classList.add('hidden');
-                }, 5000);
-            });
-        }
-
-        // ========================================================================
-        // Cleanup Old Previews
-        // ========================================================================
+        // Cleanup Previews
         function cleanupPreviews() {
-            var button = safeGet('cleanupBtn');
-            if (button) button.disabled = true;
-
             fetch('./cleanup-previews', { method: 'POST' })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     if (data.success) {
                         showNotification('Cleaned up ' + data.files_removed + ' old preview files', 'success');
                     } else {
-                        showNotification('Cleanup failed: ' + (data.error || 'Unknown error'), 'error');
+                        showNotification('Cleanup failed: ' + data.error, 'error');
                     }
-                    if (button) button.disabled = false;
                 })
-                .catch(function(error) {
-                    showNotification('Cleanup network error: ' + error.message, 'error');
-                    if (button) button.disabled = false;
+                .catch(function() { showNotification('Cleanup request failed', 'error'); });
+        }
+
+        // Gallery
+        function openGallery() {
+            var modal = safeGet('galleryModal');
+            var body = safeGet('galleryBody');
+            if (!modal || !body) return;
+
+            body.innerHTML = '<div class="gallery-empty">Loading previews...</div>';
+            modal.style.display = 'block';
+
+            fetch('./api/gallery-previews')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (!data.files || data.files.length === 0) {
+                        body.innerHTML = '<div class="gallery-empty">No old previews found</div>';
+                        return;
+                    }
+                    var html = '<div class="gallery-grid">';
+                    data.files.forEach(function(f) {
+                        html += '<div class="gallery-item">';
+                        html += '<img src="' + f.url + '" alt="' + f.name + '" onclick="window.open(\'' + f.url + '\', \'_blank\')">';
+                        html += '<div class="gallery-item-info">' + f.name + '<br>' + f.modified + '</div>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                    body.innerHTML = html;
+                })
+                .catch(function() {
+                    body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
                 });
         }
 
-        // ========================================================================
-        // Notification System
-        // ========================================================================
-        function showNotification(message, type) {
-            var notification = safeGet('notification');
-            if (!notification) return;
-
-            notification.textContent = message;
-            notification.style.background = type === 'success' ? 'var(--success)' : 'var(--error)';
-            notification.style.display = 'block';
-
-            setTimeout(function() { notification.classList.add('show'); }, 10);
-            setTimeout(function() {
-                notification.classList.remove('show');
-                setTimeout(function() { notification.style.display = 'none'; }, 300);
-            }, NOTIFICATION_DURATION);
+        function closeGallery() {
+            var modal = safeGet('galleryModal');
+            if (modal) modal.style.display = 'none';
         }
 
-        // ========================================================================
-        // Slider Value Update (robust: uses output id based on slider id)
-        // ========================================================================
+        // Slider
         function updateSliderValue(slider) {
-            var value = parseFloat(slider.value);
-            var outputId = slider.id + 'Value';
-            var output = safeGet(outputId);
-            if (!output) {
-                output = slider.nextElementSibling;
-            }
-            if (output) {
-                output.textContent = value.toFixed(1);
-            }
+            var valueEl = safeGet(slider.id + 'Value');
+            if (valueEl) valueEl.textContent = slider.value;
         }
 
-        // ========================================================================
-        // Form Submission
-        // ========================================================================
+        // Form Submit
         function handleSubmit(event) {
             event.preventDefault();
+            var form = safeGet('settingsForm');
+            if (!form) return;
 
-            fetch(window.location.href, {
-                method: 'POST',
-                body: new FormData(document.getElementById('settingsForm'))
-            })
-            .then(function(response) {
-                if (response.ok) {
-                    showNotification('Settings saved successfully!', 'success');
-                    return;
-                }
-                throw new Error('Failed to save settings');
-            })
-            .catch(function(error) {
-                showNotification('Error: ' + error.message, 'error');
-            });
+            var formData = new FormData(form);
+            fetch('./', { method: 'POST', body: formData })
+                .then(function(response) {
+                    if (response.ok || response.redirected) {
+                        showNotification('Settings saved successfully!', 'success');
+                        updateSourceVisibility();
+                    } else {
+                        return response.text().then(function(text) { throw new Error(text); });
+                    }
+                })
+                .catch(function(error) {
+                    showNotification('Error saving settings: ' + error.message, 'error');
+                });
         }
 
-        // ========================================================================
-        // Reset Confirmation
-        // ========================================================================
+        // Reset
         function showResetConfirmation() {
             var modal = safeGet('confirmModal');
             if (modal) modal.style.display = 'flex';
         }
 
+        function cancelReset() {
+            var modal = safeGet('confirmModal');
+            if (modal) modal.style.display = 'none';
+        }
+
         function confirmReset() {
+            var imageSource = safeGet('image_source');
             var url = safeGet('url');
             var album = safeGet('album');
+            var haUrl = safeGet('ha_url');
+            var comfyuiPrompt = safeGet('comfyui_prompt');
+            var comfyuiNegativePrompt = safeGet('comfyui_negative_prompt');
+            var comfyuiWidth = safeGet('comfyui_width');
+            var comfyuiHeight = safeGet('comfyui_height');
+            var comfyuiSeed = safeGet('comfyui_seed');
+            var comfyuiMaxGens = safeGet('comfyui_max_generations');
+            var comfyuiDirectUrl = safeGet('comfyui_direct_url');
+            var comfyuiWorkflow = safeGet('comfyui_workflow_json');
             var rotation = safeGet('rotation');
             var displayMode = safeGet('display_mode');
             var imageOrder = safeGet('image_order');
             var dithering = safeGet('dithering_method');
 
+            if (imageSource) imageSource.value = 'immich';
             if (url) url.value = 'http://localhost';
-            if (album) album.value = 'default_album';
+            if (album) album.value = 'eink';
+            if (haUrl) haUrl.value = '';
+            if (comfyuiPrompt) comfyuiPrompt.value = '';
+            if (comfyuiNegativePrompt) comfyuiNegativePrompt.value = '';
+            if (comfyuiWidth) comfyuiWidth.value = '800';
+            if (comfyuiHeight) comfyuiHeight.value = '480';
+            if (comfyuiSeed) comfyuiSeed.value = '-1';
+            if (comfyuiMaxGens) comfyuiMaxGens.value = '50';
+            if (comfyuiDirectUrl) comfyuiDirectUrl.value = '';
+            if (comfyuiWorkflow) comfyuiWorkflow.value = '';
             if (rotation) rotation.value = '270';
             if (displayMode) displayMode.value = 'fill';
             if (imageOrder) imageOrder.value = 'random';
@@ -1382,16 +1158,52 @@
             if (sleepEndM) sleepEndM.value = '0';
             if (wakeup) wakeup.value = '1440';
 
+            updateSourceVisibility();
             showNotification('Settings reset to default! Click Save to apply.', 'success');
 
             var modal = safeGet('confirmModal');
             if (modal) modal.style.display = 'none';
         }
 
-        function cancelReset() {
-            var modal = safeGet('confirmModal');
-            if (modal) modal.style.display = 'none';
+        // Notification
+        function showNotification(message, type) {
+            var notification = safeGet('notification');
+            if (!notification) return;
+            notification.textContent = message;
+            notification.style.background = type === 'error' ? 'var(--error)' : 'var(--success)';
+            notification.style.display = 'block';
+            setTimeout(function() { notification.classList.add('show'); }, 10);
+            setTimeout(function() {
+                notification.classList.remove('show');
+                setTimeout(function() { notification.style.display = 'none'; }, 300);
+            }, NOTIFICATION_DURATION);
         }
+
+        // Close gallery on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeGallery();
+        });
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function() {
+            var savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            var themeIcon = safeGet('themeIcon');
+            if (themeIcon) themeIcon.textContent = savedTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
+
+            var yearEl = safeGet('copyrightYear');
+            if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+            checkHealth();
+            updatePhotoStatus();
+            updateBatteryInfo();
+            updateSourceVisibility();
+
+            setInterval(checkHealth, POLL_INTERVALS.HEALTH);
+            setInterval(updatePhotoStatus, POLL_INTERVALS.PHOTO_STATUS);
+            setInterval(updateBatteryInfo, POLL_INTERVALS.BATTERY);
+            setInterval(updateGenerationStatus, POLL_INTERVALS.HEALTH);
+        });
     </script>
 </body>
 </html>

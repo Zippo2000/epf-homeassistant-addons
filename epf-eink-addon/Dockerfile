@@ -41,6 +41,7 @@ RUN python3 setup.py build_ext --inplace && \
     echo "✅ Cython module compiled successfully"
 
 COPY app.py /app/
+COPY providers.py /app/
 COPY templates/ /app/templates/
 
 COPY run.sh /

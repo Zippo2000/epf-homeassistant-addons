@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-ARC-001  
-**Version:** 1.1.0  
+**Version:** 2.0.0  
 **Date:** 2026-04-03  
-**Baseline:** Repository commit 52 (main branch) + v1.0.4 enhancements  
+**Baseline:** Repository commit (main branch, v2.0.0)  
 **Status:** Released
 
 ---
@@ -28,11 +28,13 @@ The architecture covers the single add-on `epf-eink-addon` including its contain
 ## 2. Architectural Goals and Constraints
 
 ### 2.1 Goals
-- **G-001:** Provide a seamless bridge between Immich photo library and ESP32-based E-Ink display hardware
+- **G-001:** Provide a seamless bridge between photo sources (Immich, ComfyUI) and ESP32-based E-Ink display hardware
 - **G-002:** Optimize images for 7-color E-Ink displays using performant Cython-compiled dithering algorithms
 - **G-003:** Integrate natively into Home Assistant with configuration via HA UI and Ingress web interface
 - **G-004:** Support power-efficient operation through configurable sleep schedules and ESP32 deep-sleep coordination
 - **G-005:** Enable multi-architecture deployment (ARM and x86) via Home Assistant build system
+- **G-006:** Support multiple image sources (Immich, ComfyUI via HA, ComfyUI Direct) through a provider abstraction layer
+- **G-007:** Enable AI-generated images with configurable prompt templates and daily generation limits
 
 ### 2.2 Constraints
 - **C-001:** Must operate as a Home Assistant supervised Docker container
@@ -261,6 +263,118 @@ The architecture covers the single add-on `epf-eink-addon` including its contain
 | **Configuration** | 2 workers, 2 threads each, 120s timeout, bound to 0.0.0.0:5000 |
 | **Design Rationale** | Gunicorn replaces Flask's development server for production use, providing process isolation, concurrent request handling, and graceful worker recycling. |
 
+#### C-013: ImageProvider (Abstract Base Class)
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ImageProvider Abstract Interface |
+| **Type** | Design Pattern / Abstract Base Class |
+| **Responsibility** | Define the contract for all image source providers: `fetch_image()`, `health_check()`, `get_source_name()`, `get_config_summary()` |
+| **Key Methods** | `fetch_image() -> (PILImage, source_id)`, `health_check() -> bool`, `get_source_name() -> str` |
+| **Design Rationale** | Enables source-agnostic image fetching logic in app.py. New sources can be added without modifying core routes, following the Open/Closed Principle. |
+
+#### C-014: ImmichProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Immich Image Provider |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Fetch images from Immich photo server: album listing, asset selection (random/newest), image download, format conversion (JPEG, RAW, HEIC), tracking |
+| **Key Functions** | `fetch_image()`, `health_check()`, `load_downloaded_images()`, `save_downloaded_image()` |
+| **Dependencies** | Immich REST API, requests, rawpy, pillow-heif |
+
+#### C-015: ComfyUIHAProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ComfyUI via Home Assistant Provider |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Generate images via HA `ai_task.generate_image` service: prompt resolution, API call, response parsing, generation tracking, rate limiting |
+| **Key Functions** | `fetch_image()`, `health_check()`, `_extract_image_from_response()` |
+| **Dependencies** | HA REST API, HA Long-Lived Access Token, GenerationTracker |
+| **Features** | Daily generation limit, prompt variable resolution, generation history persistence |
+
+#### C-016: ComfyUIDirectProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ComfyUI Direct Provider (Expert Mode) |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Direct ComfyUI server communication: workflow submission, queue polling, progress tracking, image retrieval |
+| **Key Functions** | `fetch_image()`, `health_check()`, `_build_workflow()`, `_wait_for_generation()` |
+| **Dependencies** | ComfyUI REST API, custom workflow JSON (optional) |
+| **Features** | Default workflow fallback, queue timeout handling, generation tracking |
+
+#### C-017: Provider Factory
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Provider Factory |
+| **Type** | Creational Pattern |
+| **Responsibility** | Create the appropriate provider instance based on `image_source` configuration value |
+| **Key Functions** | `create_provider(config, photo_dir) -> ImageProvider` |
+| **Design Rationale** | Single entry point for provider instantiation. Reads `image_source` from config and returns the correct provider type. Enables runtime provider switching on config change. |
+
+#### C-018: GenerationTracker
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Generation Tracking Service |
+| **Type** | Data Management Component |
+| **Responsibility** | Track ComfyUI image generations for rate limiting and status reporting |
+| **Key Functions** | `log_generation()`, `get_count_today()`, `reset_daily_count()`, `get_last_generation()` |
+| **Storage** | JSON file `generations.json` in photo directory |
+
+#### C-013: ImageProvider (Abstract Base Class)
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ImageProvider Abstract Interface |
+| **Type** | Design Pattern / Abstract Base Class |
+| **Responsibility** | Define the contract for all image source providers: `fetch_image()`, `health_check()`, `get_source_name()`, `get_config_summary()` |
+| **Key Methods** | `fetch_image() -> (PILImage, source_id)`, `health_check() -> bool`, `get_source_name() -> str` |
+| **Design Rationale** | Enables source-agnostic image fetching logic in app.py. New sources can be added without modifying core routes, following the Open/Closed Principle. |
+
+#### C-014: ImmichProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Immich Image Provider |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Fetch images from Immich photo server: album listing, asset selection (random/newest), image download, format conversion (JPEG, RAW, HEIC), tracking |
+| **Key Functions** | `fetch_image()`, `health_check()`, `load_downloaded_images()`, `save_downloaded_image()` |
+| **Dependencies** | Immich REST API, requests, rawpy, pillow-heif |
+
+#### C-015: ComfyUIHAProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ComfyUI via Home Assistant Provider |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Generate images via HA `ai_task.generate_image` service: prompt resolution, API call, response parsing, generation tracking, rate limiting |
+| **Key Functions** | `fetch_image()`, `health_check()`, `_extract_image_from_response()` |
+| **Dependencies** | HA REST API, HA Long-Lived Access Token, GenerationTracker |
+| **Features** | Daily generation limit, prompt variable resolution, generation history persistence |
+
+#### C-016: ComfyUIDirectProvider
+| Attribute | Value |
+|-----------|-------|
+| **Name** | ComfyUI Direct Provider (Expert Mode) |
+| **Type** | Concrete Provider Implementation |
+| **Responsibility** | Direct ComfyUI server communication: workflow submission, queue polling, progress tracking, image retrieval |
+| **Key Functions** | `fetch_image()`, `health_check()`, `_build_workflow()`, `_wait_for_generation()` |
+| **Dependencies** | ComfyUI REST API, custom workflow JSON (optional) |
+| **Features** | Default workflow fallback, queue timeout handling, generation tracking |
+
+#### C-017: Provider Factory
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Provider Factory |
+| **Type** | Creational Pattern |
+| **Responsibility** | Create the appropriate provider instance based on `image_source` configuration value |
+| **Key Functions** | `create_provider(config, photo_dir) -> ImageProvider` |
+| **Design Rationale** | Single entry point for provider instantiation. Reads `image_source` from config and returns the correct provider type. Enables runtime provider switching on config change. |
+
+#### C-018: GenerationTracker
+| Attribute | Value |
+|-----------|-------|
+| **Name** | Generation Tracking Service |
+| **Type** | Data Management Component |
+| **Responsibility** | Track ComfyUI image generations for rate limiting and status reporting |
+| **Key Functions** | `log_generation()`, `get_count_today()`, `reset_daily_count()`, `get_last_generation()` |
+| **Storage** | JSON file `generations.json` in photo directory |
+
 ---
 
 ## 5. Interface Definitions
@@ -280,6 +394,7 @@ The architecture covers the single add-on `epf-eink-addon` including its contain
 | `/preview-delivered` | GET | Serve last delivered image | - | image/jpeg | 200, 404 |
 | `/preview-status` | GET | Get preview status | - | JSON | 200 |
 | `/api/battery-status` | GET | Get battery status | - | JSON | 200 |
+| `/api/generation-status` | GET | Get ComfyUI generation status | - | JSON | 200 |
 | `/sleep` | GET | Get ESP32 sleep duration | - | JSON | 200 |
 
 ### 5.2 External Interface Contracts
