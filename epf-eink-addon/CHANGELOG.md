@@ -2,6 +2,100 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2026-04-03
+
+### Added
+- **FR-025 Health Check Indicator**: Visual Immich connection status in settings header with green/red dot, polling every 60 seconds
+- **FR-026 UI Settings Improvements**:
+  - "Cleanup Old Previews" button triggering POST `/cleanup-previews`
+  - Content-Security-Policy meta tag (default-src 'self', inline styles/scripts)
+  - Referrer-Policy meta tag (strict-origin-when-cross-origin)
+  - Dynamic copyright year via JavaScript `getFullYear()`
+  - Unicode HTML entities replacing emoji for cross-platform compatibility
+  - `safeGet()` helper for robust DOM access with null checks
+  - Slider output elements with explicit `id` attributes (enhancedValue, contrastValue, strengthValue)
+  - Polling intervals defined as named constants (`POLL_INTERVALS`, `NOTIFICATION_DURATION`)
+  - Health check polling at 60s interval
+  - Error feedback for failed battery and photo status updates
+  - Conditional polling (only polls after first successful load)
+  - Mobile-responsive improvements: column borders, stacked photo actions
+
+### Changed
+- **Reset-to-default behavior**: Now shows notification "Click Save to apply" instead of silently resetting
+- **Header layout**: Fixed missing closing `</div>` for battery-status-header; restructured with `.header-right` flex container
+- **Form submit**: Uses fetch API with proper error handling; no page reload required
+- **BUILD_VERSION** updated to `1.0.5`
+- **config.yaml version** updated to `1.0.5`
+
+### Fixed
+- Header layout broken due to unclosed div tag
+- Reset button didn't provide feedback that Save is still required
+- Preview images polling even when no images exist (now conditional on first successful load)
+- Auto-refresh errors silently ignored (now shows notification after first successful load)
+- Slider value lookup fragile (was using `nextElementSibling`, now uses explicit `id`)
+- Magic numbers in JavaScript replaced with named constants
+
+### Tests
+- **11 new test cases** added (104 total, up from 93):
+  - `TestFR025HealthIndicator`: 3 tests (health element exists, healthy response, degraded response)
+  - `TestFR026UISettingsImprovements`: 8 tests (CSP meta tag, referrer meta tag, cleanup button, dynamic copyright, unicode symbols, slider output IDs, polling constants, safeGet helper)
+- All 104 tests pass in Docker (debian:bookworm, Python 3.11.2, pytest 7.4.3)
+
+### Modified Files
+- `templates/settings.html`: Complete UI overhaul with all 15 improvements
+- `tests/test_functional.py`: +11 new test classes/methods for FR-025, FR-026
+- `docs/requirements_specification_aspice.md`: v1.2.0 - Added FR-025, FR-026, NFR-010
+- `docs/test_specification_aspice.md`: v1.2.0 - Added TC-FR-025, TC-FR-026, TC-NFR-010
+
+---
+
+## [1.0.5] - 2026-04-03
+
+### Added
+- **FR-025 Health Check Indicator**: Visual Immich connection status in settings header with green/red dot, polling every 60 seconds
+- **FR-026 UI Settings Improvements**:
+  - "Cleanup Old Previews" button triggering POST `/cleanup-previews`
+  - Content-Security-Policy meta tag (default-src 'self', inline styles/scripts)
+  - Referrer-Policy meta tag (strict-origin-when-cross-origin)
+  - Dynamic copyright year via JavaScript `getFullYear()`
+  - Unicode HTML entities replacing emoji for cross-platform compatibility
+  - `safeGet()` helper for robust DOM access with null checks
+  - Slider output elements with explicit `id` attributes (enhancedValue, contrastValue, strengthValue)
+  - Polling intervals defined as named constants (`POLL_INTERVALS`, `NOTIFICATION_DURATION`)
+  - Health check polling at 60s interval
+  - Error feedback for failed battery and photo status updates
+  - Conditional polling (only polls after first successful load)
+  - Mobile-responsive improvements: column borders, stacked photo actions
+
+### Changed
+- **Reset-to-default behavior**: Now shows notification "Click Save to apply" instead of silently resetting
+- **Header layout**: Fixed missing closing `</div>` for battery-status-header; restructured with `.header-right` flex container
+- **Form submit**: Uses fetch API with proper error handling; no page reload required
+- **BUILD_VERSION** updated to `1.0.5`
+- **config.yaml version** updated to `1.0.5`
+
+### Fixed
+- Header layout broken due to unclosed div tag
+- Reset button didn't provide feedback that Save is still required
+- Preview images polling even when no images exist (now conditional on first successful load)
+- Auto-refresh errors silently ignored (now shows notification after first successful load)
+- Slider value lookup fragile (was using `nextElementSibling`, now uses explicit `id`)
+- Magic numbers in JavaScript replaced with named constants
+
+### Tests
+- **11 new test cases** added (104 total, up from 93):
+  - `TestFR025HealthIndicator`: 3 tests (health element exists, healthy response, degraded response)
+  - `TestFR026UISettingsImprovements`: 8 tests (CSP meta tag, referrer meta tag, cleanup button, dynamic copyright, unicode symbols, slider output IDs, polling constants, safeGet helper)
+- All 104 tests pass in Docker (debian:bookworm, Python 3.11.2, pytest 7.4.3)
+
+### Modified Files
+- `templates/settings.html`: Complete UI overhaul with all 15 improvements
+- `tests/test_functional.py`: +11 new test classes/methods for FR-025, FR-026
+- `docs/requirements_specification_aspice.md`: v1.2.0 - Added FR-025, FR-026, NFR-010
+- `docs/test_specification_aspice.md`: v1.2.0 - Added TC-FR-025, TC-FR-026, TC-NFR-010
+
+---
+
 ## [1.0.4] - 2026-04-03
 
 ### Added

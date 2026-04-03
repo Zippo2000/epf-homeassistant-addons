@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>E-paper Photo Frame Settings</title>
     <style>
         :root {
@@ -13,21 +15,21 @@
             --success: #10b981;
             --error: #ef4444;
             --warning: #f59e0b;
-            
+
             --bg-primary: #f8fafc;
             --bg-secondary: #ffffff;
             --bg-tertiary: #f1f5f9;
-            
+
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-tertiary: #94a3b8;
-            
+
             --border: #e2e8f0;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-            
+
             --glass-bg: rgba(255, 255, 255, 0.7);
             --glass-border: rgba(255, 255, 255, 0.18);
         }
@@ -37,21 +39,21 @@
             --primary-dark: #0ea5e9;
             --primary-light: #7dd3fc;
             --accent: #a78bfa;
-            
+
             --bg-primary: #0f172a;
             --bg-secondary: #1e293b;
             --bg-tertiary: #334155;
-            
+
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
             --text-tertiary: #64748b;
-            
+
             --border: #334155;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-            
+
             --glass-bg: rgba(30, 41, 59, 0.7);
             --glass-border: rgba(255, 255, 255, 0.1);
         }
@@ -101,6 +103,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
         .header-title {
@@ -127,6 +131,13 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        /* Header Right Section */
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         /* Battery Status in Header */
@@ -167,6 +178,45 @@
             margin-top: 2px;
         }
 
+        /* Health Status Indicator */
+        .health-status {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: var(--bg-tertiary);
+            color: var(--text-tertiary);
+        }
+
+        .health-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+            transition: background-color 0.3s ease;
+        }
+
+        .health-status.healthy .health-dot {
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .health-status.healthy {
+            color: var(--success);
+        }
+
+        .health-status.degraded .health-dot {
+            background: var(--error);
+            box-shadow: 0 0 6px var(--error);
+        }
+
+        .health-status.degraded {
+            color: var(--error);
+        }
+
         /* Theme Toggle */
         .theme-toggle {
             background: var(--bg-tertiary);
@@ -180,7 +230,6 @@
             justify-content: center;
             font-size: 1.2rem;
             transition: all 0.3s ease;
-            margin-left: 1rem;
         }
 
         .theme-toggle:hover {
@@ -229,6 +278,12 @@
             align-items: center;
             justify-content: center;
             font-size: 0.9rem;
+        }
+
+        /* Error Banner */
+        .error-banner {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            border-color: var(--error);
         }
 
         /* 3-Column Preview Grid */
@@ -311,6 +366,49 @@
             color: var(--text-tertiary);
             text-align: center;
             padding: 0.25rem;
+        }
+
+        /* Photo Actions */
+        .photo-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .photo-actions button {
+            flex: 1;
+        }
+
+        .photo-info {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .photo-info.hidden {
+            display: none;
+        }
+
+        .prepare-status {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .prepare-status.hidden {
+            display: none;
+        }
+
+        .prepare-status.loading {
+            color: var(--primary);
+        }
+
+        .prepare-status.success {
+            color: var(--success);
+        }
+
+        .prepare-status.error {
+            color: var(--error);
         }
 
         /* Form Elements */
@@ -478,8 +576,15 @@
         }
 
         .prepare-photo-btn {
-            width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .cleanup-btn {
+            background: linear-gradient(135deg, var(--warning), #d97706);
+        }
+
+        .cleanup-btn:hover {
+            background: linear-gradient(135deg, #d97706, var(--warning));
         }
 
         /* Time Input */
@@ -596,7 +701,16 @@
 
             .header-content {
                 padding: 0 1rem;
-                flex-wrap: wrap;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-title {
+                justify-content: center;
+            }
+
+            .header-right {
+                justify-content: center;
             }
 
             h1 {
@@ -619,6 +733,22 @@
             .preview-grid {
                 grid-template-columns: 1fr;
             }
+
+            .preview-column {
+                border-bottom: 1px solid var(--border);
+                padding-bottom: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .preview-column:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+                margin-bottom: 0;
+            }
+
+            .photo-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -630,13 +760,18 @@
     <header>
         <div class="header-content">
             <div class="header-title">
-                <div class="header-icon">🖼️</div>
+                <div class="header-icon">&#128444;</div>
                 <h1>E-Paper Photo Frame</h1>
             </div>
-            
-            <div style="display: flex; align-items: center; gap: 1rem;">
+
+            <div class="header-right">
+                <div class="health-status" id="healthStatus" title="Immich connection status">
+                    <span class="health-dot"></span>
+                    <span id="healthText">Checking...</span>
+                </div>
+
                 <div class="battery-status-header">
-                    <span class="battery-icon">🔋</span>
+                    <span class="battery-icon">&#128267;</span>
                     <div class="battery-text">
                         <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
                         <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) if battery_voltage > 0 else "0.00" }} V</span>
@@ -646,9 +781,10 @@
                         <span class="battery-timestamp" id="batteryTimestampHeader">No reading yet</span>
                         {% endif %}
                     </div>
-                
+                </div>
+
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
-                    <span id="themeIcon">🌙</span>
+                    <span id="themeIcon">&#9790;</span>
                 </button>
             </div>
         </div>
@@ -656,79 +792,83 @@
 
     <div class="container">
         {% if error %}
-        <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border-color: var(--error);">
-            <strong>⚠️ {{ error }}</strong>
+        <div class="card error-banner">
+            <strong>&#9888;&#65039; {{ error }}</strong>
         </div>
         {% endif %}
 
         <!-- Photo Preview Card with 3-Column Grid -->
         <div class="card">
             <h2 class="card-title">
-                <span class="card-icon">📸</span>
-                Photo Preview & Management
+                <span class="card-icon">&#128247;</span>
+                Photo Preview &amp; Management
             </h2>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <button type="button" class="prepare-photo-btn" onclick="prepareNewPhoto()">
-                    🔄 Prepare New Photo
+
+            <div class="photo-actions">
+                <button type="button" class="prepare-photo-btn" id="prepareBtn" onclick="prepareNewPhoto()">
+                    &#128260; Prepare New Photo
                 </button>
-                <div id="prepareStatus" style="margin-top: 1rem; text-align: center; display: none;">
-                    <span style="color: var(--primary);"><span class="loading"></span> Preparing photo...</span>
-                </div>
+                <button type="button" class="cleanup-btn" id="cleanupBtn" onclick="cleanupPreviews()">
+                    &#128465; Cleanup Old Previews
+                </button>
             </div>
-            
+
+            <div id="prepareStatus" class="prepare-status hidden">
+                <span class="loading"></span> <span id="prepareStatusText">Preparing photo...</span>
+            </div>
+
             <!-- 3-Column Preview Grid -->
             <div class="preview-grid">
                 <!-- Column 1: Delivered to ESP32 -->
                 <div class="preview-column">
-                    <div class="preview-title">📤 Delivered to ESP32</div>
+                    <div class="preview-title">&#128229; Delivered to ESP32</div>
                     <div class="preview-wrapper">
-                        <img id="previewDelivered" 
-                             src="./preview-delivered" 
+                        <img id="previewDelivered"
+                             src="./preview-delivered"
                              alt="No image delivered yet"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="preview-placeholder" style="display: none;">
-                            <span>📭</span>
+                            <span>&#128230;</span>
                             <p>No image delivered yet</p>
                         </div>
                     </div>
                     <div class="preview-caption">Last image sent to display</div>
                 </div>
-                
+
                 <!-- Column 2: Original from Immich -->
                 <div class="preview-column">
-                    <div class="preview-title">🖼️ Original from Immich</div>
+                    <div class="preview-title">&#128444; Original from Immich</div>
                     <div class="preview-wrapper">
-                        <img id="previewOriginal" 
-                             src="./preview-original" 
+                        <img id="previewOriginal"
+                             src="./preview-original"
                              alt="No original available"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="preview-placeholder" style="display: none;">
-                            <span>📷</span>
+                            <span>&#128247;</span>
                             <p>No image fetched yet</p>
                         </div>
                     </div>
                     <div class="preview-caption">Unprocessed source image</div>
                 </div>
-                
+
                 <!-- Column 3: Processed for ESP32 -->
                 <div class="preview-column">
-                    <div class="preview-title">⚙️ Processed (Ready for ESP32)</div>
+                    <div class="preview-title">&#9881;&#65039; Processed (Ready for ESP32)</div>
                     <div class="preview-wrapper">
-                        <img id="previewProcessed" 
-                             src="./preview-processed" 
+                        <img id="previewProcessed"
+                             src="./preview-processed"
                              alt="No processed image"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="preview-placeholder" style="display: none;">
-                            <span>🔧</span>
+                            <span>&#128295;</span>
                             <p>No processed image</p>
                         </div>
                     </div>
                     <div class="preview-caption">Rotated + dithered (next delivery)</div>
                 </div>
             </div>
-            
-            <div id="photoInfo" style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
+
+            <div id="photoInfo" class="photo-info hidden">
                 <span id="photoTimestamp"></span>
             </div>
         </div>
@@ -738,7 +878,7 @@
             <!-- Server Connection -->
             <div class="card">
                 <h2 class="card-title">
-                    <span class="card-icon">🔌</span>
+                    <span class="card-icon">&#128268;</span>
                     Server Connection
                 </h2>
                 <div class="form-group">
@@ -754,7 +894,7 @@
             <!-- Display Settings -->
             <div class="card">
                 <h2 class="card-title">
-                    <span class="card-icon">🖥️</span>
+                    <span class="card-icon">&#128421;</span>
                     Display Settings
                 </h2>
                 <div class="form-group">
@@ -784,7 +924,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="dithering_method">🎨 Dithering Method:</label>
+                    <label for="dithering_method">&#127912; Dithering Method:</label>
                     <select id="dithering_method" name="dithering_method">
                         <option value="atkinson" {% if config['immich'].get('dithering_method', 'atkinson') == 'atkinson' %}selected{% endif %}>Atkinson (Softer, cleaner)</option>
                         <option value="floyd-steinberg" {% if config['immich'].get('dithering_method', 'atkinson') == 'floyd-steinberg' %}selected{% endif %}>Floyd-Steinberg (More detail)</option>
@@ -796,14 +936,14 @@
             <!-- Image Enhancement -->
             <div class="card">
                 <h2 class="card-title">
-                    <span class="card-icon">✨</span>
+                    <span class="card-icon">&#10024;</span>
                     Image Enhancement
                 </h2>
                 <div class="form-group">
                     <label for="enhanced">Color Enhancement:</label>
                     <div class="slider-container">
                         <input type="range" id="enhanced" name="enhanced" min="0.0" max="3.0" step="0.1" value="{{ config['immich']['enhanced']|default('1.0') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value">{{ config['immich']['enhanced']|default('1.0') }}</output>
+                        <output class="slider-value" id="enhancedValue">{{ config['immich']['enhanced']|default('1.0') }}</output>
                     </div>
                 </div>
 
@@ -811,7 +951,7 @@
                     <label for="contrast">Contrast:</label>
                     <div class="slider-container">
                         <input type="range" id="contrast" name="contrast" min="0.0" max="2.0" step="0.1" value="{{ config['immich']['contrast']|default('1.0') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value">{{ config['immich']['contrast']|default('1.0') }}</output>
+                        <output class="slider-value" id="contrastValue">{{ config['immich']['contrast']|default('1.0') }}</output>
                     </div>
                 </div>
 
@@ -819,7 +959,7 @@
                     <label for="strength">Dithering Strength:</label>
                     <div class="slider-container">
                         <input type="range" id="strength" name="strength" min="0.0" max="1.0" step="0.1" value="{{ config['immich']['strength']|default('0.8') }}" oninput="updateSliderValue(this)">
-                        <output class="slider-value">{{ config['immich']['strength']|default('0.8') }}</output>
+                        <output class="slider-value" id="strengthValue">{{ config['immich']['strength']|default('0.8') }}</output>
                     </div>
                 </div>
             </div>
@@ -827,7 +967,7 @@
             <!-- Power Management -->
             <div class="card">
                 <h2 class="card-title">
-                    <span class="card-icon">⚡</span>
+                    <span class="card-icon">&#9889;</span>
                     Power Management
                 </h2>
                 <div class="form-group">
@@ -877,14 +1017,14 @@
             </div>
 
             <div class="button-group">
-                <input type="submit" value="💾 Save Configuration">
-                <button type="button" class="reset-btn" onclick="showResetConfirmation()">🔄 Reset to Default</button>
+                <input type="submit" value="&#128190; Save Configuration">
+                <button type="button" class="reset-btn" onclick="showResetConfirmation()">&#128260; Reset to Default</button>
             </div>
         </form>
 
         <footer>
-            <div>E-Paper Photo Frame © 2025</div>
-            <div class="footer-version">Version {{ addon_version }} • Build {{ build_timestamp }}</div>
+            <div>E-Paper Photo Frame &copy; <span id="copyrightYear"></span></div>
+            <div class="footer-version">Version {{ addon_version }} &bull; Build {{ build_timestamp }}</div>
         </footer>
     </div>
 
@@ -893,155 +1033,287 @@
         <div class="confirm-content">
             <h2>Reset to Default Settings</h2>
             <p>Are you sure you want to reset all settings to default?</p>
-            <button onclick="confirmReset()">✓ Confirm</button>
-            <button onclick="cancelReset()" class="reset-btn">✕ Cancel</button>
+            <button onclick="confirmReset()">&#10003; Confirm</button>
+            <button onclick="cancelReset()" class="reset-btn">&#10005; Cancel</button>
         </div>
     </div>
 
     <script>
         // ========================================================================
+        // Configuration Constants
+        // ========================================================================
+        var POLL_INTERVALS = {
+            PHOTO_STATUS: 30000,
+            BATTERY: 10000,
+            HEALTH: 60000
+        };
+        var NOTIFICATION_DURATION = 3000;
+        var SLIDER_DEFAULTS = {
+            enhanced: 1.8,
+            contrast: 0.9,
+            strength: 1.0
+        };
+
+        // State flags for conditional polling
+        var photoLoaded = false;
+        var batteryLoaded = false;
+
+        // ========================================================================
+        // Safe DOM Helper
+        // ========================================================================
+        function safeGet(id) {
+            var el = document.getElementById(id);
+            if (!el) {
+                console.warn('Element not found: #' + id);
+            }
+            return el;
+        }
+
+        // ========================================================================
         // Theme Toggle
         // ========================================================================
         function toggleTheme() {
-            const body = document.body;
-            const themeIcon = document.getElementById('themeIcon');
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
+            var body = document.body;
+            var themeIcon = safeGet('themeIcon');
+            if (!themeIcon) return;
+            var currentTheme = body.getAttribute('data-theme');
+            var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
             body.setAttribute('data-theme', newTheme);
-            themeIcon.textContent = newTheme === 'light' ? '🌙' : '☀️';
+            themeIcon.textContent = newTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
             localStorage.setItem('theme', newTheme);
         }
 
         // Load saved theme
         document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            var savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
-            document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '🌙' : '☀️';
-            
+            var themeIcon = safeGet('themeIcon');
+            if (themeIcon) {
+                themeIcon.textContent = savedTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
+            }
+
+            // Dynamic copyright year
+            var yearEl = safeGet('copyrightYear');
+            if (yearEl) {
+                yearEl.textContent = new Date().getFullYear();
+            }
+
             // Initial updates
+            checkHealth();
             updatePhotoStatus();
             updateBatteryInfo();
-            
+
             // Auto-updates
-            setInterval(updatePhotoStatus, 30000);
-            setInterval(updateBatteryInfo, 10000);
+            setInterval(checkHealth, POLL_INTERVALS.HEALTH);
+            setInterval(updatePhotoStatus, POLL_INTERVALS.PHOTO_STATUS);
+            setInterval(updateBatteryInfo, POLL_INTERVALS.BATTERY);
         });
+
+        // ========================================================================
+        // Health Check
+        // ========================================================================
+        function checkHealth() {
+            fetch('./health', { method: 'HEAD' })
+                .then(function(response) {
+                    var healthStatus = safeGet('healthStatus');
+                    var healthText = safeGet('healthText');
+                    if (!healthStatus || !healthText) return;
+
+                    if (response.ok) {
+                        healthStatus.className = 'health-status healthy';
+                        healthText.textContent = 'Connected';
+                    } else {
+                        healthStatus.className = 'health-status degraded';
+                        healthText.textContent = 'Disconnected';
+                    }
+                })
+                .catch(function() {
+                    var healthStatus = safeGet('healthStatus');
+                    var healthText = safeGet('healthText');
+                    if (healthStatus) healthStatus.className = 'health-status degraded';
+                    if (healthText) healthText.textContent = 'Disconnected';
+                });
+        }
 
         // ========================================================================
         // Battery Status Auto-Update
         // ========================================================================
         function updateBatteryInfo() {
             fetch('./api/battery-status')
-                .then(response => response.json())
-                .then(data => {
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    batteryLoaded = true;
                     if (data.voltage > 0) {
-                        const voltageInVolts = (data.voltage / 1000).toFixed(2);
-                        document.getElementById('batteryPercentageHeader').textContent = data.percentage.toFixed(1) + '%';
-                        document.getElementById('batteryVoltageHeader').textContent = voltageInVolts + ' V';
+                        var voltageInVolts = (data.voltage / 1000).toFixed(2);
+                        var pct = safeGet('batteryPercentageHeader');
+                        var volt = safeGet('batteryVoltageHeader');
+                        if (pct) pct.textContent = data.percentage.toFixed(1) + '%';
+                        if (volt) volt.textContent = voltageInVolts + ' V';
                     }
                     if (data.formatted_timestamp) {
-                        document.getElementById('batteryTimestampHeader').textContent = data.formatted_timestamp;
+                        var ts = safeGet('batteryTimestampHeader');
+                        if (ts) ts.textContent = data.formatted_timestamp;
                     }
                 })
-                .catch(error => console.error('Battery update failed:', error));
+                .catch(function(error) {
+                    console.error('Battery update failed:', error);
+                    if (batteryLoaded) {
+                        showNotification('Battery status update failed', 'error');
+                    }
+                });
         }
 
         // ========================================================================
         // Photo Preview Updates (3-Column Grid)
         // ========================================================================
         function updatePhotoStatus() {
-            const timestamp = Date.now();
-            
-            // Update all three previews
-            const previewDelivered = document.getElementById('previewDelivered');
-            const previewOriginal = document.getElementById('previewOriginal');
-            const previewProcessed = document.getElementById('previewProcessed');
-            
+            var timestamp = Date.now();
+
+            var previewDelivered = safeGet('previewDelivered');
+            var previewOriginal = safeGet('previewOriginal');
+            var previewProcessed = safeGet('previewProcessed');
+
             if (previewDelivered) {
                 previewDelivered.src = './preview-delivered?t=' + timestamp;
                 previewDelivered.style.display = 'block';
             }
-            
+
             if (previewOriginal) {
                 previewOriginal.src = './preview-original?t=' + timestamp;
                 previewOriginal.style.display = 'block';
             }
-            
+
             if (previewProcessed) {
                 previewProcessed.src = './preview-processed?t=' + timestamp;
                 previewProcessed.style.display = 'block';
             }
-            
+
             // Get status info
             fetch('./preview-status')
-                .then(response => response.json())
-                .then(data => {
-                    const info = document.getElementById('photoInfo');
-                    const timestamp = document.getElementById('photoTimestamp');
-                    
-                    if (data.exists) {
-                        info.style.display = 'block';
-                        const statusIcon = data.status === 'new' ? '🆕' : '✅';
-                        timestamp.textContent = `${statusIcon} Last prepared: ${data.formatted_time}`;
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    photoLoaded = true;
+                    var info = safeGet('photoInfo');
+                    var photoTs = safeGet('photoTimestamp');
+
+                    if (data.exists && info && photoTs) {
+                        info.classList.remove('hidden');
+                        var statusIcon = data.status === 'new' ? '\u{1F195}' : '\u2705';
+                        photoTs.textContent = statusIcon + ' Last prepared: ' + data.formatted_time;
                     }
                 })
-                .catch(error => console.error('Status update failed:', error));
+                .catch(function(error) {
+                    console.error('Status update failed:', error);
+                    if (photoLoaded) {
+                        showNotification('Photo status update failed', 'error');
+                    }
+                });
         }
 
+        // ========================================================================
+        // Prepare New Photo
+        // ========================================================================
         function prepareNewPhoto() {
-            const statusDiv = document.getElementById('prepareStatus');
-            const button = document.querySelector('.prepare-photo-btn');
-            
-            statusDiv.style.display = 'block';
+            var statusDiv = safeGet('prepareStatus');
+            var statusText = safeGet('prepareStatusText');
+            var button = safeGet('prepareBtn');
+
+            if (!statusDiv || !button) return;
+
+            statusDiv.className = 'prepare-status loading';
+            if (statusText) statusText.textContent = 'Preparing photo...';
+            statusDiv.classList.remove('hidden');
             button.disabled = true;
-            
+
             fetch('./prepare-photo', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'}
             })
-            .then(response => response.json())
-            .then(data => {
-                statusDiv.style.display = 'none';
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
                 button.disabled = false;
-                
+
                 if (data.success) {
-                    showNotification('✅ Photo prepared successfully!', 'success');
+                    statusDiv.className = 'prepare-status success';
+                    if (statusText) statusText.textContent = 'Photo prepared successfully!';
+                    showNotification('Photo prepared successfully!', 'success');
                     setTimeout(updatePhotoStatus, 500);
                 } else {
-                    showNotification('❌ Error: ' + (data.error || 'Unknown error'), 'error');
+                    statusDiv.className = 'prepare-status error';
+                    if (statusText) statusText.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    showNotification('Error: ' + (data.error || 'Unknown error'), 'error');
                 }
+
+                setTimeout(function() {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
             })
-            .catch(error => {
-                statusDiv.style.display = 'none';
+            .catch(function(error) {
                 button.disabled = false;
-                showNotification('❌ Network error: ' + error.message, 'error');
+                statusDiv.className = 'prepare-status error';
+                if (statusText) statusText.textContent = 'Network error: ' + error.message;
+                showNotification('Network error: ' + error.message, 'error');
+                setTimeout(function() {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
             });
+        }
+
+        // ========================================================================
+        // Cleanup Old Previews
+        // ========================================================================
+        function cleanupPreviews() {
+            var button = safeGet('cleanupBtn');
+            if (button) button.disabled = true;
+
+            fetch('./cleanup-previews', { method: 'POST' })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        showNotification('Cleaned up ' + data.files_removed + ' old preview files', 'success');
+                    } else {
+                        showNotification('Cleanup failed: ' + (data.error || 'Unknown error'), 'error');
+                    }
+                    if (button) button.disabled = false;
+                })
+                .catch(function(error) {
+                    showNotification('Cleanup network error: ' + error.message, 'error');
+                    if (button) button.disabled = false;
+                });
         }
 
         // ========================================================================
         // Notification System
         // ========================================================================
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
+        function showNotification(message, type) {
+            var notification = safeGet('notification');
+            if (!notification) return;
+
             notification.textContent = message;
             notification.style.background = type === 'success' ? 'var(--success)' : 'var(--error)';
             notification.style.display = 'block';
 
-            setTimeout(() => notification.classList.add('show'), 10);
-            setTimeout(() => {
+            setTimeout(function() { notification.classList.add('show'); }, 10);
+            setTimeout(function() {
                 notification.classList.remove('show');
-                setTimeout(() => notification.style.display = 'none', 300);
-            }, 3000);
+                setTimeout(function() { notification.style.display = 'none'; }, 300);
+            }, NOTIFICATION_DURATION);
         }
 
         // ========================================================================
-        // Slider Value Update
+        // Slider Value Update (robust: uses output id based on slider id)
         // ========================================================================
         function updateSliderValue(slider) {
-            const value = parseFloat(slider.value);
-            const output = slider.nextElementSibling;
-            output.textContent = value.toFixed(1);
+            var value = parseFloat(slider.value);
+            var outputId = slider.id + 'Value';
+            var output = safeGet(outputId);
+            if (!output) {
+                output = slider.nextElementSibling;
+            }
+            if (output) {
+                output.textContent = value.toFixed(1);
+            }
         }
 
         // ========================================================================
@@ -1054,15 +1326,15 @@
                 method: 'POST',
                 body: new FormData(document.getElementById('settingsForm'))
             })
-            .then(response => {
+            .then(function(response) {
                 if (response.ok) {
-                    showNotification('✅ Settings saved successfully!', 'success');
+                    showNotification('Settings saved successfully!', 'success');
                     return;
                 }
                 throw new Error('Failed to save settings');
             })
-            .catch(error => {
-                showNotification('❌ Error: ' + error.message, 'error');
+            .catch(function(error) {
+                showNotification('Error: ' + error.message, 'error');
             });
         }
 
@@ -1070,44 +1342,56 @@
         // Reset Confirmation
         // ========================================================================
         function showResetConfirmation() {
-            document.getElementById('confirmModal').style.display = 'flex';
+            var modal = safeGet('confirmModal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function confirmReset() {
-            document.getElementById('url').value = 'http://localhost';
-            document.getElementById('album').value = 'default_album';
-            document.getElementById('rotation').value = '270';
-            document.getElementById('display_mode').value = 'fill';
-            document.getElementById('image_order').value = 'random';
-            document.getElementById('dithering_method').value = 'atkinson';
+            var url = safeGet('url');
+            var album = safeGet('album');
+            var rotation = safeGet('rotation');
+            var displayMode = safeGet('display_mode');
+            var imageOrder = safeGet('image_order');
+            var dithering = safeGet('dithering_method');
 
-            const sliders = [
-                { id: 'enhanced', defaultValue: 1.8 },
-                { id: 'contrast', defaultValue: 0.9 },
-                { id: 'strength', defaultValue: 1.0 }
-            ];
+            if (url) url.value = 'http://localhost';
+            if (album) album.value = 'default_album';
+            if (rotation) rotation.value = '270';
+            if (displayMode) displayMode.value = 'fill';
+            if (imageOrder) imageOrder.value = 'random';
+            if (dithering) dithering.value = 'atkinson';
 
-            sliders.forEach(slider => {
-                const sliderElement = document.getElementById(slider.id);
-                const outputElement = sliderElement.nextElementSibling;
-                sliderElement.value = slider.defaultValue;
-                outputElement.textContent = slider.defaultValue.toFixed(1);
+            var sliderIds = ['enhanced', 'contrast', 'strength'];
+            sliderIds.forEach(function(id) {
+                var sliderEl = safeGet(id);
+                if (sliderEl) {
+                    sliderEl.value = SLIDER_DEFAULTS[id];
+                    updateSliderValue(sliderEl);
+                }
             });
 
-            document.getElementById('sleep_start_hour').value = '23';
-            document.getElementById('sleep_start_minute').value = '0';
-            document.getElementById('sleep_end_hour').value = '6';
-            document.getElementById('sleep_end_minute').value = '0';
-            document.getElementById('wakeup_interval').value = '1440';
+            var sleepStartH = safeGet('sleep_start_hour');
+            var sleepStartM = safeGet('sleep_start_minute');
+            var sleepEndH = safeGet('sleep_end_hour');
+            var sleepEndM = safeGet('sleep_end_minute');
+            var wakeup = safeGet('wakeup_interval');
 
-            showNotification('🔄 Settings reset to default!', 'success');
-            document.getElementById('confirmModal').style.display = 'none';
+            if (sleepStartH) sleepStartH.value = '23';
+            if (sleepStartM) sleepStartM.value = '0';
+            if (sleepEndH) sleepEndH.value = '6';
+            if (sleepEndM) sleepEndM.value = '0';
+            if (wakeup) wakeup.value = '1440';
+
+            showNotification('Settings reset to default! Click Save to apply.', 'success');
+
+            var modal = safeGet('confirmModal');
+            if (modal) modal.style.display = 'none';
         }
 
         function cancelReset() {
-            document.getElementById('confirmModal').style.display = 'none';
+            var modal = safeGet('confirmModal');
+            if (modal) modal.style.display = 'none';
         }
     </script>
 </body>
 </html>
-
