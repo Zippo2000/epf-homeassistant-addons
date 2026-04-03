@@ -2,7 +2,7 @@ name: "E-Paper Photo Frame (EPF)"
 version: "2.0.0"
 slug: "epf-eink-addon"
 description: "E-Ink Photo Frame with Immich and ComfyUI integration for displaying photos on E-Ink displays"
-url: "https://github.com/Zippo2000/epf-homeassistant-addons/tree/main/epf-eink-addon"
+url: "https://github.com/Zippo2000/epf-homeassistant-addons"
 arch:
   - armhf
   - armv7
