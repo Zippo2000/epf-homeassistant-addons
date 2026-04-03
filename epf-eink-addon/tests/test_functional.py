@@ -10,6 +10,7 @@ import os
 import io
 import json
 import time
+import requests
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 from PIL import Image
@@ -1182,3 +1183,103 @@ class TestFR024PreviewCleanup:
         data = response.get_json()
         assert data['success'] is True
         assert 'files_removed' in data
+
+
+# ============================================================
+# TC-FR-025: Health Check Indicator in UI
+# ============================================================
+
+class TestFR025HealthIndicator:
+    """TC-FR-025: Verify health check indicator is present in settings UI."""
+
+    def test_health_status_element_exists(self, client_with_mocks):
+        """Settings page contains health status element."""
+        response = client_with_mocks.get('/')
+        assert response.status_code == 200
+        html = response.data.decode('utf-8')
+        assert 'health-status' in html
+        assert 'healthText' in html
+        assert 'health-dot' in html
+
+    def test_health_endpoint_returns_healthy(self, client_with_mocks, app_module):
+        """Health endpoint returns healthy when Immich is reachable."""
+        response = client_with_mocks.get('/health')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['status'] == 'healthy'
+
+    @responses.activate
+    def test_health_endpoint_returns_degraded(self, client_with_mocks, app_module):
+        """Health endpoint returns degraded when Immich is unreachable."""
+        responses.reset()
+        responses.add(responses.GET, 'http://192.168.1.10/api/server/ping',
+                      body=Exception('Connection refused'))
+        response = client_with_mocks.get('/health')
+        assert response.status_code == 503
+        data = response.get_json()
+        assert data['status'] == 'degraded'
+
+
+# ============================================================
+# TC-FR-026: UI Settings Improvements
+# ============================================================
+
+class TestFR026UISettingsImprovements:
+    """TC-FR-026: Verify UI improvements (CSP, cleanup button, dynamic year, unicode)."""
+
+    def test_csp_meta_tag_present(self, client_with_mocks):
+        """Settings page contains Content-Security-Policy meta tag."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'Content-Security-Policy' in html
+
+    def test_referrer_meta_tag_present(self, client_with_mocks):
+        """Settings page contains referrer-policy meta tag."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'referrer' in html
+
+    def test_cleanup_button_present(self, client_with_mocks):
+        """Settings page contains cleanup button."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'cleanupPreviews' in html
+        assert 'Cleanup Old Previews' in html
+
+    def test_dynamic_copyright_year(self, client_with_mocks):
+        """Settings page uses JavaScript for dynamic copyright year."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'copyrightYear' in html
+        assert 'getFullYear' in html
+
+    def test_unicode_symbols_used(self, client_with_mocks):
+        """Settings page uses unicode symbols instead of emoji."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert '&#' in html
+
+    def test_slider_output_ids_present(self, client_with_mocks):
+        """Slider output elements have id attributes for robust lookup."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'id="enhancedValue"' in html
+        assert 'id="contrastValue"' in html
+        assert 'id="strengthValue"' in html
+
+    def test_polling_constants_defined(self, client_with_mocks):
+        """JavaScript defines polling intervals as constants."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'POLL_INTERVALS' in html
+        assert 'NOTIFICATION_DURATION' in html
+
+    def test_safe_get_helper_defined(self, client_with_mocks):
+        """JavaScript defines safeGet helper for robust DOM access."""
+        response = client_with_mocks.get('/')
+        html = response.data.decode('utf-8')
+        assert 'safeGet' in html
+
+
+# ============================================================
+# TC-FR-025: Health Check Indicator in UI

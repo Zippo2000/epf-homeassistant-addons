@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 1.0.0  
-**Date:** 2025-11-08  
-**Baseline:** Repository commit 52 (main branch)  
+**Version:** 1.2.0  
+**Date:** 2026-04-03  
+**Baseline:** Repository commit 52 (main branch) + v1.0.5 UI enhancements  
 **Status:** Released  
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
@@ -17,7 +17,7 @@ This document specifies the software test cases for verifying the EPF (E-Paper P
 
 ### 1.2 Scope
 The scope encompasses all functional, non-functional, interface, security, and performance requirements for the `epf-eink-addon`. This includes:
-- 24 Functional Requirements (FR-001 to FR-024)
+- 26 Functional Requirements (FR-001 to FR-026)
 - 8 Non-Functional Requirements (NFR-001 to NFR-008)
 - 5 Interface Requirements (IFR-001 to IFR-005)
 - 4 Security Requirements (SEC-001 to SEC-004)
@@ -587,6 +587,70 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Actual Result** | _To be filled during execution_ |
 | **Status** | Not Executed |
 
+#### TC-FR-025: Health Check Indicator
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-025 |
+| **Requirement** | FR-025 |
+| **Title** | Verify health check indicator in settings UI |
+| **Priority** | Medium |
+| **Preconditions** | SUT running; Flask test client available |
+| **Test Input** | GET / (settings page) |
+| **Test Steps** | 1. Load settings page<br>2. Verify health-status element exists<br>3. Verify health-dot element exists<br>4. Verify healthText element exists<br>5. GET /health returns 200 with status "healthy"<br>6. Simulate Immich unreachable<br>7. GET /health returns 503 with status "degraded" |
+| **Expected Result** | Health indicator elements present in HTML; health endpoint returns correct status codes |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
+#### TC-FR-026: UI Settings Improvements
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-026 |
+| **Requirement** | FR-026 |
+| **Title** | Verify enhanced settings UI features |
+| **Priority** | Medium |
+| **Preconditions** | SUT running; Flask test client available |
+| **Test Input** | GET / (settings page) |
+| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined |
+| **Expected Result** | All UI improvements present and functional |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
+#### TC-FR-025: Health Check Indicator
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-025 |
+| **Requirement** | FR-025 |
+| **Title** | Verify health check indicator in settings UI |
+| **Priority** | Medium |
+| **Preconditions** | SUT running; Flask test client available |
+| **Test Input** | GET / (settings page) |
+| **Test Steps** | 1. Load settings page<br>2. Verify health-status element exists<br>3. Verify health-dot element exists<br>4. Verify healthText element exists<br>5. GET /health returns 200 with status "healthy"<br>6. Simulate Immich unreachable<br>7. GET /health returns 503 with status "degraded" |
+| **Expected Result** | Health indicator elements present in HTML; health endpoint returns correct status codes |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
+#### TC-FR-026: UI Settings Improvements
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-026 |
+| **Requirement** | FR-026 |
+| **Title** | Verify enhanced settings UI features |
+| **Priority** | Medium |
+| **Preconditions** | SUT running; Flask test client available |
+| **Test Input** | GET / (settings page) |
+| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined |
+| **Expected Result** | All UI improvements present and functional |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
 ---
 
 ### 3.2 Non-Functional Requirements Test Cases
@@ -923,6 +987,22 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Actual Result** | _To be filled during execution_ |
 | **Status** | Not Executed |
 
+#### TC-NFR-010: Web Security Headers
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-NFR-010 |
+| **Requirement** | NFR-010 |
+| **Title** | Verify Content Security Policy and Referrer Policy meta tags |
+| **Priority** | Low |
+| **Preconditions** | SUT running; Flask test client available |
+| **Test Input** | GET / (settings page) |
+| **Test Steps** | 1. Load settings page HTML<br>2. Verify Content-Security-Policy meta tag exists<br>3. Verify CSP restricts default-src to 'self'<br>4. Verify Referrer-Policy meta tag exists<br>5. Verify referrer-policy is 'strict-origin-when-cross-origin' |
+| **Expected Result** | Both security meta tags present with correct values |
+| **Verification Method** | Inspection, Test |
+| **Actual Result** | _To be filled during execution_ |
+| **Status** | Not Executed |
+
 ---
 
 ## 4. Test Traceability Matrix
@@ -967,7 +1047,9 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-007 | NFR-007 | Analysis | Not Executed |
 | TC-NFR-008 | NFR-008 | Test | Not Executed |
 | TC-NFR-009 | NFR-009 | Inspection | Not Executed |
-| TC-NFR-009 | NFR-009 | Inspection | Not Executed |
+| TC-NFR-010 | NFR-010 | Inspection | Not Executed |
+| TC-FR-025 | FR-025 | Test | Not Executed |
+| TC-FR-026 | FR-026 | Test | Not Executed |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
 | TC-IFR-002 | IFR-002 | Test | Not Executed |
 | TC-IFR-003 | IFR-003 | Test | Not Executed |

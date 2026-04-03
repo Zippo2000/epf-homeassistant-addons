@@ -351,6 +351,30 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Verification** | Test |
 | **Traceability** | `app.py:cleanup_old_previews, trigger_cleanup route` |
 
+#### FR-025: Health Check Indicator
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-025 |
+| **Title** | Visual Immich connection status in settings UI |
+| **Priority** | Medium |
+| **Description** | The settings web interface SHALL display a real-time health indicator showing the Immich server connection status. The indicator SHALL poll `/health` every 60 seconds and display a green dot for "Connected" and a red dot for "Disconnected". |
+| **Input** | HEAD request to /health |
+| **Output** | Visual status indicator in header |
+| **Verification** | Test |
+| **Traceability** | `app.py:health route, templates/settings.html` |
+
+#### FR-026: UI Settings Improvements
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-026 |
+| **Title** | Enhanced settings UI with cleanup, security, and robustness |
+| **Priority** | Medium |
+| **Description** | The settings web interface SHALL include: (1) a "Cleanup Old Previews" button that triggers POST `/cleanup-previews`, (2) Content-Security-Policy and Referrer-Policy meta tags, (3) dynamic copyright year via JavaScript `getFullYear()`, (4) Unicode HTML entities instead of emoji for cross-platform compatibility, (5) robust DOM access via `safeGet()` helper, (6) slider output elements with explicit `id` attributes, and (7) polling intervals defined as named constants. |
+| **Input** | User interaction with settings page |
+| **Output** | Updated UI with improved security and usability |
+| **Verification** | Test |
+| **Traceability** | `templates/settings.html` |
+
 ---
 
 ### 3.2 Non-Functional Requirements (NFR)
@@ -444,6 +468,16 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Description** | All public functions, class methods, and module-level variables in `app.py` SHALL have Python type annotations. The `from __future__ import annotations` directive SHALL be used for forward reference support. Type hints SHALL cover all parameters, return types, and global state variables using the `typing` module (Optional, Dict, Any, Set, Tuple, Callable, List). |
 | **Verification** | Inspection |
 | **Traceability** | `app.py` |
+
+#### NFR-010: Web Security Headers
+| Attribute | Value |
+|-----------|-------|
+| **ID** | NFR-010 |
+| **Title** | Content Security Policy and Referrer Policy |
+| **Priority** | Low |
+| **Description** | The settings web interface SHALL include a Content-Security-Policy meta tag restricting sources to 'self' with inline styles/scripts allowed, and a Referrer-Policy meta tag set to 'strict-origin-when-cross-origin'. |
+| **Verification** | Inspection |
+| **Traceability** | `templates/settings.html` |
 
 ---
 
@@ -612,6 +646,8 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-022 | app.py | Test | Implemented |
 | FR-023 | app.py | Test | Implemented |
 | FR-024 | app.py | Test | Implemented |
+| FR-025 | app.py, templates/settings.html | Test | Implemented |
+| FR-026 | templates/settings.html | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |
@@ -621,6 +657,8 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | NFR-007 | cpy.pyx | Analysis | Implemented |
 | NFR-008 | settings.html | Test | Implemented |
 | NFR-009 | app.py | Inspection | Implemented |
+| NFR-010 | settings.html | Inspection | Implemented |
+| NFR-010 | settings.html | Inspection | Implemented |
 | NFR-009 | app.py | Inspection | Implemented |
 | IFR-001 | app.py | Test | Implemented |
 | IFR-002 | app.py | Test | Implemented |
