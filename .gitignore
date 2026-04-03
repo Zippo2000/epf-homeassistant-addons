@@ -6,6 +6,8 @@
 # ==========================================
 
 # Local configuration with real values (API keys, URLs, etc.)
+# Note: epf-eink-addon/config.yaml is the addon schema and MUST be tracked
+!epf-eink-addon/config.yaml
 config.yaml
 
 # Environment files
@@ -29,6 +31,8 @@ __pycache__/
 
 # C extensions
 *.so
+!epf-eink-addon/cpy.so
+!epf-eink-addon/cpy.so
 
 # Distribution / packaging
 .Python
@@ -187,21 +191,3 @@ run.test.sh
 node_modules/
 npm-debug.log
 yarn-error.log
-
-# macOS workspace settings
-.workspace
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Generated certificates
-*.pem
-*.crt
-*.key
-*.cert
-
-# API responses (for debugging)
-*.json.bak
-response_*.json
