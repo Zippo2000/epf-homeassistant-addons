@@ -4,6 +4,7 @@
 # Home Assistant Add-on: EPF E-Ink Photo Frame
 # Based on Zippo2000/EPF with HA Integration
 # Full-featured Flask Server with Cython Optimization
+# Version 2.0.0 - Multi-Source Support (Immich, ComfyUI via HA, ComfyUI Direct)
 # ==============================================================================
 
 from __future__ import annotations
@@ -11,8 +12,8 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, Set, Tuple, Callable, List
 import sys
 
-BUILD_TIMESTAMP = "2025-11-08 18:20:00 CET"
-BUILD_VERSION = "1.0.5"
+BUILD_TIMESTAMP = "2026-04-03 21:30:00 CET"
+BUILD_VERSION = "2.0.0"
 
 from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for, Blueprint
 import yaml
@@ -37,6 +38,11 @@ import sys
 from werkzeug.middleware.proxy_fix import ProxyFix
 from shutil import copy2
 import glob as glob_module
+
+from providers import (
+    ImageProvider, ImmichProvider, ComfyUIHAProvider, ComfyUIDirectProvider,
+    create_provider, resolve_prompt_variables, GenerationTracker
+)
 
 # =============== LOGGING CONFIGURATION ===============
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO').upper()
@@ -83,6 +89,7 @@ except ImportError as e:
 
 # =============== DEFAULT CONFIGURATION ===============
 DEFAULT_CONFIG: Dict[str, Any] = {
+    'image_source': os.getenv('IMAGE_SOURCE', 'immich'),
     'immich': {
         'url': os.getenv('IMMICH_URL', 'http://192.168.1.10'),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -98,12 +105,24 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         'sleep_end_hour': int(os.getenv('SLEEP_END_HOUR', '6')),
         'sleep_end_minute': int(os.getenv('SLEEP_END_MINUTE', '0')),
         'wakeup_interval': int(os.getenv('WAKEUP_INTERVAL', '1440')),
+    },
+    'comfyui': {
+        'ha_url': os.getenv('HA_URL', ''),
+        'prompt': os.getenv('COMFYUI_PROMPT', ''),
+        'negative_prompt': os.getenv('COMFYUI_NEGATIVE_PROMPT', ''),
+        'width': int(os.getenv('COMFYUI_WIDTH', '800')),
+        'height': int(os.getenv('COMFYUI_HEIGHT', '480')),
+        'seed': int(os.getenv('COMFYUI_SEED', '-1')),
+        'max_generations_per_day': int(os.getenv('COMFYUI_MAX_GENERATIONS', '50')),
+        'direct_url': os.getenv('COMFYUI_DIRECT_URL', ''),
+        'workflow_json': os.getenv('COMFYUI_WORKFLOW_JSON', ''),
     }
 }
 
 current_config: Dict[str, Any] = DEFAULT_CONFIG.copy()
 
 # =============== GLOBAL VARIABLES ===============
+image_source: str = current_config.get('image_source', 'immich')
 url: str = current_config['immich']['url']
 album_name: str = current_config['immich']['album']
 rotation_angle: int = current_config['immich']['rotation']
@@ -138,6 +157,20 @@ ALLOWED_EXTENSIONS: List[str] = ['.jpeg', '.raw', '.jpg', '.bmp', '.dng', '.heic
 os.makedirs(photo_dir, exist_ok=True)
 register_heif_opener()
 
+# =============== ACTIVE PROVIDER ===============
+active_provider: Optional[ImageProvider] = None
+
+def get_active_provider() -> ImageProvider:
+    global active_provider, current_config, photo_dir
+    if active_provider is None:
+        active_provider = create_provider(current_config, photo_dir)
+    return active_provider
+
+def reset_provider() -> None:
+    global active_provider
+    active_provider = create_provider(current_config, photo_dir)
+    logger.info(f"Provider reset to: {active_provider.get_source_name()}")
+
 # =============== BATTERY TRACKING ===============
 last_battery_voltage: float = 0
 last_battery_update: float = 0
@@ -151,19 +184,18 @@ BATTERY_LEVELS: Dict[int, int] = {
 
 # =============== 6-COLOR PALETTE ===============
 palette: List[Tuple[int, int, int]] = [
-    (0, 0, 0),         # Black
-    (255, 255, 255),   # White
-    (255, 243, 56),    # Yellow
-    (191, 0, 0),       # Red
-    (100, 64, 255),    # Blue
-    (67, 138, 28)      # Green
+    (0, 0, 0),
+    (255, 255, 255),
+    (255, 243, 56),
+    (191, 0, 0),
+    (100, 64, 255),
+    (67, 138, 28)
 ]
 
-# =============== NTP SHUTDOWN EVENT (Punkt 7) ===============
+# =============== NTP SHUTDOWN EVENT ===============
 _ntp_stop_event: threading.Event = threading.Event()
 
 def calculate_battery_percentage(voltage: float) -> float:
-    """Calculate battery percentage from voltage (Lithium Battery)"""
     if voltage >= 4200:
         return 100.0
     if voltage <= 3400:
@@ -180,78 +212,12 @@ def calculate_battery_percentage(voltage: float) -> float:
             return round(percentage, 1)
     return 0.0
 
-# =============== IMAGE TRACKING FUNCTIONS ===============
-def load_downloaded_images() -> Set[str]:
-    """Load downloaded image IDs from tracking.txt"""
-    global album_name
-    try:
-        if not os.path.exists(tracking_file):
-            with open(tracking_file, 'w') as f:
-                pass
-        
-        os.chmod(tracking_file, 0o666)
-        
-        with open(tracking_file, 'r') as f:
-            lines: list = f.readlines()
-        
-        if not lines or lines[0].strip() != album_name:
-            with open(tracking_file, 'w') as f:
-                f.write(f"{album_name}\n")
-            return set()
-        
-        return {line.strip() for line in lines[1:] if line.strip()}
-    
-    except Exception as e:
-        logger.error(f"Error reading tracking file: {e}")
-        return set()
-
-def save_downloaded_image(asset_id: str) -> None:
-    """Save downloaded image ID to tracking.txt"""
-    global album_name
-    try:
-        if not os.path.exists(tracking_file):
-            with open(tracking_file, 'w') as f:
-                pass
-        
-        os.chmod(tracking_file, 0o666)
-        
-        with open(tracking_file, 'r') as f:
-            lines: list = f.readlines()
-        
-        if not lines or lines[0].strip() != album_name:
-            with open(tracking_file, 'w') as f:
-                f.write(f"{album_name}\n")
-        
-        with open(tracking_file, 'a') as f:
-            f.write(f"{asset_id}\n")
-    
-    except Exception as e:
-        logger.error(f"Error writing to tracking file: {e}")
-
-def reset_tracking_file() -> None:
-    """Reset tracking.txt file"""
-    try:
-        open(tracking_file, 'w').close()
-    except Exception as e:
-        logger.error(f"Error resetting tracking file: {e}")
-
-# =============== PREVIEW CLEANUP (Punkt 5) ===============
+# =============== PREVIEW CLEANUP ===============
 PREVIEW_PATTERNS: List[str] = ['latest_original_*.jpg', 'latest_processed_*.jpg', 'latest_delivered_*.jpg']
-MAX_PREVIEW_AGE_SECONDS: int = 7 * 24 * 3600  # 7 days
+MAX_PREVIEW_AGE_SECONDS: int = 7 * 24 * 3600
 MAX_PREVIEW_COUNT: int = 50
 
 def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None) -> int:
-    """
-    Remove stale preview files older than max_age_seconds or exceeding max_count.
-    
-    Args:
-        directory: Photo directory to clean (defaults to global photo_dir)
-        max_age_seconds: Max age in seconds before deletion (default: 7 days)
-        max_count: Max number of previews to keep (default: 50)
-    
-    Returns:
-        Number of files removed
-    """
     target_dir: str = directory or photo_dir
     age_limit: int = max_age_seconds or MAX_PREVIEW_AGE_SECONDS
     count_limit: int = max_count or MAX_PREVIEW_COUNT
@@ -300,7 +266,6 @@ def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optio
 
 # =============== HEX CONVERSION ===============
 def depalette_image(pixels: ndarray, pal: List[Tuple[int, int, int]]) -> ndarray:
-    """Convert RGB image to palette indices using nearest color matching."""
     palette_array: ndarray = np.array(pal)
     diffs: ndarray = np.sqrt(np.sum((pixels[:, :, None, :] - palette_array[None, None, :, :]) ** 2, axis=3))
     indices: ndarray = np.argmin(diffs, axis=2)
@@ -308,7 +273,6 @@ def depalette_image(pixels: ndarray, pal: List[Tuple[int, int, int]]) -> ndarray
     return indices
 
 def convert_to_hex_format(image_data: PILImage) -> io.BytesIO:
-    """Convert processed image to hex-encoded format expected by ESP32."""
     pixels: ndarray = np.array(image_data)
     indices: ndarray = depalette_image(pixels, palette)
     height: int
@@ -339,7 +303,6 @@ def convert_to_hex_format(image_data: PILImage) -> io.BytesIO:
 
 # =============== IMAGE PROCESSING ===============
 def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height: int = 480, bg_color: Tuple[int, int, int] = (255, 255, 255)) -> PILImage:
-    """Process image in memory using Cython."""
     global rotation_angle, dithering_method
     rotation: int = rotation_angle
     
@@ -423,7 +386,6 @@ def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height:
     return output_img
 
 def save_three_previews(image_original: PILImage) -> PILImage:
-    """Save three preview versions: original, processed, BMP."""
     original_path: str = os.path.join(photo_dir, 'latest_original.jpg')
     image_resized: PILImage = image_original.copy()
     image_resized.thumbnail((800, 480), Image.LANCZOS)
@@ -446,26 +408,62 @@ def save_three_previews(image_original: PILImage) -> PILImage:
 
 # =============== RAW/HEIC CONVERTERS ===============
 def convert_raw_or_dng_to_jpg(input_file_path: str, output_dir: str) -> str:
-    """Convert RAW/DNG to JPG"""
     with rawpy.imread(input_file_path) as raw:
         rgb: ndarray = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
-    
     basename: str = os.path.splitext(os.path.basename(input_file_path))[0]
     jpg_path: str = os.path.join(output_dir, f'{basename}.jpg')
     Image.fromarray(rgb).save(jpg_path, 'JPEG')
     return jpg_path
 
 def convert_heic_to_jpg(input_file_path: str, output_dir: str) -> str:
-    """Convert HEIC to JPG"""
     img: PILImage = Image.open(input_file_path).convert('RGB')
     basename = os.path.splitext(os.path.basename(input_file_path))[0]
     jpg_path = os.path.join(output_dir, f'{basename}.jpg')
     img.save(jpg_path, 'JPEG', quality=95)
     return jpg_path
 
-# =============== CONFIGURATION WATCHER ===============
+# =============== IMAGE TRACKING FUNCTIONS ===============
+def load_downloaded_images() -> Set[str]:
+    global album_name
+    try:
+        if not os.path.exists(tracking_file):
+            with open(tracking_file, 'w') as f:
+                pass
+        os.chmod(tracking_file, 0o666)
+        with open(tracking_file, 'r') as f:
+            lines: list = f.readlines()
+        if not lines or lines[0].strip() != album_name:
+            with open(tracking_file, 'w') as f:
+                f.write(f"{album_name}\n")
+            return set()
+        return {line.strip() for line in lines[1:] if line.strip()}
+    except Exception as e:
+        logger.error(f"Error reading tracking file: {e}")
+        return set()
+
+def save_downloaded_image(asset_id: str) -> None:
+    global album_name
+    try:
+        if not os.path.exists(tracking_file):
+            with open(tracking_file, 'w') as f:
+                pass
+        os.chmod(tracking_file, 0o666)
+        with open(tracking_file, 'r') as f:
+            lines: list = f.readlines()
+        if not lines or lines[0].strip() != album_name:
+            with open(tracking_file, 'w') as f:
+                f.write(f"{album_name}\n")
+        with open(tracking_file, 'a') as f:
+            f.write(f"{asset_id}\n")
+    except Exception as e:
+        logger.error(f"Error writing to tracking file: {e}")
+
+def reset_tracking_file() -> None:
+    try:
+        open(tracking_file, 'w').close()
+    except Exception as e:
+        logger.error(f"Error resetting tracking file: {e}")
 class ConfigFileHandler(FileSystemEventHandler):
-    """Watch config.yaml for changes"""
     def __init__(self, config_path: str, config_update_callback: Callable[[Dict[str, Any]], None]) -> None:
         self.config_path: str = config_path
         self.config_update_callback: Callable[[Dict[str, Any]], None] = config_update_callback
@@ -509,8 +507,7 @@ class ConfigFileHandler(FileSystemEventHandler):
             return DEFAULT_CONFIG
 
 def update_app_config(new_config: Dict[str, Any]) -> None:
-    """Update configuration"""
-    global current_config, url, album_name, rotation_angle, img_enhanced, img_contrast
+    global current_config, image_source, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     
     if new_config is None or 'immich' not in new_config:
@@ -518,6 +515,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
         return
     
     current_config = new_config
+    image_source = new_config.get('image_source', 'immich')
     url = new_config['immich']['url']
     album_name = new_config['immich']['album']
     rotation_angle = new_config['immich']['rotation']
@@ -532,10 +530,11 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     sleep_start_minute = new_config['immich']['sleep_start_minute']
     sleep_end_minute = new_config['immich']['sleep_end_minute']
     
-    logger.info(f"Config updated: URL={url}, Album={album_name}, Rotation={rotation_angle}, Dithering={dithering_method}")
+    reset_provider()
+    
+    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Dithering={dithering_method}")
 
 def start_config_watcher(cfg_path: str) -> Observer:
-    """Start watching config.yaml"""
     config_handler = ConfigFileHandler(cfg_path, update_app_config)
     observer: Observer = Observer()
     observer.schedule(config_handler, path=os.path.dirname(cfg_path), recursive=False)
@@ -547,7 +546,7 @@ app: Flask = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 logger.info("=" * 80)
-logger.info("EPF Flask Server ( + HA) - Initializing")
+logger.info("EPF Flask Server v2.0.0 - Multi-Source Support")
 logger.info(f"Build Version: {BUILD_VERSION} - {BUILD_TIMESTAMP}")
 logger.info("=" * 80)
 logger.info(f"Cython Available: {CYTHON_AVAILABLE}")
@@ -559,7 +558,6 @@ bp: Blueprint = Blueprint('main', __name__)
 # =============== ROUTES ===============
 @bp.route('/', methods=['GET', 'POST'])
 def settings() -> Any:
-    """Settings page - ROOT ROUTE"""
     global current_config, last_battery_voltage, last_battery_update
     
     if current_config is None:
@@ -580,6 +578,7 @@ def settings() -> Any:
     
     if request.method == 'POST':
         new_config: Dict[str, Any] = {
+            'image_source': request.form.get('image_source', current_config.get('image_source', 'immich')),
             'immich': {
                 'url': request.form.get('url', current_config['immich']['url']),
                 'album': request.form.get('album', current_config['immich']['album']),
@@ -595,6 +594,17 @@ def settings() -> Any:
                 'sleep_end_hour': int(request.form.get('sleep_end_hour', current_config['immich']['sleep_end_hour'])),
                 'sleep_end_minute': int(request.form.get('sleep_end_minute', current_config['immich']['sleep_end_minute'])),
                 'wakeup_interval': int(request.form.get('wakeup_interval', current_config['immich']['wakeup_interval'])),
+            },
+            'comfyui': {
+                'ha_url': request.form.get('ha_url', current_config.get('comfyui', {}).get('ha_url', '')),
+                'prompt': request.form.get('comfyui_prompt', current_config.get('comfyui', {}).get('prompt', '')),
+                'negative_prompt': request.form.get('comfyui_negative_prompt', current_config.get('comfyui', {}).get('negative_prompt', '')),
+                'width': int(request.form.get('comfyui_width', current_config.get('comfyui', {}).get('width', 800))),
+                'height': int(request.form.get('comfyui_height', current_config.get('comfyui', {}).get('height', 480))),
+                'seed': int(request.form.get('comfyui_seed', current_config.get('comfyui', {}).get('seed', -1))),
+                'max_generations_per_day': int(request.form.get('comfyui_max_generations', current_config.get('comfyui', {}).get('max_generations_per_day', 50))),
+                'direct_url': request.form.get('comfyui_direct_url', current_config.get('comfyui', {}).get('direct_url', '')),
+                'workflow_json': request.form.get('comfyui_workflow_json', current_config.get('comfyui', {}).get('workflow_json', '')),
             }
         }
         
@@ -621,25 +631,24 @@ def settings() -> Any:
 
 @bp.route('/health', methods=['GET', 'HEAD'])
 def health() -> Any:
-    """Health check endpoint"""
-    immich_ok: bool
     try:
-        response = requests.get(f"{url}/api/server/ping", timeout=5)
-        immich_ok = response.status_code == 200
+        provider = get_active_provider()
+        is_healthy = provider.health_check()
     except Exception:
-        immich_ok = False
+        is_healthy = False
     
-    status_code: int = 200 if immich_ok else 503
+    status_code: int = 200 if is_healthy else 503
+    provider = get_active_provider()
     return jsonify({
-        'status': 'healthy' if immich_ok else 'degraded',
+        'status': 'healthy' if is_healthy else 'degraded',
         'timestamp': datetime.now().isoformat(),
-        'immich': 'connected' if immich_ok else 'unreachable'
+        'source': provider.get_source_name(),
+        'source_status': 'connected' if is_healthy else 'unreachable'
     }), status_code
 
 @bp.route('/download', methods=['GET'])
 def process_and_download() -> Any:
-    """Download and process image from Immich. Returns hex-encoded format."""
-    global url, album_name, last_battery_voltage, last_battery_update
+    global last_battery_voltage, last_battery_update
     
     try:
         battery_voltage: float = float(request.headers.get('batteryCap', 0))
@@ -685,74 +694,8 @@ def process_and_download() -> Any:
     logger.info("Fetching and preparing photo on-the-fly")
     
     try:
-        if not url or not album_name:
-            return jsonify({'error': 'Not configured'}), 500
-        
-        response = requests.get(f'{url}/api/albums', headers=headers, timeout=10)
-        if response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch albums'}), 500
-        
-        data: Any = response.json()
-        album_id: Optional[str] = next((item['id'] for item in data if item.get('albumName') == album_name), None)
-        
-        if not album_id:
-            return jsonify({'error': f'Album {album_name} not found'}), 404
-        
-        response = requests.get(f'{url}/api/albums/{album_id}', headers=headers, timeout=10)
-        if response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch album assets'}), 500
-        
-        data = response.json()
-        if 'assets' not in data or not data['assets']:
-            return jsonify({'error': 'No images in album'}), 404
-        
-        image_order_config: str = current_config['immich'].get('image_order', 'random')
-        downloaded_images: Set[str] = load_downloaded_images()
-        
-        selected_image: Dict[str, Any]
-        if image_order_config == 'newest':
-            sorted_assets: List[Dict[str, Any]] = sorted(data['assets'],
-                key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
-                reverse=True)
-            remaining_images: List[Dict[str, Any]] = [img for img in sorted_assets if img['id'] not in downloaded_images]
-            
-            if not remaining_images:
-                reset_tracking_file()
-                remaining_images = sorted_assets
-            
-            selected_image = remaining_images[0]
-        else:
-            remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
-            if not remaining_images:
-                reset_tracking_file()
-                remaining_images = data['assets']
-            selected_image = random.choice(remaining_images)
-        
-        asset_id: str = selected_image['id']
-        save_downloaded_image(asset_id)
-        
-        response = requests.get(
-            f'{url}/api/assets/{asset_id}/original',
-            headers=headers,
-            stream=True,
-            timeout=30
-        )
-        
-        if response.status_code != 200:
-            return jsonify({'error': 'Failed to download image'}), 500
-        
-        image_data: io.BytesIO = io.BytesIO(response.content)
-        original_path_str: str = selected_image.get('originalPath', '').lower()
-        
-        image: PILImage
-        if original_path_str.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
-            with rawpy.imread(image_data) as raw:
-                rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
-            image = Image.fromarray(rgb)
-        elif original_path_str.endswith('.heic'):
-            image = Image.open(image_data).convert('RGB')
-        else:
-            image = Image.open(image_data)
+        provider = get_active_provider()
+        image, source_id = provider.fetch_image()
         
         save_three_previews(image)
         
@@ -770,7 +713,7 @@ def process_and_download() -> Any:
         bmp_image = Image.open(preview_bmp_path)
         hex_data = convert_to_hex_format(bmp_image)
         
-        logger.info(f"Photo delivered on-the-fly (hex format): {asset_id}")
+        logger.info(f"Photo delivered on-the-fly (hex format) from {provider.get_source_name()}: {source_id}")
         
         return send_file(
             hex_data,
@@ -779,6 +722,9 @@ def process_and_download() -> Any:
             download_name='frame.txt'
         )
     
+    except RuntimeError as e:
+        logger.error(f"Provider error: {e}")
+        return jsonify({'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
         logger.error(f"Network error: {e}")
         return jsonify({'error': f'Network error: {str(e)}'}), 500
@@ -788,7 +734,6 @@ def process_and_download() -> Any:
 
 @bp.route('/preview-photo', methods=['GET'])
 def preview_photo() -> Any:
-    """Serve the latest prepared photo as preview"""
     processed_path: str = os.path.join(photo_dir, 'latest_processed.jpg')
     original_path: str = os.path.join(photo_dir, 'latest_original.jpg')
     
@@ -801,7 +746,6 @@ def preview_photo() -> Any:
 
 @bp.route('/preview-status', methods=['GET'])
 def preview_status() -> Any:
-    """Get the status of the current preview photo"""
     status_file: str = os.path.join(photo_dir, 'latest.status')
     processed_path: str = os.path.join(photo_dir, 'latest_processed.jpg')
     
@@ -824,7 +768,6 @@ def preview_status() -> Any:
 
 @bp.route('/preview-original', methods=['GET'])
 def preview_original() -> Any:
-    """Serve original unprocessed image"""
     original_path: str = os.path.join(photo_dir, 'latest_original.jpg')
     if not os.path.exists(original_path):
         return jsonify({'error': 'No original available'}), 404
@@ -832,7 +775,6 @@ def preview_original() -> Any:
 
 @bp.route('/preview-processed', methods=['GET'])
 def preview_processed() -> Any:
-    """Serve processed image"""
     processed_path: str = os.path.join(photo_dir, 'latest_processed.jpg')
     if not os.path.exists(processed_path):
         return jsonify({'error': 'No processed image available'}), 404
@@ -840,7 +782,6 @@ def preview_processed() -> Any:
 
 @bp.route('/preview-delivered', methods=['GET'])
 def preview_delivered() -> Any:
-    """Serve last delivered image to ESP32"""
     delivered_path: str = os.path.join(photo_dir, 'latest_delivered.jpg')
     if not os.path.exists(delivered_path):
         return jsonify({'error': 'No delivered image available'}), 404
@@ -848,7 +789,6 @@ def preview_delivered() -> Any:
 
 @bp.route('/api/battery-status', methods=['GET'])
 def battery_status() -> Any:
-    """Get current battery status for JavaScript polling"""
     global last_battery_voltage, last_battery_update
     
     current_time: float = time.time()
@@ -871,90 +811,43 @@ def battery_status() -> Any:
         'age_seconds': int(current_time - last_battery_update) if last_battery_update > 0 else None
     })
 
+@bp.route('/api/generation-status', methods=['GET'])
+def generation_status() -> Any:
+    provider = get_active_provider()
+    source_name = provider.get_source_name()
+    
+    if source_name.startswith('ComfyUI') and hasattr(provider, 'tracker'):
+        tracker: GenerationTracker = provider.tracker
+        last_gen = tracker.get_last_generation()
+        max_gens = getattr(provider, 'max_generations_per_day', 0)
+        return jsonify({
+            'source': source_name,
+            'count_today': tracker.get_count_today(),
+            'max_per_day': max_gens,
+            'last_generation': last_gen['timestamp'][:19] if last_gen else None
+        })
+    
+    return jsonify({
+        'source': source_name,
+        'count_today': 0,
+        'max_per_day': 0,
+        'last_generation': None
+    })
+    
+    return jsonify({
+        'source': source_name,
+        'count_today': 0,
+        'max_per_day': 0,
+        'last_generation': None
+    })
+
 @bp.route('/prepare-photo', methods=['POST'])
 def prepare_photo() -> Any:
-    """Manually fetch and prepare a new photo from Immich"""
     try:
         logger.info("Manual photo preparation requested")
-        immich_url: str = current_config['immich']['url']
-        album_name_cfg: str = current_config['immich']['album']
-        image_order_config: str = current_config['immich']['image_order']
         
-        if not immich_url or not album_name_cfg:
-            return jsonify({'error': 'Immich not configured', 'success': False}), 500
-        
-        api_key_env: Optional[str] = os.getenv('IMMICH_API_KEY')
-        if not api_key_env:
-            return jsonify({'error': 'IMMICH_API_KEY not configured', 'success': False}), 500
-        
-        req_headers: Dict[str, str] = {'x-api-key': api_key_env}
-        
-        response = requests.get(f'{immich_url}/api/albums', headers=req_headers)
-        if response.status_code != 200:
-            return jsonify({'error': f'Failed to fetch albums: {response.status_code}', 'success': False}), 500
-        
-        albums: List[Dict[str, Any]] = response.json()
-        target_album: Optional[Dict[str, Any]] = next((a for a in albums if a['albumName'] == album_name_cfg), None)
-        
-        if not target_album:
-            return jsonify({'error': f'Album "{album_name_cfg}" not found', 'success': False}), 404
-        
-        album_id: str = target_album['id']
-        
-        response = requests.get(f'{immich_url}/api/albums/{album_id}', headers=req_headers)
-        if response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch album assets', 'success': False}), 500
-        
-        data: Dict[str, Any] = response.json()
-        
-        if not data.get('assets') or len(data['assets']) == 0:
-            return jsonify({'error': 'No assets in album', 'success': False}), 404
-        
-        downloaded_images: Set[str] = load_downloaded_images()
-        
-        selected_image: Dict[str, Any]
-        if image_order_config == 'newest':
-            sorted_assets: List[Dict[str, Any]] = sorted(data['assets'],
-                key=lambda x: x.get('exifInfo', {}).get('dateTimeOriginal', '1970-01-01T00:00:00'),
-                reverse=True)
-            remaining_images: List[Dict[str, Any]] = [img for img in sorted_assets if img['id'] not in downloaded_images]
-            
-            if not remaining_images:
-                reset_tracking_file()
-                remaining_images = sorted_assets
-            
-            selected_image = remaining_images[0]
-        else:
-            remaining_images = [img for img in data['assets'] if img['id'] not in downloaded_images]
-            if not remaining_images:
-                reset_tracking_file()
-                remaining_images = data['assets']
-            selected_image = random.choice(remaining_images)
-        
-        asset_id: str = selected_image['id']
-        save_downloaded_image(asset_id)
-        
-        response = requests.get(
-            f'{immich_url}/api/assets/{asset_id}/original',
-            headers=req_headers,
-            stream=True
-        )
-        
-        if response.status_code != 200:
-            return jsonify({'error': 'Failed to download image', 'success': False}), 500
-        
-        image_data: io.BytesIO = io.BytesIO(response.content)
-        original_path_str: str = selected_image.get('originalPath', '').lower()
-        
-        image: PILImage
-        if original_path_str.endswith(('.raw', '.dng', '.arw', '.cr2', '.nef')):
-            with rawpy.imread(image_data) as raw:
-                rgb = raw.postprocess(use_camera_wb=True, use_auto_wb=False)
-                image = Image.fromarray(rgb)
-        elif original_path_str.endswith('.heic'):
-            image = Image.open(image_data).convert('RGB')
-        else:
-            image = Image.open(image_data)
+        provider = get_active_provider()
+        image, source_id = provider.fetch_image()
         
         save_three_previews(image)
         
@@ -962,21 +855,24 @@ def prepare_photo() -> Any:
         with open(status_file, 'w') as f:
             f.write('new')
         
-        logger.info(f"Photo prepared with 3 previews: {asset_id}")
+        logger.info(f"Photo prepared with 3 previews from {provider.get_source_name()}: {source_id}")
         
         return jsonify({
             'success': True,
             'message': 'Photo prepared successfully',
-            'asset_id': asset_id
+            'source_id': source_id,
+            'source': provider.get_source_name()
         }), 200
     
+    except RuntimeError as e:
+        logger.error(f"Provider error: {e}")
+        return jsonify({'error': str(e), 'success': False}), 500
     except Exception as e:
         logger.error(f"Error preparing photo: {e}", exc_info=True)
         return jsonify({'error': str(e), 'success': False}), 500
 
 @bp.route('/sleep', methods=['GET'])
 def get_sleep_duration() -> Any:
-    """Get sleep duration for ESP32"""
     current_time: datetime = datetime.now()
     interval: int = int(current_config['immich']['wakeup_interval'])
     
@@ -1038,7 +934,6 @@ def get_sleep_duration() -> Any:
 
 @bp.route('/cleanup-previews', methods=['POST'])
 def trigger_cleanup() -> Any:
-    """Trigger manual preview cleanup (Punkt 5)"""
     try:
         removed: int = cleanup_old_previews()
         return jsonify({
@@ -1049,6 +944,42 @@ def trigger_cleanup() -> Any:
     except Exception as e:
         logger.error(f"Cleanup failed: {e}", exc_info=True)
         return jsonify({'error': str(e), 'success': False}), 500
+
+@bp.route('/api/gallery-previews', methods=['GET'])
+def gallery_previews() -> Any:
+    """Return list of all preview files for gallery view."""
+    try:
+        files: List[Dict[str, str]] = []
+        patterns: List[str] = ['latest_original_*.jpg', 'latest_processed_*.jpg', 'latest_delivered_*.jpg']
+        
+        for pattern in patterns:
+            matching = glob_module.glob(os.path.join(photo_dir, pattern))
+            for filepath in matching:
+                try:
+                    mtime = os.path.getmtime(filepath)
+                    files.append({
+                        'name': os.path.basename(filepath),
+                        'url': '/preview-file/' + os.path.basename(filepath),
+                        'modified': datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                        'timestamp': mtime
+                    })
+                except OSError:
+                    continue
+        
+        files.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({'files': files})
+    except Exception as e:
+        logger.error(f"Gallery previews failed: {e}", exc_info=True)
+        return jsonify({'files': [], 'error': str(e)}), 500
+
+@bp.route('/preview-file/<filename>', methods=['GET'])
+def preview_file(filename: str) -> Any:
+    """Serve a specific preview file by filename."""
+    safe_name: str = os.path.basename(filename)
+    filepath: str = os.path.join(photo_dir, safe_name)
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(filepath, mimetype='image/jpeg')
 
 # Register blueprint
 app.register_blueprint(bp)
@@ -1064,7 +995,6 @@ except Exception as e:
 config_observer: Observer = start_config_watcher(config_path)
 
 def run_daily_ntp_sync() -> None:
-    """Daily NTP sync with graceful shutdown support (Punkt 7)"""
     while not _ntp_stop_event.is_set():
         try:
             now: datetime = datetime.now()
@@ -1075,7 +1005,6 @@ def run_daily_ntp_sync() -> None:
             
             wait_seconds: float = (next_sync - now).total_seconds()
             
-            # Use event.wait() instead of time.sleep() for graceful shutdown
             if _ntp_stop_event.wait(timeout=wait_seconds):
                 logger.info("NTP sync thread received stop signal")
                 break
@@ -1091,11 +1020,9 @@ def run_daily_ntp_sync() -> None:
                 break
 
 def stop_ntp_sync() -> None:
-    """Signal NTP sync thread to stop gracefully (Punkt 7)"""
     logger.info("Signaling NTP sync thread to stop...")
     _ntp_stop_event.set()
 
-# Start NTP sync thread
 ntp_thread: threading.Thread = threading.Thread(target=run_daily_ntp_sync, daemon=True)
 ntp_thread.start()
 

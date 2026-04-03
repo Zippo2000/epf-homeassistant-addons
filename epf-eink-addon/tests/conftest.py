@@ -205,6 +205,7 @@ def write_test_config(config_dir, config=None):
     """Write a test config.yaml file."""
     if config is None:
         config = {
+            'image_source': 'immich',
             'immich': {
                 'url': MOCK_IMMICH_URL,
                 'album': MOCK_ALBUM_NAME,
@@ -220,8 +221,19 @@ def write_test_config(config_dir, config=None):
                 'sleep_end_hour': 6,
                 'sleep_end_minute': 0,
                 'wakeup_interval': 60,
-            }
+            },
+            'comfyui': {
+                'ha_url': '',
+                'prompt': '',
+                'negative_prompt': '',
+                'width': 800,
+                'height': 480,
+                'seed': -1,
+                'max_generations_per_day': 50,
+                'direct_url': '',
+            'workflow_json': '',
         }
+    }
     config_path = os.path.join(config_dir, 'config.yaml')
     with open(config_path, 'w') as f:
         yaml.safe_dump(config, f)
@@ -345,6 +357,7 @@ def test_image_800x480():
 def test_config():
     """Return a standard test configuration dict."""
     return {
+        'image_source': 'immich',
         'immich': {
             'url': MOCK_IMMICH_URL,
             'album': MOCK_ALBUM_NAME,
@@ -360,6 +373,17 @@ def test_config():
             'sleep_end_hour': 6,
             'sleep_end_minute': 0,
             'wakeup_interval': 60,
+        },
+        'comfyui': {
+            'ha_url': '',
+            'prompt': '',
+            'negative_prompt': '',
+            'width': 800,
+            'height': 480,
+            'seed': -1,
+            'max_generations_per_day': 50,
+            'direct_url': '',
+            'workflow_json': '',
         }
     }
 

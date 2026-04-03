@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 1.0.0  
-**Date:** 2025-11-08  
-**Baseline:** Repository commit 52 (main branch)  
+**Version:** 2.0.0  
+**Date:** 2026-04-03  
+**Baseline:** Repository commit (main branch, v2.0.0)  
 **Status:** Released
 
 ---
@@ -15,7 +15,7 @@
 This document specifies the software requirements for the EPF (E-Paper Photo Frame) Home Assistant Add-on in accordance with ASPICE processes SWE.1 (Software Requirements Analysis) and SYS.2 (System Requirements Analysis). It serves as the single source of truth for functional, non-functional, interface, security, and performance requirements derived from the current codebase state.
 
 ### 1.2 Scope
-The scope encompasses the single add-on `epf-eink-addon` within the repository, which provides a Flask-based server running inside a Home Assistant supervised Docker container. The server integrates with an Immich photo management backend, processes images for 7-color E-Ink displays (800x480), and serves the processed data to ESP32-based hardware clients.
+The scope encompasses the single add-on `epf-eink-addon` within the repository, which provides a Flask-based server running inside a Home Assistant supervised Docker container. The server integrates with multiple image sources — **Immich** (photo management backend), **ComfyUI via Home Assistant** (AI image generation through HA service), and **ComfyUI Direct** (direct ComfyUI API) — processes images for 7-color E-Ink displays (800x480), and serves the processed data to ESP32-based hardware clients.
 
 ### 1.3 References
 - ASPICE v3.1 Process Reference Model
@@ -36,6 +36,14 @@ The scope encompasses the single add-on `epf-eink-addon` within the repository, 
 | Cython | Python-to-C compiler for performance optimization |
 | HA | Home Assistant |
 | Ingress | HA mechanism for embedding add-on web UI |
+| ComfyUI | AI image generation server (Stable Diffusion frontend) |
+| ImageProvider | Abstract base class defining the interface for image source implementations |
+| Provider Factory | Pattern for creating the appropriate provider based on `image_source` configuration |
+| Prompt Variable | Dynamic placeholder in ComfyUI prompts resolved at generation time (e.g., `{time_of_day}`) |
+| ComfyUI | AI image generation server (Stable Diffusion frontend) |
+| ImageProvider | Abstract base class defining the interface for image source implementations |
+| Provider Factory | Pattern for creating the appropriate provider based on `image_source` configuration |
+| Prompt Variable | Dynamic placeholder in ComfyUI prompts resolved at generation time (e.g., `{time_of_day}`) |
 
 ---
 
@@ -44,6 +52,7 @@ The scope encompasses the single add-on `epf-eink-addon` within the repository, 
 ### 2.1 System Boundary
 The EPF Add-on operates as a Home Assistant supervised Docker container. It communicates with:
 - **Immich Server** (external, via HTTP REST API)
+- **ComfyUI Server** (external, via HA ai_task service or direct HTTP API)
 - **ESP32 E-Paper Frame** (external, via HTTP client requests)
 - **Home Assistant Supervisor** (internal, via bashio config API and ingress routing)
 - **NTP Server** (external, pool.ntp.org)
@@ -375,6 +384,66 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Verification** | Test |
 | **Traceability** | `templates/settings.html` |
 
+#### FR-027: Image Source Selection
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-027 |
+| **Title** | Configurable image source selection |
+| **Priority** | High |
+| **Description** | The system SHALL provide a configurable `image_source` parameter allowing the user to select between `immich`, `comfyui_ha`, and `comfyui_direct` as the active image source via the web settings interface. The selection SHALL be persisted in the configuration file and SHALL determine which provider is used for all image fetch operations. The selection SHALL remain persistent across restarts until explicitly changed by the user. |
+| **Input** | `image_source` config value via web UI dropdown |
+| **Output** | Active provider selection affecting all image operations |
+| **Verification** | Test |
+| **Traceability** | `config.yaml:image_source`, `providers.py:create_provider`, `app.py:get_active_provider` |
+
+#### FR-028: ComfyUI via Home Assistant Integration
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-028 |
+| **Title** | AI image generation via Home Assistant |
+| **Priority** | High |
+| **Description** | When `image_source` is set to `comfyui_ha`, the system SHALL generate images by calling the Home Assistant `ai_task.generate_image` service. The service call SHALL use the required parameters `task_name`, `instructions`, and `entity_id` as defined by the ai_task integration schema. The system SHALL resolve prompt template variables in the `instructions` field at generation time. The HA service response SHALL contain a `service_response` object with a relative `url` field pointing to the generated image. The system SHALL download the image from HA, process it through the standard E-Ink pipeline (scaling, rotation, dithering, 6-color palette), and track it in the generation history. A daily generation counter SHALL enforce the configured limit and SHALL reset daily. |
+| **Input** | Prompt template (→ instructions), task_name (fixed: "Image"), entity_id, HA API token, HA URL |
+| **Output** | Generated image from HA ComfyUI integration, processed for E-Ink display |
+| **Verification** | Test |
+| **Traceability** | `providers.py:ComfyUIHAProvider`, `app.py:generation-status route` |
+
+#### FR-029: ComfyUI Direct (Expert Mode)
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-029 |
+| **Title** | Direct ComfyUI server integration |
+| **Priority** | Medium |
+| **Description** | When `image_source` is set to `comfyui_direct`, the system SHALL connect directly to a ComfyUI server API endpoint. It SHALL support custom workflow JSON, queue management, and progress polling. The system SHALL submit a workflow, poll for completion via the `/history/{prompt_id}` endpoint, and retrieve the generated image via the `/view` endpoint. A default workflow SHALL be provided if no custom workflow JSON is configured. Daily generation limits SHALL apply. |
+| **Input** | ComfyUI server URL, workflow JSON (optional), prompt parameters |
+| **Output** | Generated image from direct ComfyUI server, processed for E-Ink display |
+| **Verification** | Test |
+| **Traceability** | `providers.py:ComfyUIDirectProvider` |
+
+#### FR-030: Prompt Template Variables
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-030 |
+| **Title** | Dynamic prompt template variable resolution |
+| **Priority** | Medium |
+| **Description** | The system SHALL support dynamic prompt template variables in ComfyUI prompt configuration. Supported variables SHALL include: `{time_of_day}` (context-aware based on current hour), `{weather}` (random from predefined list), `{season}` (context-aware based on current month), `{day_of_week}` (current day name), `{month}` (current month name), and `{random_element}` (random from predefined list). Variables SHALL be resolved at generation time with context-appropriate values. Unknown variables SHALL be passed through unchanged. |
+| **Input** | Prompt template string with variable placeholders |
+| **Output** | Resolved prompt string with substituted values |
+| **Verification** | Test |
+| **Traceability** | `providers.py:resolve_prompt_variables, PROMPT_VARIABLES` |
+
+#### FR-031: Generation Status API
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-031 |
+| **Title** | Generation status endpoint |
+| **Priority** | Medium |
+| **Description** | The system SHALL provide a `/api/generation-status` GET endpoint that returns JSON with generation tracking information for ComfyUI sources. The response SHALL include: `source` (provider name), `count_today` (generations today), `max_per_day` (daily limit), and `last_generation` (timestamp of last generation). For non-ComfyUI sources, the endpoint SHALL return zeros. The generation history SHALL be persisted in a JSON file and SHALL survive restarts. |
+| **Input** | HTTP GET request |
+| **Output** | JSON response with generation status fields |
+| **Verification** | Test |
+| **Traceability** | `app.py:generation_status route`, `providers.py:GenerationTracker` |
+
 ---
 
 ### 3.2 Non-Functional Requirements (NFR)
@@ -648,6 +717,16 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-024 | app.py | Test | Implemented |
 | FR-025 | app.py, templates/settings.html | Test | Implemented |
 | FR-026 | templates/settings.html | Test | Implemented |
+| FR-027 | config.yaml, providers.py, app.py, templates/settings.html | Test | Implemented |
+| FR-028 | providers.py:ComfyUIHAProvider, app.py | Test | Implemented |
+| FR-029 | providers.py:ComfyUIDirectProvider | Test | Implemented |
+| FR-030 | providers.py:resolve_prompt_variables | Test | Implemented |
+| FR-031 | app.py:generation_status, providers.py:GenerationTracker | Test | Implemented |
+| FR-027 | config.yaml, providers.py, app.py, templates/settings.html | Test | Implemented |
+| FR-028 | providers.py:ComfyUIHAProvider, app.py | Test | Implemented |
+| FR-029 | providers.py:ComfyUIDirectProvider | Test | Implemented |
+| FR-030 | providers.py:resolve_prompt_variables | Test | Implemented |
+| FR-031 | app.py:generation_status, providers.py:GenerationTracker | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |

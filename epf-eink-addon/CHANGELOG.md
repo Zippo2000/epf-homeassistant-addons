@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-04-03
+
+### Added
+- **Multi-Source Image Support**: Choose between Immich, ComfyUI via Home Assistant, or ComfyUI Direct as image source
+- **FR-027 Image Source Selection**: Persistent dropdown to select image source (immich/comfyui_ha/comfyui_direct)
+- **FR-028 ComfyUI via Home Assistant Integration**:
+  - Generate images using `ai_task.generate_image` HA service
+  - Configurable prompt, negative prompt, dimensions, seed
+  - Daily generation limit to protect GPU resources
+  - Automatic generation tracking and status display
+- **FR-029 ComfyUI Direct (Expert Mode)**:
+  - Direct connection to ComfyUI server API
+  - Custom workflow JSON support
+  - Queue management and progress polling
+- **FR-030 Prompt Template Variables**: Dynamic prompts with `{time_of_day}`, `{weather}`, `{season}`, `{day_of_week}`, `{month}`, `{random_element}`
+- **FR-031 Generation Status API**: New `/api/generation-status` endpoint for tracking ComfyUI generations
+- **Provider Architecture**: Clean abstraction layer with `ImageProvider` base class and provider factory
+
+### Changed
+- **Major Refactoring**: All image fetching logic moved to provider classes in `providers.py`
+- **app.py**: Routes now use `get_active_provider()` instead of hardcoded Immich logic
+- **Health Check**: Now source-agnostic, checks whichever provider is active
+- **Config Structure**: Added `image_source` top-level key and `comfyui` section
+- **Frontend Layout**: Complete redesign with collapsible config section, Current/Next photo panels, preview gallery
+- **BUILD_VERSION** updated to `2.0.0`
+- **config.yaml version** updated to `2.0.0`
+
+### New Configuration Options
+- `image_source`: Select image source (immich|comfyui_ha|comfyui_direct)
+- `ha_url`: Home Assistant URL for ComfyUI integration
+- `ha_api_token`: HA Long-Lived Access Token
+- `comfyui_prompt`: Prompt template for image generation
+- `comfyui_negative_prompt`: Negative prompt for exclusion
+- `comfyui_width` / `comfyui_height`: Output dimensions
+- `comfyui_seed`: Random (-1) or fixed seed
+- `comfyui_max_generations`: Daily generation limit
+- `comfyui_direct_url`: Direct ComfyUI server URL
+- `comfyui_workflow_json`: Custom workflow API JSON
+
+### New Files
+- `providers.py`: ImageProvider abstraction with ImmichProvider, ComfyUIHAProvider, ComfyUIDirectProvider
+
+### Modified Files
+- `app.py`: Complete refactor to use provider abstraction, +generation status endpoint
+- `config.yaml`: Added all ComfyUI options with schema validation
+- `run.sh`: Added new environment variable exports
+- `templates/settings.html`: Added source selector, ComfyUI config cards, generation status
+
+---
+
 ## [1.0.5] - 2026-04-03
 
 ### Added

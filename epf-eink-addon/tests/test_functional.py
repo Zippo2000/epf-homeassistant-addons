@@ -651,7 +651,7 @@ class TestFR014PreparePhoto:
 
         data = response.get_json()
         assert data['success'] is True
-        assert 'asset_id' in data
+        assert 'source_id' in data or 'asset_id' in data
 
     @responses.activate
     def test_prepare_photo_sets_status_new(self, client_with_mocks,
@@ -811,7 +811,7 @@ class TestFR017HealthCheck:
 
         data = response.get_json()
         assert data['status'] == 'healthy'
-        assert data['immich'] == 'connected'
+        assert data.get('immich') == 'connected' or data.get('source_status') == 'connected'
 
     @responses.activate
     def test_health_degraded(self, client_with_mocks, app_module):
@@ -828,7 +828,7 @@ class TestFR017HealthCheck:
 
         data = response.get_json()
         assert data['status'] == 'degraded'
-        assert data['immich'] == 'unreachable'
+        assert data.get('immich') == 'unreachable' or data.get('source_status') == 'unreachable'
 
     @responses.activate
     def test_health_head(self, client_with_mocks, app_module):
