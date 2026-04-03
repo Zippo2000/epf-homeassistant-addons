@@ -161,6 +161,12 @@
             color: var(--text-tertiary);
         }
 
+        .battery-timestamp {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
         /* Theme Toggle */
         .theme-toggle {
             background: var(--bg-tertiary);
@@ -633,9 +639,13 @@
                     <span class="battery-icon">🔋</span>
                     <div class="battery-text">
                         <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
-                        <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) }} V</span>
+                        <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) if battery_voltage > 0 else "0.00" }} V</span>
+                        {% if battery_last_read %}
+                        <span class="battery-timestamp" id="batteryTimestampHeader">{{ battery_last_read }}</span>
+                        {% else %}
+                        <span class="battery-timestamp" id="batteryTimestampHeader">No reading yet</span>
+                        {% endif %}
                     </div>
-                </div>
                 
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
                     <span id="themeIcon">🌙</span>
@@ -929,6 +939,9 @@
                         const voltageInVolts = (data.voltage / 1000).toFixed(2);
                         document.getElementById('batteryPercentageHeader').textContent = data.percentage.toFixed(1) + '%';
                         document.getElementById('batteryVoltageHeader').textContent = voltageInVolts + ' V';
+                    }
+                    if (data.formatted_timestamp) {
+                        document.getElementById('batteryTimestampHeader').textContent = data.formatted_timestamp;
                     }
                 })
                 .catch(error => console.error('Battery update failed:', error));
