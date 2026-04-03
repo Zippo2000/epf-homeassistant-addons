@@ -31,7 +31,7 @@ options:
   comfyui_negative_prompt: ""
   comfyui_width: 800
   comfyui_height: 480
-  comfyui_seed: 0  # 0 = random, >0 = fixed seed
+  comfyui_seed: 0
   comfyui_max_generations: 50
   comfyui_entity_id: ""
   comfyui_direct_url: ""
@@ -52,10 +52,10 @@ options:
 schema:
   image_source: "list(immich|comfyui_ha|comfyui_direct)"
   immich_api_key: "str"
-  immich_url: "url"
+  immich_url: "str"
   album_name: "str"
   ha_api_token: "str"
-  ha_url: "url?"
+  ha_url: "str?"
   comfyui_prompt: "str?"
   comfyui_negative_prompt: "str?"
   comfyui_width: "int(256,2048)?"
@@ -63,7 +63,7 @@ schema:
   comfyui_seed: "int(0,999999999)?"
   comfyui_max_generations: "int(1,200)?"
   comfyui_entity_id: "str?"
-  comfyui_direct_url: "url?"
+  comfyui_direct_url: "str?"
   comfyui_workflow_json: "str?"
   rotation_angle: "list(0|90|180|270)"
   color_enhance: "float(0,3)"
