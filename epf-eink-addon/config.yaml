@@ -31,7 +31,7 @@ options:
   comfyui_negative_prompt: ""
   comfyui_width: 800
   comfyui_height: 480
-  comfyui_seed: -1
+  comfyui_seed: 0  # 0 = random, >0 = fixed seed
   comfyui_max_generations: 50
   comfyui_entity_id: ""
   comfyui_direct_url: ""
@@ -60,7 +60,7 @@ schema:
   comfyui_negative_prompt: "str?"
   comfyui_width: "int(256,2048)?"
   comfyui_height: "int(256,2048)?"
-  comfyui_seed: "int(-1,999999999)?"
+  comfyui_seed: "int(0,999999999)?"
   comfyui_max_generations: "int(1,200)?"
   comfyui_entity_id: "str?"
   comfyui_direct_url: "url?"
