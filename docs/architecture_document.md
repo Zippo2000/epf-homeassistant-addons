@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-ARC-001  
-**Version:** 1.0.0  
-**Date:** 2025-11-08  
-**Baseline:** Repository commit 52 (main branch)  
+**Version:** 1.1.0  
+**Date:** 2026-04-03  
+**Baseline:** Repository commit 52 (main branch) + v1.0.4 enhancements  
 **Status:** Released
 
 ---
@@ -691,19 +691,48 @@ Background Threads:
 | NTP Synchronizer | FR-023 |
 | Web Settings UI | FR-021, NFR-008 |
 | Gunicorn WSGI Server | NFR-002, NFR-003, NFR-005, PER-002 |
+| Preview Cleanup Service | FR-024, NFR-009 |
 
 ---
 
 ## 13. Open Architectural Concerns
 
-| ID | Concern | Impact | Recommendation |
-|----|---------|--------|----------------|
-| AC-001 | `cpy.so` binary in repository is architecture-specific (amd64) and will not work on ARM hosts without Docker recompilation. | Medium | Add `cpy.so` to `.gitignore`; rely solely on Docker build-time compilation. |
-| AC-002 | No atomic file operations for tracking.txt; concurrent requests could cause race conditions. | Low | Use file locking (fcntl) or atomic rename pattern for tracking file updates. |
-| AC-003 | Global mutable state for configuration variables; no thread-safe access guarantees. | Low | Use threading.Lock for config updates or immutable config snapshots per request. |
-| AC-004 | No rate limiting or authentication on ESP32 endpoints; any LAN client can trigger image processing. | Medium | Add optional API key validation for `/download` endpoint or restrict via HA network policy. |
-| AC-005 | NTP daemon thread has no graceful shutdown; container stop may interrupt sync. | Negligible | Daemon threads are terminated by OS on container stop; no action needed. |
-| AC-006 | Single photo directory with no cleanup; old preview files accumulate. | Low | Implement periodic cleanup of stale preview files or size-based rotation. |
+| ID | Concern | Impact | Recommendation | Status |
+|----|---------|--------|----------------|--------|
+| AC-001 | `cpy.so` binary in repository is architecture-specific (amd64) and will not work on ARM hosts without Docker recompilation. | Medium | Add `cpy.so` to `.gitignore`; rely solely on Docker build-time compilation. | Open |
+| AC-002 | No atomic file operations for tracking.txt; concurrent requests could cause race conditions. | Low | Use file locking (fcntl) or atomic rename pattern for tracking file updates. | Open |
+| AC-003 | Global mutable state for configuration variables; no thread-safe access guarantees. | Low | Use threading.Lock for config updates or immutable config snapshots per request. | Open |
+| AC-004 | No rate limiting or authentication on ESP32 endpoints; any LAN client can trigger image processing. | Medium | Add optional API key validation for `/download` endpoint or restrict via HA network policy. | Open |
+| AC-005 | ~~NTP daemon thread has no graceful shutdown; container stop may interrupt sync.~~ | ~~Negligible~~ | ~~Daemon threads are terminated by OS on container stop; no action needed.~~ | **RESOLVED (v1.0.4)**: Implemented `_ntp_stop_event` threading.Event for graceful shutdown. |
+| AC-006 | ~~Single photo directory with no cleanup; old preview files accumulate.~~ | ~~Low~~ | ~~Implement periodic cleanup of stale preview files or size-based rotation.~~ | **RESOLVED (v1.0.4)**: Implemented `cleanup_old_previews()` with age-based and count-based eviction. |
+| AC-007 | ~~No type hints in application code; reduces maintainability and IDE support.~~ | ~~Low~~ | ~~Add Python type annotations throughout the codebase.~~ | **RESOLVED (v1.0.4)**: Full type hints added to all functions, variables, and class members. |
+
+---
+
+## 15. Design Decisions Added in v1.0.4
+
+### D-009: Graceful NTP Thread Shutdown
+- **Problem:** NTP daemon thread had no mechanism for graceful shutdown
+- **Solution:** Introduced `_ntp_stop_event` (threading.Event). The NTP loop checks this event before each sleep cycle and exits cleanly when signaled. A `stop_ntp_sync()` function is called during application shutdown.
+- **Impact:** Clean container shutdown, no orphaned threads
+
+### D-010: Preview File Cleanup
+- **Problem:** Preview files (latest_original_*.jpg, latest_processed_*.jpg, latest_delivered_*.jpg) accumulated indefinitely
+- **Solution:** Implemented `cleanup_old_previews()` function with dual eviction strategy:
+  - Age-based: Files older than 7 days are removed
+  - Count-based: When more than 50 files match a pattern, oldest are removed first
+- **Interface:** Exposed via POST `/cleanup-previews` endpoint
+- **Impact:** Prevents unbounded disk growth
+
+### D-011: Type Hints Throughout Codebase
+- **Problem:** No type annotations, reducing code clarity and IDE support
+- **Solution:** Added `from __future__ import annotations` and comprehensive type hints using `typing` module (Optional, Dict, Any, Set, Tuple, Callable, List) for all function signatures, global variables, and class attributes
+- **Impact:** Improved maintainability, better IDE autocomplete, earlier error detection
+
+### D-012: UI/Schema Alignment for color_enhance
+- **Problem:** Settings UI slider capped at 2.0 while config schema allows 0.0–3.0
+- **Solution:** Updated slider `max` attribute from `2.0` to `3.0` in settings.html
+- **Impact:** Consistent user experience, full schema range accessible via UI
 
 ---
 
@@ -717,4 +746,4 @@ Background Threads:
 
 ---
 
-*Document generated from codebase analysis of repository state at commit 52 on main branch. All architectural descriptions reflect implemented design decisions, not planned features.*
+*Document generated from codebase analysis of repository state at commit 52 on main branch + v1.0.4 enhancements. All architectural descriptions reflect implemented design decisions, not planned features.*
