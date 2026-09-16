@@ -240,7 +240,7 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 | 2026-09-16 | A | 14.4 | `run.sh` Gate source-conditional (`image_source=immich`); bash-n + Gate-Simulation | ✅ `9893f77` |
 | 2026-09-16 | B | 14.1 | „7-color“→„6-color“ (6 Stellen/3 Dateien); Diagonale erhalten | ✅ `5fc0de2` |
 | 2026-09-16 | B | 14.5 | `cpy.so` + 2× `!…cpy.so` entfernt; Build kompiliert `cpy.pyx` selbst | ✅ `1360f2f` |
-| – | B | 14.7 | _(TODO: fonts-dejavu-core ins Prod-Dockerfile)_ | ☐ |
+| 2026-09-16 | B | 14.7 | `fonts-dejavu-core` ins Prod-`Dockerfile`; Font-Pfad im bookworm-Image verifiziert | ✅ `293fc09` |
 | – | B | 14.6 | _(TODO: Test-Report neu auf v2.x)_ | ☐ |
 | – | C | 14.13 | _(TODO: gitignore + dotenv dedupe)_ | ☐ |
 | – | C | 14.11 / 14.10 / 14.8 / 14.12 | _(TODO: Entscheidungen dokumentieren; optional Code)_ | ☐ |

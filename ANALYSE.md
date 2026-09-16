@@ -549,6 +549,7 @@ den aktuellen Stand**. → Beim nächsten Lauf `EPF-RPT-001` auf v2.x hochziehen
 (laut `run.test.sh` trivial möglich).
 
 ### 14.7 Datum-Overlay braucht **DejaVu**, das **Prod-**`Dockerfile` **installiert nicht** (kosmetisch)
+> **Status (14.7): ✅ behoben** — `fonts-dejavu-core` zur apt-Liste des **Prod-**`Dockerfile` hinzugefügt (war nur im Test-Image); `DejaVuSans-Bold.ttf` im bookworm-Image verifiziert → Datum-Overlay rendert mit der beabsichtigten Schrift statt `load_default()`. Fix: Commit `293fc09`.
 `scale_img_in_memory` versucht `ImageFont.truetype('.../DejaVuSans-Bold.ttf')`; nur **`Dockerfile.test`**
 bündelt `fonts-dejavu-core`. Im **prod** Image fällt das auf `ImageFont.load_default()` (winzige
 Bitmap-Schrift) zurück → Overlay bleibt, ist aber nicht die beabsichtigte Schrift. → Either `fonts-dejavu-core`
