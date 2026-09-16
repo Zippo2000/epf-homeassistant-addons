@@ -512,6 +512,7 @@ Der Waveshare 7,3″ **Spectra-6 (E630S)** ist ein **6-Farben**-Panel; `palette`
 `architecture_document.md` (Goals G-002, Constraints C-003) — ein **Copy-Paste-Erbe vom
 Upstream-Projekt**. Ironie: Dieselben Doku widersprechen sich *intern* (andere Stellen derselben
 Datei sagen „6-color“). **→ auf „6“ vereinheitlichen.**
+> **Status (14.1): ✅ behoben** — alle 6 "7-color"-Stellen auf "6-color" gesetzt (epf-`README` L9/L174; `requirements_spec` L18/L24; `architecture_document` L32/L42); "7.3 inch"/"7.3inch" (Diagonale) bewusst erhalten; intern jetzt konsistent. Fix: Commit `5fc0de2`.
 
 ### 14.2 Zwei `config.yaml`-Bedeutungen (konzeptionell, gut gedocht)
 `epf-eink-addon/config.yaml` = **Add-on-Manifest** (tracked) vs. Laufzeit-`config/config.yaml`
