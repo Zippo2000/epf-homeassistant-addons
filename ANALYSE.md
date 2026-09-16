@@ -543,6 +543,7 @@ wird **niemals** ins Image kopiert. `.gitignore` whitelistet sie trotzdem (`!epf
 sie suggeriert falsche Relevanz; der Build ist self-contained.
 
 ### 14.6 `test_report_aspice.md` ist **veraltet** (kosmetisch, aber Vertrauens-Problem)
+> **Status (14.6): ✅ behoben** — Report auf **v2.0.0 / 140 Tests** neu geschrieben (früher 1.1.0/93, intern inkonsistent: 93 nominal vs 78 ausgeführt). Jetzt: 140/140 (functional 77, non-functional 27, provider-unit 36), v3-konforme Immich-Mocks, FR-027/028 erfasst. Fix: Commit `30ad215`.
 Report = **v1.1.0 / 93 Tests / „100 %“ / 14,75 s** — eine **v1.0.4**-Baseline. Code & Specs stehen aber
 auf **v2.0.0** (31 FR, + ganzer Provider-Test-Modul). Die Report-Zahlen sind damit **keine Aussage über
 den aktuellen Stand**. → Beim nächsten Lauf `EPF-RPT-001` auf v2.x hochziehen und die Count aktualisieren
