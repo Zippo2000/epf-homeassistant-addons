@@ -31,8 +31,6 @@ __pycache__/
 
 # C extensions
 *.so
-!epf-eink-addon/cpy.so
-!epf-eink-addon/cpy.so
 
 # Distribution / packaging
 .Python
