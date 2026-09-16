@@ -15,13 +15,13 @@
 This document specifies the software requirements for the EPF (E-Paper Photo Frame) Home Assistant Add-on in accordance with ASPICE processes SWE.1 (Software Requirements Analysis) and SYS.2 (System Requirements Analysis). It serves as the single source of truth for functional, non-functional, interface, security, and performance requirements derived from the current codebase state.
 
 ### 1.2 Scope
-The scope encompasses the single add-on `epf-eink-addon` within the repository, which provides a Flask-based server running inside a Home Assistant supervised Docker container. The server integrates with multiple image sources — **Immich** (photo management backend), **ComfyUI via Home Assistant** (AI image generation through HA service), and **ComfyUI Direct** (direct ComfyUI API) — processes images for 7-color E-Ink displays (800x480), and serves the processed data to ESP32-based hardware clients.
+The scope encompasses the single add-on `epf-eink-addon` within the repository, which provides a Flask-based server running inside a Home Assistant supervised Docker container. The server integrates with multiple image sources — **Immich** (photo management backend), **ComfyUI via Home Assistant** (AI image generation through HA service), and **ComfyUI Direct** (direct ComfyUI API) — processes images for 6-color E-Ink displays (800x480), and serves the processed data to ESP32-based hardware clients.
 
 ### 1.3 References
 - ASPICE v3.1 Process Reference Model
 - Home Assistant Add-on Specification v1.0
 - Immich API v1.x
-- Waveshare 7.3inch E-Paper (7-color) Datasheet
+- Waveshare 7.3inch E-Paper (6-color) Datasheet
 - ESP32 FireBeetle E Hardware Reference
 
 ### 1.4 Terminology and Abbreviations

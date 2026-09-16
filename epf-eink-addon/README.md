@@ -6,7 +6,7 @@ E-Paper Photo Frame integration for Home Assistant with **multi-source support**
 
 This add-on provides a Flask server that:
 - Fetches images from **multiple sources**: Immich photo library, ComfyUI via Home Assistant, or ComfyUI Direct
-- Processes and optimizes images for 7-color E-Ink displays (800x480)
+- Processes and optimizes images for 6-color E-Ink displays (800x480)
 - Serves images to ESP32-based E-Paper frames
 - Manages display sleep/wake cycles
 - Monitors battery levels
@@ -171,7 +171,7 @@ This add-on provides a Flask server that:
 ## Hardware Requirements
 
 - ESP32 (FireBeetle ESP32-E recommended)
-- 7.3" E-Ink display (Waveshare 7.3inch e-Paper, 7-color)
+- 7.3" E-Ink display (Waveshare 7.3inch e-Paper, 6-color)
 - LiPo battery (optional, for battery operation)
 
 ## Architecture

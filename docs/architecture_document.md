@@ -29,7 +29,7 @@ The architecture covers the single add-on `epf-eink-addon` including its contain
 
 ### 2.1 Goals
 - **G-001:** Provide a seamless bridge between photo sources (Immich, ComfyUI) and ESP32-based E-Ink display hardware
-- **G-002:** Optimize images for 7-color E-Ink displays using performant Cython-compiled dithering algorithms
+- **G-002:** Optimize images for 6-color E-Ink displays using performant Cython-compiled dithering algorithms
 - **G-003:** Integrate natively into Home Assistant with configuration via HA UI and Ingress web interface
 - **G-004:** Support power-efficient operation through configurable sleep schedules and ESP32 deep-sleep coordination
 - **G-005:** Enable multi-architecture deployment (ARM and x86) via Home Assistant build system
@@ -39,7 +39,7 @@ The architecture covers the single add-on `epf-eink-addon` including its contain
 ### 2.2 Constraints
 - **C-001:** Must operate as a Home Assistant supervised Docker container
 - **C-002:** Must use the Home Assistant bashio configuration API for runtime configuration
-- **C-003:** E-Ink display hardware is fixed at 800x480 pixels, 7-color palette (Waveshare 7.3inch)
+- **C-003:** E-Ink display hardware is fixed at 800x480 pixels, 6-color palette (Waveshare 7.3inch)
 - **C-004:** ESP32 client firmware expects a specific hex-encoded pixel format (4-bit per pixel, packed)
 - **C-005:** Cython module must be compiled during Docker build for each target architecture
 
