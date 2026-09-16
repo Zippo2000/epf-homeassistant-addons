@@ -236,7 +236,7 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 
 | Datum | Phase | Finding | Beschreibung / Commit-Ref | Ergebnis |
 |-------|-------|---------|----------------------------|----------|
-| – | A | 14.3 | _(TODO: port v3 + Mock + TestFR002)_ | ☐ |
+| 2026-09-16 | A | 14.3 | v3 `POST /api/search/metadata`-Port; Mocks + FR-001/002 + `List`-Import; **140/140 grün** | ✅ `5c7b262` |
 | – | A | 14.4 | _(TODO: run.sh gate conditional)_ | ☐ |
 | – | B | 14.1 / 14.5 / 14.7 | _(TODO: Doku 6-Farben; cpy.so raus; DejaVu)_ | ☐ |
 | – | B | 14.6 | _(TODO: Test-Report neu auf v2.x)_ | ☐ |
