@@ -532,6 +532,7 @@ wie der Standalone-EPF es bereits tut — das wäre der *konsistente* Zustand.
 **unabhängig vom `image_source`**. Ein **ComfyUI-only**-Setup (kein Immich) kann daher **nicht starten**,
 solange man nicht Dummy-Werte eingibt. **Empfehlung:** Gate **conditional** auf `image_source == immich`
 machen; ggf. nur die *für die gewählte Quelle relevanten* Felder validieren.
+> **Status (14.4): ✅ behoben** — Gate in `run.sh` ist jetzt **source-conditional** (`image_source=immich`); reine ComfyUI-Setups starten ohne Immich-Werte. Verifiziert: `bash -n` + Gate-Simulation. Fix: Commit `9893f77`.
 
 ### 14.5 `cpy.so` (1,2 MB, amd64) ist **redundant im Repo** (kosmetisch/hygienisch)
 Der Docker-Build **COPYt nur `cpy.pyx` + `setup.py`** und **kompiliert selbst** — die commit-ete `cpy.so`
