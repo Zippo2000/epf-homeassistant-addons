@@ -536,6 +536,7 @@ machen; ggf. nur die *für die gewählte Quelle relevanten* Felder validieren.
 > **Status (14.4): ✅ behoben** — Gate in `run.sh` ist jetzt **source-conditional** (`image_source=immich`); reine ComfyUI-Setups starten ohne Immich-Werte. Verifiziert: `bash -n` + Gate-Simulation. Fix: Commit `9893f77`.
 
 ### 14.5 `cpy.so` (1,2 MB, amd64) ist **redundant im Repo** (kosmetisch/hygienisch)
+> **Status (14.5): ✅ behoben** — prebuilt `cpy.so` **und** beide `!epf-eink-addon/cpy.so`-Negations entfernt; der Build kompiliert `cpy.pyx` selbst (`*.so` bleibt ignoriert). Fix: Commit `1360f2f`.
 Der Docker-Build **COPYt nur `cpy.pyx` + `setup.py`** und **kompiliert selbst** — die commit-ete `cpy.so`
 wird **niemals** ins Image kopiert. `.gitignore` whitelistet sie trotzdem (`!epf-eink-addon/cpy.so`)
 (zweimal, sogar dupliziert) als **Erbe vom Basisprojekt**. → **Entfernen** (oder `!`-Zeile löschen) —
