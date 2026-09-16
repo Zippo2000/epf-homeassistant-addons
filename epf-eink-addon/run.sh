@@ -35,14 +35,17 @@ export LOG_LEVEL=$(bashio::config 'log_level' 'info')
 # If running in Ingress mode, HA handles the routing without needing the token
 export INGRESS_PATH="/api/hassio_ingress"
 
-if [ -z "${IMMICH_API_KEY}" ]; then
-    bashio::log.fatal "IMMICH_API_KEY is required!"
-    exit 1
-fi
-
-if [ -z "${IMMICH_URL}" ]; then
-    bashio::log.fatal "IMMICH_URL is required!"
-    exit 1
+# Immich credentials are only mandatory when Immich is actually the image source
+# (a ComfyUI-only setup must be able to start without any Immich values).
+if [ "${IMAGE_SOURCE}" = "immich" ]; then
+    if [ -z "${IMMICH_API_KEY}" ]; then
+        bashio::log.fatal "IMMICH_API_KEY is required (image_source=immich)"
+        exit 1
+    fi
+    if [ -z "${IMMICH_URL}" ]; then
+        bashio::log.fatal "IMMICH_URL is required (image_source=immich)"
+        exit 1
+    fi
 fi
 
 bashio::log.info "Configuration loaded:"
