@@ -515,6 +515,7 @@ Datei sagen „6-color“). **→ auf „6“ vereinheitlichen.**
 > **Status (14.1): ✅ behoben** — alle 6 "7-color"-Stellen auf "6-color" gesetzt (epf-`README` L9/L174; `requirements_spec` L18/L24; `architecture_document` L32/L42); "7.3 inch"/"7.3inch" (Diagonale) bewusst erhalten; intern jetzt konsistent. Fix: Commit `5fc0de2`.
 
 ### 14.2 Zwei `config.yaml`-Bedeutungen (konzeptionell, gut gedocht)
+> **Status (14.2): keine Maßnahme nötig** — Manifest-`epf-eink-addon/config.yaml` (Add-on-Schema, getrackt) vs. Laufzeit-`config/config.yaml` ist in `README`/`ANALYSE`/`AGENTS` + `.gitignore` bereits erklärt.
 `epf-eink-addon/config.yaml` = **Add-on-Manifest** (tracked) vs. Laufzeit-`config/config.yaml`
 (ignored, Bind-Mount). `.gitignore` trennt das bewusst via `!`-Whitelist. Klar, aber der
 **Namensgleichklang** ist eine wiederkehrende Falle; in allen Doku explizit benennen (done: §11).
@@ -557,17 +558,20 @@ Bitmap-Schrift) zurück → Overlay bleibt, ist aber nicht die beabsichtigte Sch
 in `Dockerfile` nachziehen, oder den Fallback als *intended* dokumentieren.
 
 ### 14.8 Sleep-/Wake-Zeit = **Container-Uhr** (Zone + Drift) (wie Basis-EPF, bewusst)
+> **Status (14.8): ✅ entschieden (Doku)** — bewusst wie Basis-EPF: die **Host-/System-Uhr muss stimmen**; der NTP-Thread *liest* nur, setzt die Uhr nicht. *Optional:* `TZ` als Add-on-Option durchreichen, damit Schlaf-/Wake-Fenster lokal sind.
 `/sleep` nutzt `datetime.now()` in der **Container-Zoné** (Default **UTC**) — ohne `TZ`-Option driftet
 das Fensters um die Offset. NTP-Thread **liest nur** `pool.ntp.org`, **setzt die Uhr nicht**. → **TZ** als
 Add-on-Option anbieten (bzw. Doku: „Systemuhr des Hosts muss stimmen“), s. Standalone-Analyse.
 
 ### 14.9 **Zwei Paletten in zwei Phasen** (Dithering vs. De-Palette) (offen, s. Basis-EPF)
+> **Status (14.9): 🔶 explizit OFFEN** — die endgültige **Farb-Slot-Zuordnung** (2 Paletten/2 Phasen; `indices[indices>3]+=1`) lässt sich nur **gegen eine Waveshare-Referenzkarte / per Foto** abschließend prüfen. Bis dahin **bewusst offengelegt** (nicht verheimlicht) — siehe auch Basis-EPF.
 `cpy.pyx` dithert gegen **reine** RGBs; `app.py::depalette_image` mappt gegen die **annähernden**
 Waveshare-RGBs — plus `indices[indices>3] += 1` (Slot 4 = Waveshare-`RED` wird nie ausgegeben).
 Deterministisch, aber **fragil**; die **effektive Farbzuordnung zum Panel** sollte einmal
 fotoğrafisch gegen eine Waveshare-Referenz verifiziert (wie in der Basis-ANALYSE empfohlen).
 
 ### 14.10 Health koppelt **Container-Status an externe Quelle** (Design-Entscheidung, Trade-off)
+> **Status (14.10): ✅ entschieden (Trade-off behalten)** — die Kopplung bleibt, weil sie die **Abhängigkeit sichtbar** macht (down-Quelle ⇒ 503). *Optional:* Health = „App up“, Quellen-Status nur im UI anzeigen (kein 503).
 Docker-`HEALTHCHECK` → `GET /health` → pingt den **aktiven Provider** (z. B. Immich). Ist Immich down,
 ist der **Container „unhealthy“** — auch wenn die App selbst einwandfrei läuft. Das ist **bewusst**
 (zeigt die Abhängigkeit), kann aber Supervisor-Aktionen/Alerting **falsch** triggern. → Alternative:
@@ -575,6 +579,7 @@ Health auf „App ist up” (Process-Check) reduzieren und die *Quellen*-Erreich
 **Separaten-Status** im UI anzeigen.
 
 ### 14.11 **Kein Auth** auf `/` (POST), `/prepare-photo`, `/cleanup-previews`, `/download` (kritisch außer-LAN)
+> **Status (14.11): ✅ entschieden (bekannte Grenze)** — Endpunkte bleiben unauthentifiziert; **rohen Port 5000 nur im LAN/VLAN** exponieren; **Ingress** liefert den Session-Schutz für die UI. Token-/Rate-Limit nur **optional**, falls >LAN. Siehe §4 (Security).
 Alle Endpunkte sind **anonym** ansprechbar (Ingress bietet bei UI-Zugriff *Session*-Schutz, **roher Port 5000
 nicht**). Jeder im Netz könnte Einstellungen ändern oder `/download` in einem Loop feuern. Das **vertraute-
 LAN**-Modell (wie Basis-EPF, `SEC-001…` decken nur *Leakage*, nicht *Zugriff*) ist akzeptabel **im Home-LAN**,
@@ -582,6 +587,7 @@ LAN**-Modell (wie Basis-EPF, `SEC-001…` decken nur *Leakage*, nicht *Zugriff*)
 abgedeckt; **Endpoint-Auth/Rate-Limit** fehlt. → Bei Exponierung: minimales Bearer- oder Token-Schutz + Rate-Limit.
 
 ### 14.12 **Single `active_provider`-Global** unter gunicorn **2×2** (robust, aber zu beachten)
+> **Status (14.12): ✅ entschieden (bekannte Einschränkung)** — relevant **nur** bei **mehreren Frames gegen einer Instanz** (State/`active_provider` pro Worker/Thread). *Optional:* leichtes Locking/`fcntl` auf `tracking.txt`/`generations.json`. Kein Pflicht-Code.
 Der Provider wird pro Worker-Process lazy erzeugt (`get_active_provider`) und bei Config-Wechsel pro
 Worker neu gebaut — da gunicorn **forkt**, teilen **verschiedene Worker eigene** `active_provider`/
 Tracking-Datei-Zustände. `tracking.txt`/`generations.json` haben **keine Dateisperre** → zwei
@@ -590,6 +596,7 @@ Limiter **zählen parallel** (mild). Im typischen Betrieb (1 Frame, sequentiell)
 **mehrere Frames** gegen dieselbe Instanz relevant (wie in Basis-EPF §10.5.2).
 
 ### 14.13 Kleinkram
+> **Status (14.13): ✅ behoben** — `.gitignore`-Duplikate (`test-results.xml`; `Dockerfile.test`+`run.test.sh`) zusammengefasst; unused `python-dotenv` aus `requirements.txt` entfernt ( nirgends importiert). Fix: Commit `5e1f047`.
 * `run.sh`/`run.test.sh` **doppelt** in `.gitignore` aufgeführt (cosmetic).
 * `requirements.txt` pinnen `python-dotenv`, das **nirgends** importiert wird (dead dep).
 * `app.py` importiert `rawpy`/`glob` o. ä. mehrfach; `setup.py`-`define_macros` (Numpy-ABI) — alles

@@ -242,7 +242,10 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 | 2026-09-16 | B | 14.5 | `cpy.so` + 2× `!…cpy.so` entfernt; Build kompiliert `cpy.pyx` selbst | ✅ `1360f2f` |
 | 2026-09-16 | B | 14.7 | `fonts-dejavu-core` ins Prod-`Dockerfile`; Font-Pfad im bookworm-Image verifiziert | ✅ `293fc09` |
 | 2026-09-16 | B | 14.6 | Test-Report auf **v2.0.0/140 Tests** neu (140/140); v3-Mocks, FR-027/028 | ✅ `30ad215` |
-| – | C | 14.13 | _(TODO: gitignore + dotenv dedupe)_ | ☐ |
-| – | C | 14.11 / 14.10 / 14.8 / 14.12 | _(TODO: Entscheidungen dokumentieren; optional Code)_ | ☐ |
-| – | C | 14.9 | _(TODO: Foto-Verifizierung oder explizit offen)_ | ☐ |
-| – | – | **Release** | _(TODO: Tag v2.0.1, falls A+B done)_ | ☐ |
+| 2026-09-16 | C | 14.13 | `.gitignore`-Duplikate deduped; dead `python-dotenv` entfernt | ✅ `5e1f047` |
+| 2026-09-16 | C | 14.11 | Entscheidung: Endpunkte unauth.; **Port 5000 nur LAN**; Ingress = UI-Schutz; Token/Rate-Limit nur >LAN | ✅ Doku |
+| 2026-09-16 | C | 14.10 | Entscheidung: **Health-Kopplung behalten** (zeigt Abhängigkeit); optional Health=“App up” | ✅ Doku |
+| 2026-09-16 | C | 14.8 | Entscheidung: **Doku** (Host-Uhr; NTP liest nur); optional TZ-Option | ✅ Doku |
+| 2026-09-16 | C | 14.12 | Entscheidung: **bekannte Einschränkung** (nur Multi-Frame/Instanz); optional leichtes Locking | ✅ Doku |
+| – | C | 14.9 | **explizit OFFEN**: Farb-Slot-Zuordnung nur gegen Referenzkarte/Foto abschließbar (nicht verheimlicht) | 🔶 offen |
+| – | – | **Release** | A+B fertig (14.3/14.4/14.1/14.5/14.7/14.6). **Tag `v2.0.1`** empfohlen **nach Merge** nach `main` | ⏳ nach Merge |
