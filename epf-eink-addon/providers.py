@@ -12,7 +12,7 @@ Supports multiple image sources:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 import io
 import os
 import random
@@ -250,12 +250,25 @@ class ImmichProvider(ImageProvider):
         if not album_id:
             raise RuntimeError(f'Album "{self.album_name}" not found')
         
-        response = requests.get(f'{self.url}/api/albums/{album_id}', headers=self.headers, timeout=10)
-        if response.status_code != 200:
-            raise RuntimeError('Failed to fetch album assets')
+        # Immich v3+: GET /api/albums/{id} no longer returns 'assets' —
+        # fetch them via the paginated POST /api/search/metadata instead (basis EPF).
+        album_assets: List[Dict[str, Any]] = []
+        page = 1
+        while True:
+            search_body = {"albumIds": [album_id], "size": 1000, "page": page, "withExif": True}
+            response = requests.post(f'{self.url}/api/search/metadata',
+                                     headers=self.headers, json=search_body, timeout=30)
+            if response.status_code != 200:
+                raise RuntimeError(f'Failed to fetch album assets: {response.status_code}')
+            result: Dict[str, Any] = response.json().get('assets', {})
+            album_assets.extend(result.get('items', []))
+            next_page = result.get('nextPage')
+            if not next_page:
+                break
+            page = int(next_page)
         
-        album_data: dict = response.json()
-        if 'assets' not in album_data or not album_data['assets']:
+        album_data: dict = {'assets': album_assets}
+        if not album_data['assets']:
             raise RuntimeError('No images in album')
         
         downloaded_images: set = self._load_downloaded_images()

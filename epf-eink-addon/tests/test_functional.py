@@ -45,13 +45,13 @@ class TestFR001AlbumRetrieval:
         response = client_with_mocks.post('/prepare-photo')
         data = response.get_json()
 
-        # Check that the albums endpoint was called
-        albums_request = None
-        for call in responses.calls:
-            if '/api/albums' in call.request.url and 'album' not in call.request.url.split('/api/albums/')[0]:
-                albums_request = call
-                break
-
+        # Check that the album LIST endpoint (GET /api/albums) was called with the key.
+        # (After the 14.3 v3 change, album *assets* no longer come from /api/albums/{id};
+        # only the list call is addressed here, so match exactly '.../api/albums'.)
+        albums_request = next(
+            (call for call in responses.calls
+             if call.request.url.rstrip('/').endswith('/api/albums')),
+            None)
         assert albums_request is not None
         assert albums_request.request.headers.get('x-api-key') == MOCK_API_KEY
 
@@ -80,7 +80,7 @@ class TestFR002AlbumAssetRetrieval:
 
         # Check album assets endpoint was called
         album_assets_called = any(
-            f'/api/albums/{MOCK_ALBUM_ID}' in call.request.url
+            'search/metadata' in call.request.url
             for call in responses.calls
         )
         assert album_assets_called

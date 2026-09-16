@@ -99,7 +99,7 @@ def mock_albums_response(albums=None):
 
 
 def mock_album_assets_response(asset_count=3, image_order='newest'):
-    """Return assets for /api/albums/{id}."""
+    """Return assets in the Immich v3 search/metadata shape."""
     assets = []
     for i in range(asset_count):
         asset = {
@@ -116,7 +116,7 @@ def mock_album_assets_response(asset_count=3, image_order='newest'):
     if image_order == 'newest':
         assets.sort(key=lambda x: x['exifInfo']['dateTimeOriginal'],
                     reverse=True)
-    return {'assets': assets}
+    return {'assets': {'items': assets, 'nextPage': None, 'total': len(assets)}}
 
 
 def setup_immich_mocks(responses_mock, album_name=MOCK_ALBUM_NAME,
@@ -164,15 +164,15 @@ def setup_immich_mocks(responses_mock, album_name=MOCK_ALBUM_NAME,
     # Album assets
     if assets_empty:
         responses_mock.add(
-            responses.GET,
-            f'{immich_url}/api/albums/{album_id}',
-            json={'assets': []},
+            responses.POST,
+            f'{immich_url}/api/search/metadata',
+            json={'assets': {'items': [], 'nextPage': None, 'total': 0}},
             status=200,
         )
     else:
         responses_mock.add(
-            responses.GET,
-            f'{immich_url}/api/albums/{album_id}',
+            responses.POST,
+            f'{immich_url}/api/search/metadata',
             json=mock_album_assets_response(asset_count),
             status=200,
         )
