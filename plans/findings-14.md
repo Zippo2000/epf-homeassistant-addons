@@ -2,7 +2,7 @@
 
 **Repo:** [`Zippo2000/epf-homeassistant-addons`](https://github.com/Zippo2000/epf-homeassistant-addons) · Add-on `epf-eink-addon` (v2.0.0)
 **Bezogen auf:** [`../ANALYSE.md`](../ANALYSE.md) §14 (14.1 – 14.13) · **Verwandt:** [`ARCHITECTURE.md`](../ARCHITECTURE.md), [`docs/`](../docs/)
-**Status:** `OPEN` (Plan) · **Autor/Stand:** _(ausgefüllt beim Start)_ · **Sprache:** Deutsch
+**Status:** `CLOSED` (14.1-14.13 erledigt; **14.9** bewusst offen) · **Autor/Stand:** _(ausgefüllt beim Start)_ · **Sprache:** Deutsch
 
 > **Verwendung:** Dies ist der Arbeits-Plan zur Behebung der Findings aus `ANALYSE.md` §14.
 > Jedes Finding unten hat ein Checkbox-Set — **haken im Verlauf ab** und trag die
@@ -114,9 +114,9 @@ durch:
 korrigieren + Hinweis „v3, paginiert (`withExif`)“.
 
 **✅ Verifizierung**
-- [ ] `docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:local epf-eink-addon`
-- [ ] `docker run --rm epf-eink-tests:local /run.sh` → **Exit 0** (v. a. FR-001/002/003/004 + `TestImmichProvider`)
-- [ ] *(empfohlen, live)* `curl -H 'x-api-key: …' -X POST '{immich}/api/search/metadata' -d '{"albumIds":["<id>"],"size":10,"page":1,"withExif":true}'` → Items + `exifInfo` vorhanden
+- [x] `docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:local epf-eink-addon`
+- [x] `docker run --rm epf-eink-tests:local /run.sh` → **Exit 0** (v. a. FR-001/002/003/004 + `TestImmichProvider`)
+- [x] *(empfohlen, live)* `curl -H 'x-api-key: …' -X POST '{immich}/api/search/metadata' -d '{"albumIds":["<id>"],"size":10,"page":1,"withExif":true}'` → Items + `exifInfo` vorhanden
 **Effort: M · Risiko: niedrig (nach Mock-Sync) · Gate: Suite grün**
 
 ---
@@ -147,8 +147,8 @@ fi
 # fi
 ```
 **✅ Verifizierung**
-- [ ] `bash -n epf-eink-addon/run.sh` (Syntax)
-- [ ] manuell: `IMAGE_SOURCE=comfyui_ha` **ohne** Immich-Werte → Startet nicht wegen Immich (ggf. nur wegen HA-TOKEN)
+- [x] `bash -n epf-eink-addon/run.sh` (Syntax)
+- [x] manuell: `IMAGE_SOURCE=comfyui_ha` **ohne** Immich-Werte → Startet nicht wegen Immich (ggf. nur wegen HA-TOKEN)
 **Effort: S · Risiko: niedrig · Gate: manuel + Syntax**
 
 ---
@@ -160,29 +160,29 @@ fi
 - `docs/requirements_specification_aspice.md` (**L18** Intro, **L24** Refs),
 - `docs/architecture_document.md` (**L32** G-002, **L42** C-003).
 - Ein globaler Such-/Ersetz-Pass; danach **Abgleich** der bereits korrekten „6“-Stellen, damit beides einheitlich „6“ liest.
-- [ ] Suchen `7-color|7 farbig|seven-color` → **0 Treffer** in Doku.
+- [x] Suchen `7-color|7 farbig|seven-color` → **0 Treffer** in Doku.
 
 **14.5 (Hygiene, S)** — redundantes `cpy.so`:
-- [ ] `git rm epf-eink-addon/cpy.so` (das Build **kompiliert** `cpy.pyx` selbst; die committed Binary wird vom Dockerfile nie kopiert).
-- [ ] **`.gitignore` L34/35:** beide `!epf-eink-addon/cpy.so`-Zeilen löschen.
+- [x] `git rm epf-eink-addon/cpy.so` (das Build **kompiliert** `cpy.pyx` selbst; die committed Binary wird vom Dockerfile nie kopiert).
+- [x] **`.gitignore` L34/35:** beide `!epf-eink-addon/cpy.so`-Zeilen löschen.
 - **Verifiz:** `docker build -f epf-eink-addon/Dockerfile .` (kompiliert weiterhin) + `git status` zeigt `cpy.so` nicht.
 
 **14.7 (Docker, S)** — DejaVu-Schrift:
-- [ ] `epf-eink-addon/Dockerfile` apt-Liste (**L7–24**) um **`fonts-dejavu-core`** erweitern (bisher nur in `Dockerfile.test`) → Datum-Overlay rendert mit der beabsichtigten Schrift, nicht mit `load_default()`.
+- [x] `epf-eink-addon/Dockerfile` apt-Liste (**L7–24**) um **`fonts-dejavu-core`** erweitern (bisher nur in `Dockerfile.test`) → Datum-Overlay rendert mit der beabsichtigten Schrift, nicht mit `load_default()`.
 - **Verifiz:** `docker run`-Smoke, Settings-UI → Preview zeigt sauberes Datum-Overlay.
 
 **14.6 (Doku/CI — **letztes** der Phase, S)** — Test-Report neu:
-- [ ] nach A+B: `docker run --rm epf-eink-tests:local /run.sh` → **alle Tests**, neue Counts.
-- [ ] `docs/test_report_aspice.md` auf **aktuellen Stand** (v2.x; **nicht** mehr v1.1.0/93 Tests) neu schreiben: Total/Passed/Env/Ausführungszeit + Verdict.
-- [ ] Versions-Header des Reports auf den Code-Stand alignen (Vermeidung weiterer Versionsscherben).
+- [x] nach A+B: `docker run --rm epf-eink-tests:local /run.sh` → **alle Tests**, neue Counts.
+- [x] `docs/test_report_aspice.md` auf **aktuellen Stand** (v2.x; **nicht** mehr v1.1.0/93 Tests) neu schreiben: Total/Passed/Env/Ausführungszeit + Verdict.
+- [x] Versions-Header des Reports auf den Code-Stand alignen (Vermeidung weiterer Versionsscherben).
 
 ---
 
 ### 3.4 P2–P3 (Entscheidungen & Optional — bewusste Kanten)
 
 **14.13 (Hygiene, S)**
-- [ ] `.gitignore`: duplizierte Blöcke löschen — **L76/77** (`test-results.xml`×2) und **L178/179 + L182/183** (`Dockerfile.test`/`run.test.sh` je zweimal).
-- [ ] `requirements.txt`: **`python-dotenv` entfernen** (wird nirgends importiert).
+- [x] `.gitignore`: duplizierte Blöcke löschen — **L76/77** (`test-results.xml`×2) und **L178/179 + L182/183** (`Dockerfile.test`/`run.test.sh` je zweimal).
+- [x] `requirements.txt`: **`python-dotenv` entfernen** (wird nirgends importiert).
 - **Verifiz:** `grep -c "Dockerfile.test" .gitignore` → 1; `pip check`-artig: Build ohne `python-dotenv` ok.
 
 **14.11 (Auth, **Entscheidung**)** — *Empfehlung:*
@@ -249,3 +249,4 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 | 2026-09-16 | C | 14.12 | Entscheidung: **bekannte Einschränkung** (nur Multi-Frame/Instanz); optional leichtes Locking | ✅ Doku |
 | – | C | 14.9 | **explizit OFFEN**: Farb-Slot-Zuordnung nur gegen Referenzkarte/Foto abschließbar (nicht verheimlicht) | 🔶 offen |
 | – | – | **Release** | A+B fertig (14.3/14.4/14.1/14.5/14.7/14.6). **Tag `v2.0.1`** empfohlen **nach Merge** nach `main` | ⏳ nach Merge |
+| 2026-09-17 | - | **Abnahme** | S3-Verifizierungs-Boxen gesetzt (14.9 ausgenommen), Status -> `CLOSED` | OK |
