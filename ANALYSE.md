@@ -606,6 +606,28 @@ Limiter **zählen parallel** (mild). Im typischen Betrieb (1 Frame, sequentiell)
 * **`PROXY`/`X-Forwarded`**: `ProxyFix(x_for=1, …)` ist korrekt für eine HA-Schicht; bei **mehr** als
   einem Proxy davor (z. B. zusätzlicher Reverse-Proxy) müsste `x_for` erhöht werden — Doku-Hinweis.
 
+### 14.14 UI-Track: Footer-Version/-Build-Datum & Health-Indikator (geschlossen in 2.0.3)
+Neben dem §14-Katalog lief ein separater **UI-Findings-Track** (Dokumentation:
+[`plans/findings.md`](plans/findings.md); der §14-Remediation-Track selbst liegt in
+[`plans/findings-14.md`](plans/findings-14.md)):
+
+* **Footer:** `BUILD_VERSION`/`BUILD_TIMESTAMP` waren **manuell gepflegte** Konstanten in `app.py` —
+  die Version war gebumpt, das Datum hatte stehen bleiben (altes `2026-04-03`). **Behoben in 2.0.3:**
+  beide Werte werden jetzt *im Image abgeleitet* — Version: (Priorität) `ADDON_VERSION`-Build-Arg →
+  **Manifest** `config.yaml`, Feld `version:` (Single Source of Truth) → `dev`; Build-Datum:
+  `BUILD_TIMESTAMP`-Env → **`.build_stamp`** (vom `Dockerfile` beim Image-Build geschrieben, UTC,
+  `SOURCE_DATE_EPOCH`-kompatibel) → `unknown`. Eine handgepflegte Versionsziffer existiert in
+  `app.py` nicht mehr; das Release-Verfahren ist in `README.md` („Building & Releasing“) verankert.
+* **Header:** Das alte „Connected“-Label sagte nicht, *womit* verbunden. **Behoben in 2.0.3:**
+  die UI feuert **GET** an `/health` (statt HEAD) und rendert den Namen der konfigurierten
+  Bildquelle aus dem JSON-Body (z. B. `Immich online` / `Immich unreachable` + Tooltip); der
+  HEAD-Modus des Endpoints bleibt für Clients erhalten (s. §14.10).
+* **Sprache:** Alle nutzerorientierten Strings des Add-ons sind seither **Englisch**
+  (Regel verankert in `AGENTS.md`, „Docs & language split").
+
+> **Status (14.14): ✅ geschlossen (2.0.3)** — ausstehend sind nur die *Feld-Smokes* auf der
+> echten HA-Instanz (Header × 2 Quellen, Footer), dokumentiert in `plans/findings.md` (L3).
+
 ---
 
 ## 15. Fazit & Empfehlungen
