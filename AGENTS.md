@@ -239,8 +239,15 @@ pass counts.**
 - **The web UI is a single self-contained `templates/settings.html`** (inline `<style>` +
   `<script>`). It polls `/health` (60 s), `/api/battery-status` (30 s), `/preview-status` (10 s).
   Keep the **CSP** meta tag and the named `POLL_INTERVALS`/`NOTIFICATION_DURATION` constants intact.
-- **Docs split:** code-facing docs (`README.md`, `AGENTS.md`, `ARCHITECTURE.md`) are **English**;
-  the analytical docs (`ANALYSE.md`, `TESTSPEC.md`) are **German** — match the neighbour.
+- **Docs & language split:**
+  - **Code-facing docs** (`README.md`, `AGENTS.md`, `ARCHITECTURE.md`) are **English**;
+    **analytical docs** (`ANALYSE.md`, `TESTSPEC.md`) and **working docs** (`plans/findings*.md`)
+    are **German** — match the neighbour.
+  - **Everything inside `epf-eink-addon/` is English** — user-facing text (the
+    `templates/settings.html` UI: labels, tooltips, placeholders; the user-facing `README.md`;
+    manifest descriptions; log messages) **and** code comments (`app.py`, `providers.py`,
+    `Dockerfile`, `run.sh`, `setup.py`). German slipping in there (UI strings, Dockerfile
+    comments, …) is a defect — if a string can ever reach a user's browser, it is English.
 
 ---
 

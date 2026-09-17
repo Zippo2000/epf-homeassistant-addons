@@ -495,9 +495,9 @@ footer {
                 <h1>E-Paper Photo Frame</h1>
             </div>
             <div class="header-right">
-                <div class="health-status" id="healthStatus" title="Erreichbarkeit der konfigurierten Bildquelle">
+                <div class="health-status" id="healthStatus" title="Reachability of the configured image source">
                     <span class="health-dot"></span>
-                    <span id="healthText">Bildquelle: …</span>
+                    <span id="healthText">Image source: …</span>
                 </div>
                 <div class="battery-status-header">
                     <span>&#128267;</span>
@@ -908,10 +908,10 @@ footer {
                 var label, title;
                 if (source) {
                     label = healthy ? source + ' online' : source + ' unreachable';
-                    title = 'Erreichbarkeit der konfigurierten Bildquelle (' + source + ')';
+                    title = 'Reachability of the configured image source (' + source + ')';
                 } else {
                     label = healthy ? 'Connected' : 'Disconnected';
-                    title = healthy ? 'Bildquelle erreichbar' : 'Bildquelle nicht erreichbar';
+                    title = healthy ? 'Image source reachable' : 'Image source unreachable';
                 }
                 healthStatus.className = 'health-status ' + (healthy ? 'healthy' : 'degraded');
                 healthStatus.title = title;

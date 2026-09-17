@@ -3,7 +3,7 @@ FROM ${BUILD_FROM}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Python und Build-Dependencies installieren
+# Install Python and build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.11 \
     python3-pip \
@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY requirements.txt /app/
 
-# --break-system-packages ist in Containern sicher, da keine System-Python-Apps vorhanden sind
+# --break-system-packages is safe inside containers, since no system Python apps are present
 RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip \
     && pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
@@ -36,7 +36,7 @@ RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip \
 COPY cpy.pyx /app/
 COPY setup.py /app/
 
-# BUILD CYTHON MODULE während Docker Build!
+# BUILD CYTHON MODULE during the Docker build!
 RUN python3 setup.py build_ext --inplace && \
     ls -la /app/*.so && \
     echo "✅ Cython module compiled successfully"
