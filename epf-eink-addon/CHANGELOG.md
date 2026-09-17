@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2] - 2026-09-18
+
+### Fixed
+- **Documentation / implementation drift.** Reconciled the add-on docs with the actually implemented state (no change to the Python/Cython code path):
+  - `config.yaml`: `comfyui_seed` default aligned to `-1` (random) and its schema widened to `int(-1,999999999)`, so the long-documented “`-1` = random” default is now legal in the HA UI. Previously the shipped default was `0` (contradicting the README) while the documented `-1` violated the `min 0` schema. Net runtime effect: a fresh install now defaults to a random seed, matching the documented intent.
+  - `README.md`: documented the previously undocumented `comfyui_entity_id` option (forwarded to `ai_task.generate_image` as `entity_id`, consumed via the provider’s env read), the `log_level` option, and the three unlisted routes `GET /preview-photo`, `GET /api/gallery-previews`, `GET /preview-file/<filename>`.
+  - Clarified that the `{random_element}` prompt variable samples the `{time_of_day}` vocabulary rather than a generic list.
+
+### Changed
+- Bumped `BUILD_VERSION` (`app.py`) and the `config.yaml` addon version to `2.0.2` (documentation / configuration consistency release).
+
 ## [2.0.1] - 2026-09-17
 
 ### Fixed

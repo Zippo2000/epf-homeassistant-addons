@@ -60,7 +60,7 @@ This add-on provides a Flask server that:
   - `{season}` → Context-aware (spring, summer, autumn, winter)
   - `{day_of_week}` → Current day name
   - `{month}` → Current month name
-  - `{random_element}` → Random element from predefined list
+  - `{random_element}` → Random element drawn from the `{time_of_day}` vocabulary
 - Example: `A beautiful landscape at {time_of_day}, {weather} weather, {season} scenery, photorealistic`
 
 **comfyui_negative_prompt**
@@ -80,6 +80,11 @@ This add-on provides a Flask server that:
 **comfyui_max_generations**
 - Maximum generations per day (protects GPU resources)
 - Default: 50
+
+**comfyui_entity_id** (optional)
+- Target Home Assistant `ai_task` entity to generate into
+- Leave empty to let the service pick its default entity
+- Forwarded to the `ai_task.generate_image` service as its `entity_id` input
 
 ### ComfyUI Direct - Expert Mode (image_source: comfyui_direct)
 
@@ -144,6 +149,13 @@ This add-on provides a Flask server that:
 - End of sleep window (display on)
 - Default: 06:00
 
+### Logging
+
+**log_level**
+- gunicorn log verbosity
+- Options: `debug`, `info`, `warning`, `error`
+- Default: `info`
+
 ## API Endpoints
 
 | Endpoint | Method | Purpose |
@@ -160,6 +172,9 @@ This add-on provides a Flask server that:
 | `/api/generation-status` | GET | Get ComfyUI generation tracking info |
 | `/sleep` | GET | Get ESP32 sleep duration |
 | `/cleanup-previews` | POST | Clean up old preview files |
+| `/preview-photo` | GET | Serve a preview image (processed, falling back to original) |
+| `/api/gallery-previews` | GET | List available preview files |
+| `/preview-file/<filename>` | GET | Serve a specific preview file |
 
 ## Usage
 
