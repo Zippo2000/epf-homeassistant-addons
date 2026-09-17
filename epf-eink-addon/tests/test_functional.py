@@ -812,6 +812,8 @@ class TestFR017HealthCheck:
         data = response.get_json()
         assert data['status'] == 'healthy'
         assert data.get('immich') == 'connected' or data.get('source_status') == 'connected'
+        # Contract the settings-UI header relies on: the source name is exposed.
+        assert data['source'] == 'Immich'
 
     @responses.activate
     def test_health_degraded(self, client_with_mocks, app_module):
@@ -829,6 +831,7 @@ class TestFR017HealthCheck:
         data = response.get_json()
         assert data['status'] == 'degraded'
         assert data.get('immich') == 'unreachable' or data.get('source_status') == 'unreachable'
+        assert data['source'] == 'Immich'
 
     @responses.activate
     def test_health_head(self, client_with_mocks, app_module):

@@ -495,9 +495,9 @@ footer {
                 <h1>E-Paper Photo Frame</h1>
             </div>
             <div class="header-right">
-                <div class="health-status" id="healthStatus">
+                <div class="health-status" id="healthStatus" title="Erreichbarkeit der konfigurierten Bildquelle">
                     <span class="health-dot"></span>
-                    <span id="healthText">Checking...</span>
+                    <span id="healthText">Bildquelle: …</span>
                 </div>
                 <div class="battery-status-header">
                     <span>&#128267;</span>
@@ -896,26 +896,39 @@ footer {
         }
 
         // Health Check
+        // /health reflects the configured IMAGE SOURCE (Immich / ComfyUI via HA /
+        // ComfyUI direct), NOT the add-on or the frame itself. The JSON body carries
+        // the source name ("source") — so we use GET; a HEAD request would drop it.
         function checkHealth() {
-            fetch('./health', { method: 'HEAD' })
+            var healthStatus = safeGet('healthStatus');
+            var healthText = safeGet('healthText');
+            if (!healthStatus || !healthText) return;
+
+            function render(healthy, source) {
+                var label, title;
+                if (source) {
+                    label = healthy ? source + ' online' : source + ' unreachable';
+                    title = 'Erreichbarkeit der konfigurierten Bildquelle (' + source + ')';
+                } else {
+                    label = healthy ? 'Connected' : 'Disconnected';
+                    title = healthy ? 'Bildquelle erreichbar' : 'Bildquelle nicht erreichbar';
+                }
+                healthStatus.className = 'health-status ' + (healthy ? 'healthy' : 'degraded');
+                healthStatus.title = title;
+                healthText.textContent = label;
+            }
+
+            fetch('./health', { method: 'GET' })
                 .then(function(response) {
-                    var healthStatus = safeGet('healthStatus');
-                    var healthText = safeGet('healthText');
-                    if (!healthStatus || !healthText) return;
-                    if (response.ok) {
-                        healthStatus.className = 'health-status healthy';
-                        healthText.textContent = 'Connected';
-                    } else {
-                        healthStatus.className = 'health-status degraded';
-                        healthText.textContent = 'Disconnected';
-                    }
+                    var healthy = !!response.ok;
+                    return response.json()
+                        .then(function(data) {
+                            var source = (data && typeof data.source === 'string') ? data.source : '';
+                            render(healthy, source);
+                        })
+                        .catch(function() { render(healthy, ''); });
                 })
-                .catch(function() {
-                    var healthStatus = safeGet('healthStatus');
-                    var healthText = safeGet('healthText');
-                    if (healthStatus) healthStatus.className = 'health-status degraded';
-                    if (healthText) healthText.textContent = 'Disconnected';
-                });
+                .catch(function() { render(false, ''); });
         }
 
         // Generation Status
