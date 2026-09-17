@@ -32,7 +32,39 @@ The exact wire contracts are documented in [`ARCHITECTURE.md`](ARCHITECTURE.md);
 technical analysis (incl. weaknesses) in [`ANALYSE.md`](ANALYSE.md); the test model in
 [`TESTSPEC.md`](TESTSPEC.md).
 
-## Repository layout
+ "## Top-level goal: the add-on must run flawlessly in Home Assistant
+
+**The single highest bar for this project: the add-on must work end to end inside a
+real Home Assistant instance â not merely "compile and pass unit tests."** A green
+offline suite is necessary but not sufficient; the failure modes that bite in the
+field live in the *integration* with real dependencies (Immich / Home Assistant /
+ComfyUI) and in *packaging* (gunicorn, ingress, ports, the ESP32 handshake). We
+defend that bar with a **layered** assurance model, cheapest-first:
+
+| Layer | What it proves | Where / how |
+|-------|----------------|-------------|
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~140 tests); no network |
+| **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
+| **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
+| **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
+| **L4 â manual field** | real ESP32, e-paper wear, multi-day stability, real ComfyUI/HA flows | documented in the field handbook; not automatable here (TESTSPEC, section 3) |
+
+**Definition of Done (release gate).** A release is test-complete when:
+1. **L0** is green (`Dockerfile.test` run returns exit 0) and all P0/`SEC`/`IFR` cases pass;
+2. **L1** has been run against a real Immich and is green (or, if the server was
+   unavailable, that is explicitly noted). L1 is the *load-bearing* gate for
+   "works in real HA";
+3. **L3** production-image smoke answers `/health` and `/download`;
+4. the ASPICE report (`docs/test_report_aspice.md`) is regenerated against the *current*
+   code (the v1.1.0 numbers in it are stale).
+
+> **Why L1 matters most:** the offline mocks can only return what we teach them. Only a
+> live Immich run tells us, for example, whether the image source still matches the
+> server's current API. Keep L1 cheap and always skippable so it is *actually* run
+> before every release.
+
+
+## Repository layout" 
 
 ```
 repository.yaml               # marks this as a HA ADD-ON STORE (name/url/maintainer) — required for the add-on store
@@ -121,8 +153,19 @@ Or, in your own Python 3.11 env with the pinned deps (`responses`, `rawpy`, `Cyt
 cd epf-eink-addon && python -m pytest tests/ -v
 ```
 The suite is self-contained (mocked Immich/HA, `tmp_path` filesystem, patched NTP/watchdog) —
-**no network, no Immich, no ComfyUI needed**.
+ "**no network, no Immich, no ComfyUI needed**.
 
+**Run the LIVE integration tier (L1 â needs a real Immich)**
+```bash
+cd epf-eink-addon && cp .env.example .env        # then fill in .env (git-ignored)
+sh epf-eink-addon/run-live-tests.sh               # uses .env; builds the test image, then pytest tests/test_live.py
+sh epf-eink-addon/run-live-tests.sh <url> [album]   # one-off override (those two values not read from .env)
+```
+It is **opt-in + auto-skip**: without `EPF_LIVE_TESTS=1` and a `.env`, the live tests skip (never
+red), so the offline run is unaffected. Credentials come only from the git-ignored `.env` â
+never bake them in.
+
+" 
 **Edit + recompile the Cython** — only if you touched `cpy.pyx`:
 ```bash
 cd epf-eink-addon && python setup.py build_ext --inplace
@@ -160,7 +203,12 @@ This is the biggest footgun in the project:
 
 ## Testing
 
-Plain **pytest**, fully **mocked** (see `TESTSPEC.md` for the ASPICE cross-reference). Layout
+ Plain **pytest**, fully **mocked** (see `TESTSPEC.md` for the ASPICE cross-reference).
+ .  Alongside this fully-offline suite there is an **opt-in live tier** (`tests/test_live.py`,
+run via `sh epf-eink-addon/run-live-tests.sh`) that exercises a **real** Immich; it **auto-skips**
+unless `EPF_LIVE_TESTS=1` and a `.env` are present, so it never turns the offline run red. See the
+"Top-level goal" section above for how the layers fit together.
+  Layout
 mirrors the requirement catalog in `docs/requirements_specification_aspice.md`:
 
 - `tests/conftest.py` — the `app_module` fixture (fresh import with env + NTP + watchdog patched,
@@ -213,17 +261,32 @@ pass counts.**
 
 ---
 
-## Gotchas (the non-obvious stuff)
+ "## Gotchas (the non-obvious stuff)
 
+- **Line endings can break the test entrypoint on Windows.** Contributors here build with
+  `core.autocrlf=true` and there is no repo-wide `eol` pin, so a Windows checkout materialises
+  `.sh` files as **CRLF**; a CRLF shebang then makes a Docker `COPY run.test.sh /run.sh` plus
+  `exec` fail with the misleading "no such file or directory" (the *interpreter* named by the
+  mangled shebang is what is "missing"). Mitigated three ways: (1) `.gitattributes` forces
+  `eol=lf` for `*.sh`/sources on checkout; (2) `Dockerfile.test` normalises the entrypoint
+  **in-image** (strips trailing carriage returns) and runs it via an explicit `bash /run.sh`
+  rather than a shebang; (3) note `run.test.sh` itself is **git-ignored**, so the *committed*
+  robustness lives entirely in `.gitattributes` plus the Dockerfile.
+
+" 
 - **`cpy.so` in the repo is vestigial.** The Docker build **recompiles** it from `cpy.pyx`
   (`COPY cpy.pyx setup.py` + `python setup.py build_ext --inplace`); the committed `cpy.so`
   (1.2 MB, amd64) is *never copied into the image*. `.gitignore` *re-includes* it
   (`!epf-eink-addon/cpy.so`) as a leftover from the base project — it's dead weight, not a build
   input. Don't hand-edit the `.so`; edit `cpy.pyx` and let the build rebuild it.
-- **`ImmichProvider` uses the *legacy* endpoint** `GET /api/albums/{id}` to list assets — the
-  very endpoint the standalone EPF **moved away from** in favour of the v3 paged
-  `POST /api/search/metadata`. If a target Immich version drops the legacy route, this breaks.
-  Keep an eye on it (see ANALYSE §Bemerkungen).
+ - **Immich image source speaks the v3 paged API.** `ImmichProvider` resolves the album via
+  `GET /api/albums`, then lists assets with the **paginated `POST /api/search/metadata`**
+  (size=1000) and downloads via `GET /api/assets/{id}/original` â the same v3 shape the
+  standalone EPF moved to. (This supersedes an older note claiming a *legacy*
+  `GET /api/albums/{id}` call; that call is gone.) **Re-prove it against a real server with the
+  L1 live test** (`sh epf-eink-addon/run-live-tests.sh`) before a release â it is the only
+  check that can catch an Immich-version API drift the offline mocks cannot.
+ 
 - **`run.sh` hard-requires `IMMICH_API_KEY` and `IMMICH_URL`** (it `bashio::log.fatal`s +
   `exit 1` if either is empty) **even when `image_source` is a ComfyUI mode.** So a
   ComfyUI-only setup can't start without at least a *dummy* Immich value. The startup gate should

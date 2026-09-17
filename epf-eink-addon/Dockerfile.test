@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libraw-dev \
     wget \
     fonts-dejavu-core \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -45,8 +46,14 @@ COPY templates/ /app/templates/
 COPY tests/ /app/tests/
 
 COPY run.test.sh /run.sh
+# Force LF on the entrypoint inside the image, no matter how the builder's
+# checkout mangled it (e.g. Windows core.autocrlf=true -> CRLF shebang, which
+# otherwise breaks `exec /run.sh`). Defense-in-depth alongside .gitattributes.
+RUN sed -i 's/\r$//' /run.sh
 RUN chmod a+x /run.sh
 
 EXPOSE 5000
 
-CMD ["/run.sh"]
+# Invoke the entrypoint via an explicit interpreter so a missing or corrupted
+# shebang (or exec bit) can never prevent the suite from running.
+CMD ["bash", "/run.sh"]

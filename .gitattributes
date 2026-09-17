@@ -1,0 +1,45 @@
+# ============================================================================
+# Line endings & binary handling
+# ----------------------------------------------------------------------------
+# Many of our contributors/agents build on Windows with `core.autocrlf=true`,
+# which rewrites line endings at CHECKOUT. For the file classes below we force
+# LF so that a CRLF checkout can never:
+#   * corrupt a shebang (`#!/bin/bash` -> `#!/bin/bash\r`), which makes
+#     `exec` / a Docker `COPY <file>` + `#!…` fail with the cryptic
+#     "exec: <path>: no such file or directory" (the *interpreter* named by
+#     the mangled shebang is the thing that's "missing"), or
+#   * otherwise turn a text file into something its consumer mis-parses.
+# An explicit `eol=lf` takes precedence over `core.autocrlf` on checkout.
+# ============================================================================
+
+# Sensible default: let Git classify and normalize text where it can.
+*           text=auto
+
+# Shell entrypoints & hooks — the shebang line MUST stay LF.
+*.sh        text eol=lf
+.githooks/* text eol=lf
+
+# Python + Cython sources — cheap insurance against CRLF sneaking in.
+*.py        text eol=lf
+*.pyx       text eol=lf
+
+# Web front-end + documentation (markdown) assets.
+*.html      text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+*.md        text eol=lf
+
+# Declarative / config formats.
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.ini       text eol=lf
+
+# Never run text transforms on binaries (incl. the compiled Cython module).
+*.so        binary
+*.pyc       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.whl       binary
