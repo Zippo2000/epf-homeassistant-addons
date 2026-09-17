@@ -512,7 +512,7 @@ Der Waveshare 7,3″ **Spectra-6 (E630S)** ist ein **6-Farben**-Panel; `palette`
 `architecture_document.md` (Goals G-002, Constraints C-003) — ein **Copy-Paste-Erbe vom
 Upstream-Projekt**. Ironie: Dieselben Doku widersprechen sich *intern* (andere Stellen derselben
 Datei sagen „6-color“). **→ auf „6“ vereinheitlichen.**
-> **Status (14.1): ✅ behoben** — alle 6 "7-color"-Stellen auf "6-color" gesetzt (epf-`README` L9/L174; `requirements_spec` L18/L24; `architecture_document` L32/L42); "7.3 inch"/"7.3inch" (Diagonale) bewusst erhalten; intern jetzt konsistent. Fix: Commit `5fc0de2`.
+> **Status (14.1): ✅ behoben** — alle 6 "7-color"-Stellen auf "6-color" gesetzt (epf-`README` L9/L174; `requirements_spec` L18/L24; `architecture_document` L32/L42); "7.3 inch"/"7.3inch" (Diagonale) bewusst erhalten; intern jetzt konsistent. Fix: Commit `196429e`.
 
 ### 14.2 Zwei `config.yaml`-Bedeutungen (konzeptionell, gut gedocht)
 > **Status (14.2): keine Maßnahme nötig** — Manifest-`epf-eink-addon/config.yaml` (Add-on-Schema, getrackt) vs. Laufzeit-`config/config.yaml` ist in `README`/`ANALYSE`/`AGENTS` + `.gitignore` bereits erklärt.
@@ -527,31 +527,31 @@ jedoch **`GET /api/albums/{id}`**. Konsequenz: (a) auf älteren Immich-Instanzen
 (wo die legacy-Route verkleinert/retired ist) **leere/fehlende Assets** → 500 → Frame liefert kein Bild.
 **Empfehlung:** `ImmichProvider` auf das v3-`search/metadata`-Schema portieren (paginieren, `withExif`),
 wie der Standalone-EPF es bereits tut — das wäre der *konsistente* Zustand.
-> **Status (14.3): ✅ behoben** — `ImmichProvider` portiert auf das v3-`POST /api/search/metadata` (paginiert, `withExif`); Mocks (`conftest`) + Tests `FR-001`/`FR-002` angepasst (FR-001-Matcher korrigiert); Suite **140/140 grün** im Docker-Testimage. Fix: Commit `5c7b262` (Branch `fix/analyse-14`).
+> **Status (14.3): ✅ behoben** — `ImmichProvider` portiert auf das v3-`POST /api/search/metadata` (paginiert, `withExif`); Mocks (`conftest`) + Tests `FR-001`/`FR-002` angepasst (FR-001-Matcher korrigiert); Suite **140/140 grün** im Docker-Testimage. Fix: Commit `5825da7` (Branch `fix/analyse-14`).
 
 ### 14.4 `run.sh` erzwingt `IMMICH_API_KEY` **und** `IMMICH_URL` (kritisch für reine ComfyUI-Nutzer)
 `run.sh` ruft `bashio::log.fatal … ; exit 1`, wenn **irgendwelche** der beiden Werte leer sind —
 **unabhängig vom `image_source`**. Ein **ComfyUI-only**-Setup (kein Immich) kann daher **nicht starten**,
 solange man nicht Dummy-Werte eingibt. **Empfehlung:** Gate **conditional** auf `image_source == immich`
 machen; ggf. nur die *für die gewählte Quelle relevanten* Felder validieren.
-> **Status (14.4): ✅ behoben** — Gate in `run.sh` ist jetzt **source-conditional** (`image_source=immich`); reine ComfyUI-Setups starten ohne Immich-Werte. Verifiziert: `bash -n` + Gate-Simulation. Fix: Commit `9893f77`.
+> **Status (14.4): ✅ behoben** — Gate in `run.sh` ist jetzt **source-conditional** (`image_source=immich`); reine ComfyUI-Setups starten ohne Immich-Werte. Verifiziert: `bash -n` + Gate-Simulation. Fix: Commit `f6b3756`.
 
 ### 14.5 `cpy.so` (1,2 MB, amd64) ist **redundant im Repo** (kosmetisch/hygienisch)
-> **Status (14.5): ✅ behoben** — prebuilt `cpy.so` **und** beide `!epf-eink-addon/cpy.so`-Negations entfernt; der Build kompiliert `cpy.pyx` selbst (`*.so` bleibt ignoriert). Fix: Commit `1360f2f`.
+> **Status (14.5): ✅ behoben** — prebuilt `cpy.so` **und** beide `!epf-eink-addon/cpy.so`-Negations entfernt; der Build kompiliert `cpy.pyx` selbst (`*.so` bleibt ignoriert). Fix: Commit `98bd659`.
 Der Docker-Build **COPYt nur `cpy.pyx` + `setup.py`** und **kompiliert selbst** — die commit-ete `cpy.so`
 wird **niemals** ins Image kopiert. `.gitignore` whitelistet sie trotzdem (`!epf-eink-addon/cpy.so`)
 (zweimal, sogar dupliziert) als **Erbe vom Basisprojekt**. → **Entfernen** (oder `!`-Zeile löschen) —
 sie suggeriert falsche Relevanz; der Build ist self-contained.
 
 ### 14.6 `test_report_aspice.md` ist **veraltet** (kosmetisch, aber Vertrauens-Problem)
-> **Status (14.6): ✅ behoben** — Report auf **v2.0.0 / 140 Tests** neu geschrieben (früher 1.1.0/93, intern inkonsistent: 93 nominal vs 78 ausgeführt). Jetzt: 140/140 (functional 77, non-functional 27, provider-unit 36), v3-konforme Immich-Mocks, FR-027/028 erfasst. Fix: Commit `30ad215`.
+> **Status (14.6): ✅ behoben** — Report auf **v2.0.0 / 140 Tests** neu geschrieben (früher 1.1.0/93, intern inkonsistent: 93 nominal vs 78 ausgeführt). Jetzt: 140/140 (functional 77, non-functional 27, provider-unit 36), v3-konforme Immich-Mocks, FR-027/028 erfasst. Fix: Commit `5e35e92`.
 Report = **v1.1.0 / 93 Tests / „100 %“ / 14,75 s** — eine **v1.0.4**-Baseline. Code & Specs stehen aber
 auf **v2.0.0** (31 FR, + ganzer Provider-Test-Modul). Die Report-Zahlen sind damit **keine Aussage über
 den aktuellen Stand**. → Beim nächsten Lauf `EPF-RPT-001` auf v2.x hochziehen und die Count aktualisieren
 (laut `run.test.sh` trivial möglich).
 
 ### 14.7 Datum-Overlay braucht **DejaVu**, das **Prod-**`Dockerfile` **installiert nicht** (kosmetisch)
-> **Status (14.7): ✅ behoben** — `fonts-dejavu-core` zur apt-Liste des **Prod-**`Dockerfile` hinzugefügt (war nur im Test-Image); `DejaVuSans-Bold.ttf` im bookworm-Image verifiziert → Datum-Overlay rendert mit der beabsichtigten Schrift statt `load_default()`. Fix: Commit `293fc09`.
+> **Status (14.7): ✅ behoben** — `fonts-dejavu-core` zur apt-Liste des **Prod-**`Dockerfile` hinzugefügt (war nur im Test-Image); `DejaVuSans-Bold.ttf` im bookworm-Image verifiziert → Datum-Overlay rendert mit der beabsichtigten Schrift statt `load_default()`. Fix: Commit `c535e67`.
 `scale_img_in_memory` versucht `ImageFont.truetype('.../DejaVuSans-Bold.ttf')`; nur **`Dockerfile.test`**
 bündelt `fonts-dejavu-core`. Im **prod** Image fällt das auf `ImageFont.load_default()` (winzige
 Bitmap-Schrift) zurück → Overlay bleibt, ist aber nicht die beabsichtigte Schrift. → Either `fonts-dejavu-core`
@@ -596,7 +596,7 @@ Limiter **zählen parallel** (mild). Im typischen Betrieb (1 Frame, sequentiell)
 **mehrere Frames** gegen dieselbe Instanz relevant (wie in Basis-EPF §10.5.2).
 
 ### 14.13 Kleinkram
-> **Status (14.13): ✅ behoben** — `.gitignore`-Duplikate (`test-results.xml`; `Dockerfile.test`+`run.test.sh`) zusammengefasst; unused `python-dotenv` aus `requirements.txt` entfernt ( nirgends importiert). Fix: Commit `5e1f047`.
+> **Status (14.13): ✅ behoben** — `.gitignore`-Duplikate (`test-results.xml`; `Dockerfile.test`+`run.test.sh`) zusammengefasst; unused `python-dotenv` aus `requirements.txt` entfernt ( nirgends importiert). Fix: Commit `6a778dc`.
 * `run.sh`/`run.test.sh` **doppelt** in `.gitignore` aufgeführt (cosmetic).
 * `requirements.txt` pinnen `python-dotenv`, das **nirgends** importiert wird (dead dep).
 * `app.py` importiert `rawpy`/`glob` o. ä. mehrfach; `setup.py`-`define_macros` (Numpy-ABI) — alles

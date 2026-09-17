@@ -236,13 +236,13 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 
 | Datum | Phase | Finding | Beschreibung / Commit-Ref | Ergebnis |
 |-------|-------|---------|----------------------------|----------|
-| 2026-09-16 | A | 14.3 | v3 `POST /api/search/metadata`-Port; Mocks + FR-001/002 + `List`-Import; **140/140 grün** | ✅ `5c7b262` |
-| 2026-09-16 | A | 14.4 | `run.sh` Gate source-conditional (`image_source=immich`); bash-n + Gate-Simulation | ✅ `9893f77` |
-| 2026-09-16 | B | 14.1 | „7-color“→„6-color“ (6 Stellen/3 Dateien); Diagonale erhalten | ✅ `5fc0de2` |
-| 2026-09-16 | B | 14.5 | `cpy.so` + 2× `!…cpy.so` entfernt; Build kompiliert `cpy.pyx` selbst | ✅ `1360f2f` |
-| 2026-09-16 | B | 14.7 | `fonts-dejavu-core` ins Prod-`Dockerfile`; Font-Pfad im bookworm-Image verifiziert | ✅ `293fc09` |
-| 2026-09-16 | B | 14.6 | Test-Report auf **v2.0.0/140 Tests** neu (140/140); v3-Mocks, FR-027/028 | ✅ `30ad215` |
-| 2026-09-16 | C | 14.13 | `.gitignore`-Duplikate deduped; dead `python-dotenv` entfernt | ✅ `5e1f047` |
+| 2026-09-16 | A | 14.3 | v3 `POST /api/search/metadata`-Port; Mocks + FR-001/002 + `List`-Import; **140/140 grün** | ✅ `5825da7` |
+| 2026-09-16 | A | 14.4 | `run.sh` Gate source-conditional (`image_source=immich`); bash-n + Gate-Simulation | ✅ `f6b3756` |
+| 2026-09-16 | B | 14.1 | „7-color“→„6-color“ (6 Stellen/3 Dateien); Diagonale erhalten | ✅ `196429e` |
+| 2026-09-16 | B | 14.5 | `cpy.so` + 2× `!…cpy.so` entfernt; Build kompiliert `cpy.pyx` selbst | ✅ `98bd659` |
+| 2026-09-16 | B | 14.7 | `fonts-dejavu-core` ins Prod-`Dockerfile`; Font-Pfad im bookworm-Image verifiziert | ✅ `c535e67` |
+| 2026-09-16 | B | 14.6 | Test-Report auf **v2.0.0/140 Tests** neu (140/140); v3-Mocks, FR-027/028 | ✅ `5e35e92` |
+| 2026-09-16 | C | 14.13 | `.gitignore`-Duplikate deduped; dead `python-dotenv` entfernt | ✅ `6a778dc` |
 | 2026-09-16 | C | 14.11 | Entscheidung: Endpunkte unauth.; **Port 5000 nur LAN**; Ingress = UI-Schutz; Token/Rate-Limit nur >LAN | ✅ Doku |
 | 2026-09-16 | C | 14.10 | Entscheidung: **Health-Kopplung behalten** (zeigt Abhängigkeit); optional Health=“App up” | ✅ Doku |
 | 2026-09-16 | C | 14.8 | Entscheidung: **Doku** (Host-Uhr; NTP liest nur); optional TZ-Option | ✅ Doku |
