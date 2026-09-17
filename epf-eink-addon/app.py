@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any, Set, Tuple, Callable, List
 import sys
 
 BUILD_TIMESTAMP = "2026-04-03 21:30:00 CET"
-BUILD_VERSION = "2.0.0"
+BUILD_VERSION = "2.0.1"
 
 from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for, Blueprint
 import yaml

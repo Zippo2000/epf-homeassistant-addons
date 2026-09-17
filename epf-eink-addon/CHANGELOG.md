@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-09-17
+
+### Fixed
+- **Immich v3 access restored.** Images are fetched via the v3 paged
+  `POST /api/search/metadata` (album resolved through `GET /api/albums`, original
+  via `GET /api/assets/{id}/original`). The v3 migration landed in an earlier build
+  that was *also* tagged `2.0.0`; this is the first release that actually carries it, so
+  Home Assistant will now offer the update and rebuild the add-on image from the
+  v3-capable source.
+
+### Changed
+- Test entrypoint hardened against CRLF line endings: the test image normalizes the entry
+  script in-container and invokes it via an explicit `bash /run.sh` (fixes Windows /
+  `core.autocrlf=true` checkouts breaking the documented test command).
+- Added `.gitattributes` (LF for shell / source / docs / config; binaries marked) and an
+  **opt-in live Immich test tier** (`run-live-tests.sh` + `tests/test_live.py`) that verifies
+  the real v3 wire contract and the `/download` route end-to-end.
+- `AGENTS.md`: documented the "flawless in Home Assistant" goal, an L0âL4 assurance model,
+  and a release Definition of Done.
+
+
 ## [2.0.0] - 2026-04-03
 
 ### Added
