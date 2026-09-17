@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.3] - 2026-09-17
+
+### Fixed
+- **Settings header now names the configured image source.** The status pill shows e.g.
+  `Immich online` / `Immich unreachable` (plus a tooltip) instead of the ambiguous
+  `Connected`. The `/health` poll uses GET now and consumes the source name already present in
+  the response JSON (the previous HEAD request discarded the body).
+- **Footer version & build date are no longer hand-maintained.** The version is taken from the
+  add-on manifest's `version:` field (`config.yaml` — single source of truth; optional
+  `--build-arg ADDON_VERSION=...` override) and the build date is stamped by the `Dockerfile`
+  at image-build time (UTC, `SOURCE_DATE_EPOCH`-compatible). The former hardcoded constants
+  (version + the stale `2026-04-03` date) are gone from `app.py`.
+
+### Changed
+- **English everywhere in the add-on:** health-indicator UI strings and all `Dockerfile`
+  comments translated; the rule is anchored in `AGENTS.md` (“Docs & language split”).
+- **Docs alignment** (no code impact): `AGENTS.md` gotchas refreshed after the §14 remediation
+  pass, README gains a “Building & Releasing” section, `ANALYSE.md`'s Web-UI section matches the
+  new header, and `docs/test_report_aspice.md` is re-counted to the 141-case suite.
+
 ## [2.0.2] - 2026-09-18
 
 ### Fixed

@@ -200,6 +200,19 @@ The add-on uses a **Provider Architecture** pattern:
 
 This design allows adding new image sources without modifying the core application logic.
 
+## Building & Releasing
+
+- `docker build -f epf-eink-addon/Dockerfile -t epf-eink:local epf-eink-addon` produces a runnable
+  image; the per-architecture base images are listed in `epf-eink-addon/build.yaml` (used by
+  Home Assistant when building the add-on from this repository).
+- The settings-page **footer is self-describing**: the version comes from the add-on manifest's
+  `version:` field (`epf-eink-addon/config.yaml`), the build date is stamped by the `Dockerfile`
+  at image-build time. Neither needs to be — or may be — maintained by hand in `app.py`.
+- **To release:** bump `version:` in `epf-eink-addon/config.yaml`, commit and push (tag
+  `v<version>`). Home Assistant rebuilds the add-on image whenever the version changes.
+- **Optional build flags:** `--build-arg ADDON_VERSION=<ver>` overrides the manifest version in
+  the footer; `--build-arg SOURCE_DATE_EPOCH=<epoch>` pins the build date for reproducible images.
+
 ## Support
 
 For issues, questions, or contributions:

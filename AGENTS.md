@@ -268,7 +268,7 @@ pass counts.**
 
 ---
 
- "## Gotchas (the non-obvious stuff)
+## Gotchas (the non-obvious stuff)
 
 - **Line endings can break the test entrypoint on Windows.** Contributors here build with
   `core.autocrlf=true` and there is no repo-wide `eol` pin, so a Windows checkout materialises
@@ -280,12 +280,9 @@ pass counts.**
   rather than a shebang; (3) note `run.test.sh` itself is **git-ignored**, so the *committed*
   robustness lives entirely in `.gitattributes` plus the Dockerfile.
 
-" 
-- **`cpy.so` in the repo is vestigial.** The Docker build **recompiles** it from `cpy.pyx`
-  (`COPY cpy.pyx setup.py` + `python setup.py build_ext --inplace`); the committed `cpy.so`
-  (1.2 MB, amd64) is *never copied into the image*. `.gitignore` *re-includes* it
-  (`!epf-eink-addon/cpy.so`) as a leftover from the base project — it's dead weight, not a build
-  input. Don't hand-edit the `.so`; edit `cpy.pyx` and let the build rebuild it.
+- **The Cython module is compiled at image-build time.** There is no `cpy.so` in the repo:
+  both Dockerfiles run `python setup.py build_ext --inplace` (from `cpy.pyx`) during the build.
+  Never hand-edit the `.so` — edit `cpy.pyx` and let the Docker build regenerate it.
  - **Immich image source speaks the v3 paged API.** `ImmichProvider` resolves the album via
   `GET /api/albums`, then lists assets with the **paginated `POST /api/search/metadata`**
   (size=1000) and downloads via `GET /api/assets/{id}/original` â the same v3 shape the
@@ -293,23 +290,20 @@ pass counts.**
   `GET /api/albums/{id}` call; that call is gone.) **Re-prove it against a real server with the
   L1 live test** (`sh epf-eink-addon/run-live-tests.sh`) before a release â it is the only
   check that can catch an Immich-version API drift the offline mocks cannot.
- 
-- **`run.sh` hard-requires `IMMICH_API_KEY` and `IMMICH_URL`** (it `bashio::log.fatal`s +
-  `exit 1` if either is empty) **even when `image_source` is a ComfyUI mode.** So a
-  ComfyUI-only setup can't start without at least a *dummy* Immich value. The startup gate should
-  be made source-conditional before this bites in the field.
-- **Doc says "7-colour", code is 6-colour.** The Waveshare 7.3″ Spectra-6 (E630S) panel and the
-  `palette`/`epd_colors` arrays are **6 colours** (black/white/yellow/red/blue/green). Several
-  docs (`README.md`, `requirements_specification_aspice.md` intro, `architecture_document.md`
-  goals/constraints) still say "7-colour" — a copy-paste regression from the upstream project.
-  Unify on 6.
-- **`test_report_aspice.md` is stale (v1.1.0, "93 tests / 100 %")** whereas the code & specs are
-  at **v2.0.0** (31 FRs, plus the provider test module). Treat the report's numbers as a
-  *previous* run; re-run `run.test.sh` for the current truth.
-- **Date overlay needs DejaVu, but the *prod* `Dockerfile` doesn't install it** (only
-  `Dockerfile.test` does). At runtime `ImageFont.truetype('.../DejaVuSans-Bold.ttf')` falls back
-  to `load_default()` (tiny bitmap font). The overlay still renders — just not with the intended
-  font. Cosmetic.
+- **`run.sh`'s startup gate is source-conditional** (14.4): the Immich credentials
+  (`IMMICH_API_KEY` / `IMMICH_URL`) are fatal only when `image_source=immich`; a ComfyUI-only
+  setup starts with no Immich values at all. When adding a new image source, mirror the same
+  conditional block in `run.sh` (and keep the `config.yaml` schema in sync).
+- **Colour-count regression trap.** The Waveshare 7.3-inch Spectra-6 panel and the
+  `palette`/`epd_colors` arrays are **6 colours** (black/white/yellow/red/blue/green). All docs
+  were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
+- **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
+  to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
+  141-case suite, 2.0.3). If a PR adds or removes tests, update the report's counts in the same
+  PR — the "100 %" claim silently rots otherwise (that is how 14.6 found the v1.1.0 drift).
+- **Fonts for the date overlay.** The prod `Dockerfile` installs `fonts-dejavu-core` (14.7)
+  so the date overlay renders with the intended typeface; without it Pillow would silently fall
+  back to the tiny bitmap default.
 - **Two different `config.yaml` names** (manifest vs runtime) and a **`photos/` vs `IMMICH_PHOTO_DEST`**
   dir that holds `tracking.txt`, `generations.json`, the `latest_*.jpg` previews, and `latest.bmp`
   + `latest.status`. These live in the add-on's bind-mount; recreate the container without the
@@ -318,6 +312,12 @@ pass counts.**
   2 hex-digit tokens (two 4-bit colour indices per byte), newline every 16, **no closing `};`**
   (the base EPF had one; removing it avoids the firmware's extra `0x00`). The firmware in the
   sibling repo parses token-by-token until EOF, so both forms work.
+
+- **Footer version & build date are derived, never hand-edited (2.0.3).** `app.py` resolves
+  `BUILD_VERSION` from (in priority order) the `ADDON_VERSION` build arg → the `config.yaml`
+  manifest's `version:` field → `"dev"`, and `BUILD_TIMESTAMP` from the `BUILD_TIMESTAMP` env →
+  the `.build_stamp` file written by the `Dockerfile` at image-build time → `"unknown"`.
+  Release by bumping `version:` in `epf-eink-addon/config.yaml` only.
 
 ---
 

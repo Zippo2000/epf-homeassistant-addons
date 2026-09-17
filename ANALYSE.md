@@ -321,7 +321,9 @@ Ein gemeinsames **ABC `ImageProvider`** mit 4 abstrakten Methoden:
 
 Eine **einzige, selbstdenkende Seite** (Inline-`<style>`/`<script>`, Jinja-Server-Render):
 
-* **Header:** Titel, **Health-Dot** (grün/rot, `./health` via `HEAD`, 60 s), **Batterie**
+* **Header:** Titel, **Bildquellen-Indikator** (Label mit Quellenname, z. B. `Immich online`/
+  `Immich unreachable`, + grüner/roter Dot; `./health` per **GET** — das JSON-Feld `source` wird
+  im UI ausgegeben, 60 s; seit 2.0.3, vgl. `plans/findings.md`), **Batterie**
   (%, V, Zeitstempel; `./api/battery-status`, 30 s), **Theme-Toggle** (Dark/Light, in `localStorage`).
 * **Photo-Panel:** Vorschau des aktuellen Frames, **Status-Badge** („Ready to deliver“/„Already
   delivered“, `./preview-status`, 10 s), Buttons **Prepare New Photo** (`POST /prepare-photo`),

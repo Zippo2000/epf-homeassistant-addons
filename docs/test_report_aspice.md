@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.0.0
-**Date:** 2026-09-16
-**Baseline:** branch `fix/analyse-14` — code base **v2.0.0** after the §14 remediation
+**Version:** 2.0.3
+**Date:** 2026-09-17
+**Baseline:** branch `main` — code base **v2.0.3** (post §14 remediation, after the UI-track of `plans/findings.md`)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Status:** Completed — All Tests Passed
 
@@ -13,6 +13,9 @@
 > the report to the **multi-source v2** code base and to the **140-test** suite that is actually run
 > by `Dockerfile.test`. The Immich client is now **v3-conformant** (finding 14.3), and the two
 > test-side assertions affected by that port (FR-001/FR-002) are reflected below.
+> The **2.0.3** revision re-counts the suite after the UI-track work: one new offline case
+> (`TestFR017B` footer build-info contract) and the 5 opt-in **live** cases that now auto-skip
+> without an `.env`.
 
 ---
 
@@ -20,12 +23,12 @@
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | 140 |
-| **Passed** | 140 |
+| **Total Test Cases** | 146 (141 offline + 5 opt-in live) |
+| **Passed** | 141 |
 | **Failed** | 0 |
-| **Skipped** | 0 |
+| **Skipped** | 5 (live tier, no `EPF_LIVE_TESTS`/`.env`) |
 | **Pass Rate** | 100% |
-| **Execution Time** | ~17.4 s |
+| **Execution Time** | ~18.3 s |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
 | **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3) |
 
@@ -67,7 +70,7 @@
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` (album list → asset selection → NTP) | **77** | **77** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) | **78** | **78** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -81,7 +84,7 @@
 |-------|-------|--------|--------|-----------|
 | `ImmichProvider`, `ComfyUI-HA`, `ComfyUI-Direct`, `ProviderFactory`, `MultiSourceIntegration` | **36** | **36** | **0** | **100%** |
 
-**Total: 140 tests — 140 passed, 0 failed (100%).**
+**Total: 146 collected — 141 passed, 5 skipped (opt-in live tier), 0 failed (100 %).**
 
 ---
 
@@ -107,7 +110,7 @@ assertions were corrected to follow the provider's new v3 behaviour (these are t
 - **FR-002** — the URL assertion moved from the retired `/api/albums/{id}` route to `search/metadata`.
 - **FR-001** — the album-**list** matcher was disambiguated from the (removed) album-asset route.
 
-Both landed with the v3 port (finding **14.3**) and are part of the 140/140 result.
+Both landed with the v3 port (finding **14.3**) and are part of the 141/141 offline result.
 
 ---
 
@@ -116,12 +119,13 @@ Both landed with the v3 port (finding **14.3**) and are part of the 140/140 resu
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 140 items
+collected 146 items
 
-tests/test_functional.py      :: 77 passed
+tests/test_functional.py      :: 78 passed
 tests/test_nonfunctional.py  :: 27 passed
 tests/test_providers.py      :: 36 passed
-============================= 140 passed in 17.42s ==============================
+tests/test_live.py           :: 5 skipped (opt-in, no .env)
+======================= 141 passed, 5 skipped in 18.28s =========================
 ```
 
 ---
@@ -148,5 +152,7 @@ docker run --rm epf-eink-tests:local        # runs the bundled /run.sh (pytest)
 
 ---
 
-*Regenerated for code base **v2.0.0** on branch `fix/analyse-14`. All 140 automated test cases pass;
-the Immich client is v3-conformant and the production image is complete (incl. the DejaVu font, 14.7).*
+*Regenerated for code base **v2.0.3** on branch `main`. All 141 offline test cases pass (the 5
+opt-in live cases auto-skip without a `.env`); the Immich client is v3-conformant, the production
+image is complete (incl. the DejaVu font, 14.7), and the footer version/build-time are now derived
+in-image (see `plans/findings.md`, release 2.0.3).*
