@@ -848,6 +848,18 @@ class TestFR017HealthCheck:
         assert response.status_code == 200
 
 
+class TestFR017BFooterBuildInfo:
+    """Footer build-info contract: ADDON_VERSION / BUILD_TIMESTAMP reach the UI."""
+
+    def test_footer_shows_env_build_info(self, client_with_mocks, app_module):
+        """Settings-page footer renders the env-provided version and build time."""
+        response = client_with_mocks.get('/')
+        assert response.status_code == 200
+        html = response.data.decode('utf-8')
+        assert 'v9.9.9-test' in html
+        assert 'Built: 2026-01-01 00:00:00 UTC' in html
+
+
 # ============================================================
 # TC-FR-018: Battery Status Reporting
 # ============================================================

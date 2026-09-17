@@ -10,10 +10,8 @@
 from __future__ import annotations
 
 from typing import Optional, Dict, Any, Set, Tuple, Callable, List
+import re
 import sys
-
-BUILD_TIMESTAMP = "2026-04-03 21:30:00 CET"
-BUILD_VERSION = "2.0.1"
 
 from flask import Flask, jsonify, send_file, render_template, request, redirect, url_for, Blueprint
 import yaml
@@ -43,6 +41,46 @@ from providers import (
     ImageProvider, ImmichProvider, ComfyUIHAProvider, ComfyUIDirectProvider,
     create_provider, resolve_prompt_variables, GenerationTracker
 )
+
+# =============== BUILD INFO (version & build time) ===============
+# Both values are DERIVED, never hand-maintained (see plans/findings.md §1):
+#   * BUILD_VERSION   <- env ADDON_VERSION (optional build-arg override),
+#                        else the add-on manifest next to app.py (single source of truth)
+#   * BUILD_TIMESTAMP <- env BUILD_TIMESTAMP (override), else the .build_stamp file
+#                        written by the Dockerfile at image-build time
+# Fallbacks keep local/dev runs honest: "dev" / "unknown" instead of a stale date.
+def _resolve_build_version(default: str = "dev") -> str:
+    value: str = os.environ.get('ADDON_VERSION', '').strip()
+    if value:
+        return value
+    manifest: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
+    try:
+        with open(manifest, 'r', encoding='utf-8') as f:
+            match = re.search(r'^\s*version\s*:\s*["\']?([^"\'\s\r\n]+)', f.read(), re.M)
+        if match:
+            return match.group(1)
+    except OSError:
+        pass
+    return default
+
+
+def _resolve_build_timestamp(default: str = "unknown") -> str:
+    value: str = os.environ.get('BUILD_TIMESTAMP', '').strip()
+    if value:
+        return value
+    stamp: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.build_stamp')
+    try:
+        with open(stamp, 'r', encoding='utf-8') as f:
+            value = f.read().strip()
+        if value:
+            return value
+    except OSError:
+        pass
+    return default
+
+
+BUILD_VERSION: str = _resolve_build_version()
+BUILD_TIMESTAMP: str = _resolve_build_timestamp()
 
 # =============== LOGGING CONFIGURATION ===============
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO').upper()

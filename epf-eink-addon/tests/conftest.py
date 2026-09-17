@@ -272,6 +272,8 @@ def import_app_with_env(env_overrides=None, photo_dir=None, config_path=None):
         'SLEEP_END_MINUTE': '0',
         'WAKEUP_INTERVAL': '60',
         'LOG_LEVEL': 'WARNING',
+        'ADDON_VERSION': '9.9.9-test',
+        'BUILD_TIMESTAMP': '2026-01-01 00:00:00 UTC',
     }
     if env_overrides:
         env.update(env_overrides)
@@ -442,6 +444,8 @@ def app_module(test_dir, test_config_path):
         'SLEEP_END_MINUTE': '0',
         'WAKEUP_INTERVAL': '60',
         'LOG_LEVEL': 'WARNING',
+        'ADDON_VERSION': '9.9.9-test',
+        'BUILD_TIMESTAMP': '2026-01-01 00:00:00 UTC',
         'IMMICH_PHOTO_DEST': test_dir['photos'],
         'CONFIG_PATH': test_config_path,
     }):
