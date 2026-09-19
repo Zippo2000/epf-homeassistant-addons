@@ -35,6 +35,7 @@ import logging
 import sys
 from werkzeug.middleware.proxy_fix import ProxyFix
 from shutil import copy2
+import uuid
 import glob as glob_module
 
 from providers import (
@@ -255,17 +256,23 @@ PREVIEW_PATTERNS: List[str] = ['latest_original_*.jpg', 'latest_processed_*.jpg'
 MAX_PREVIEW_AGE_SECONDS: int = 7 * 24 * 3600
 MAX_PREVIEW_COUNT: int = 50
 
-def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None) -> int:
+# =============== PREVIEW GALLERY HISTORY ===============
+GALLERY_PATTERNS: List[str] = ['original_*.jpg', 'processed_*.jpg', 'delivered_*.jpg']
+GALLERY_MAX_COUNT: int = int(os.getenv('GALLERY_MAX_COUNT', '50'))
+GALLERY_MAX_AGE_SECONDS: int = 86400 * int(os.getenv('GALLERY_RETENTION_DAYS', '7'))
+
+def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None, patterns: Optional[List[str]] = None) -> int:
     target_dir: str = directory or photo_dir
     age_limit: int = max_age_seconds or MAX_PREVIEW_AGE_SECONDS
     count_limit: int = max_count or MAX_PREVIEW_COUNT
-    removed: int = 0
-    
+    use_patterns: List[str] = patterns or PREVIEW_PATTERNS
+    total_removed: int = 0
     now: float = time.time()
-    
-    for pattern in PREVIEW_PATTERNS:
+
+    for pattern in use_patterns:
+        removed: int = 0
         matching_files: List[str] = glob_module.glob(os.path.join(target_dir, pattern))
-        
+
         if len(matching_files) <= count_limit:
             for filepath in matching_files:
                 try:
@@ -284,9 +291,9 @@ def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optio
                     files_with_age.append((filepath, file_age))
                 except OSError:
                     continue
-            
+
             files_with_age.sort(key=lambda x: x[1], reverse=True)
-            
+
             for filepath, file_age in files_with_age:
                 if len(matching_files) - removed <= count_limit:
                     break
@@ -296,11 +303,11 @@ def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optio
                     logger.info(f"Cleaned up excess preview: {filepath}")
                 except OSError as e:
                     logger.warning(f"Failed to remove {filepath}: {e}")
-    
-    if removed > 0:
-        logger.info(f"Preview cleanup complete: {removed} files removed")
-    
-    return removed
+        total_removed += removed
+
+    if total_removed > 0:
+        logger.info(f"Preview cleanup complete: {total_removed} files removed")
+    return total_removed
 
 # =============== HEX CONVERSION ===============
 def depalette_image(pixels: ndarray, pal: List[Tuple[int, int, int]]) -> ndarray:
@@ -443,6 +450,56 @@ def save_three_previews(image_original: PILImage) -> PILImage:
     logger.info(f"Saved BMP for ESP32: {bmp_path}")
     
     return processed_rotated
+
+# =============== PREVIEW GALLERY ARCHIVE ===============
+# History layer: each Prepare keeps timestamped *copies* in photos/gallery/
+# so the Gallery can show a bounded history. The live single-slot files
+# (latest.*) used by the ESP32 hand-shake are intentionally left untouched.
+
+def _gallery_dir() -> str:
+    return os.path.join(photo_dir, 'gallery')
+
+def _shot_id(source_id: Optional[str]) -> str:
+    """Correlation id for one shot: the source id (sanitised) or a ts+uuid fallback."""
+    if source_id:
+        s: str = re.sub(r'_+', '_', re.sub(r'[^A-Za-z0-9._-]', '_', str(source_id))).strip('_')
+        if s:
+            return s[:64]
+    return 'ts_' + datetime.utcnow().strftime('%Y%m%d_%H%M%S') + '_' + uuid.uuid4().hex[:6]
+
+def _copy_into_gallery(src_rel: str, dst_name: str) -> None:
+    src: str = os.path.join(photo_dir, src_rel)
+    if not os.path.exists(src):
+        return
+    dest_dir: str = _gallery_dir()
+    os.makedirs(dest_dir, exist_ok=True)
+    dst: str = os.path.join(dest_dir, dst_name)
+    tmp: str = dst + '.tmp'
+    try:
+        copy2(src, tmp)
+        os.replace(tmp, dst)
+    except OSError as e:
+        logger.warning(f"Failed to archive preview {src}->{dst}: {e}")
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
+
+def _archive_previews(source_id: Optional[str]) -> None:
+    shot: str = _shot_id(source_id)
+    _copy_into_gallery('latest_original.jpg', 'original_%s.jpg' % shot)
+    _copy_into_gallery('latest_processed.jpg', 'processed_%s.jpg' % shot)
+    logger.info(f"Archived previews for shot '{shot}'")
+
+def cleanup_gallery() -> int:
+    return cleanup_old_previews(
+        directory=_gallery_dir(),
+        patterns=GALLERY_PATTERNS,
+        max_age_seconds=GALLERY_MAX_AGE_SECONDS,
+        max_count=GALLERY_MAX_COUNT,
+    )
+
 
 # =============== RAW/HEIC CONVERTERS ===============
 def convert_raw_or_dng_to_jpg(input_file_path: str, output_dir: str) -> str:
@@ -888,7 +945,8 @@ def prepare_photo() -> Any:
         image, source_id = provider.fetch_image()
         
         save_three_previews(image)
-        
+        _archive_previews(source_id)
+        cleanup_gallery()
         status_file: str = os.path.join(photo_dir, 'latest.status')
         with open(status_file, 'w') as f:
             f.write('new')
@@ -985,27 +1043,44 @@ def trigger_cleanup() -> Any:
 
 @bp.route('/api/gallery-previews', methods=['GET'])
 def gallery_previews() -> Any:
-    """Return list of all preview files for gallery view."""
+    """Return the archived preview history, grouped by source id, newest first."""
     try:
-        files: List[Dict[str, str]] = []
-        patterns: List[str] = ['latest_original.jpg', 'latest_processed.jpg', 'latest_delivered.jpg']
-        
-        for pattern in patterns:
-            matching = glob_module.glob(os.path.join(photo_dir, pattern))
-            for filepath in matching:
+        files: List[Dict[str, Any]] = []
+        gdir: str = _gallery_dir()
+        for pattern in GALLERY_PATTERNS:
+            for filepath in glob_module.glob(os.path.join(gdir, pattern)):
                 try:
-                    mtime = os.path.getmtime(filepath)
+                    base: str = os.path.basename(filepath)
+                    stem, _ext = os.path.splitext(base)
+                    parts = stem.split('_', 1)
+                    if len(parts) != 2:
+                        continue
+                    kind, shot = parts
+                    mtime: float = os.path.getmtime(filepath)
                     files.append({
-                        'name': os.path.basename(filepath),
-                        'url': '/preview-file/' + os.path.basename(filepath),
+                        'id': shot,
+                        'kind': kind,
+                        'url': '/preview-file/' + base,
+                        'name': base,
                         'modified': datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S'),
-                        'timestamp': mtime
+                        'timestamp': mtime,
                     })
-                except OSError:
+                except (OSError, ValueError):
                     continue
-        
-        files.sort(key=lambda x: x['timestamp'], reverse=True)
-        return jsonify({'files': files})
+        groups: Dict[str, List[Dict[str, Any]]] = {}
+        for f in files:
+            groups.setdefault(f['id'], []).append(f)
+        ids = sorted(
+            groups.keys(),
+            key=lambda i: max(x['timestamp'] for x in groups[i]),
+            reverse=True,
+        )[:GALLERY_MAX_COUNT]
+        out: List[Dict[str, Any]] = []
+        for i in ids:
+            for f in sorted(groups[i], key=lambda x: x['modified'], reverse=True):
+                f.pop('timestamp', None)
+                out.append(f)
+        return jsonify({'files': out, 'count': len(ids)})
     except Exception as e:
         logger.error(f"Gallery previews failed: {e}", exc_info=True)
         return jsonify({'files': [], 'error': str(e)}), 500
@@ -1014,10 +1089,11 @@ def gallery_previews() -> Any:
 def preview_file(filename: str) -> Any:
     """Serve a specific preview file by filename."""
     safe_name: str = os.path.basename(filename)
-    filepath: str = os.path.join(photo_dir, safe_name)
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-    return send_file(filepath, mimetype='image/jpeg')
+    for _base in (photo_dir, _gallery_dir()):
+        filepath: str = os.path.join(_base, safe_name)
+        if os.path.exists(filepath):
+            return send_file(filepath, mimetype='image/jpeg')
+    return jsonify({'error': 'File not found'}), 404
 
 # Register blueprint
 app.register_blueprint(bp)

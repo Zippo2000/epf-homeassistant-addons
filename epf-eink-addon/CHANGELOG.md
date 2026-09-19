@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-09-19
+
+### Added
+- **Preview gallery now keeps a history.** Each `Prepare` archives timestamped copies
+  (`photos/gallery/original_<id>.jpg`, `processed_<id>.jpg`) correlated by the source id
+  (Immich/ComfyUI asset id, sanitised; `ts_<…>_<uuid>` fallback). The Gallery tab renders them
+  as grouped pairs (Original · E-Paper · [On-frame once delivered]), newest first, and
+  `cleanup_gallery()` bounds the archive (default 50 pairs / 7 days). The live single-slot files
+  the ESP32 hand-shake relies on (`latest.bmp`, `latest.status`, `latest_*.jpg`) are intentionally
+  left untouched, so the delivery protocol is unchanged.
+- **Tests:** new `tests/test_gallery_history.py` (shot-id, archiving, grouped reader, pruning,
+  live-slot safety, end-to-end prepare).
+
+### Fixed
+- **Gallery only ever pruned its first pattern.** `cleanup_old_previews()` used a single `removed`
+  counter shared across all patterns, so only the first pattern was capped. Each pattern is now
+  capped independently (and the live slot is never a candidate).
+- **Stale UI test.** The 2.1.0 SVG redesign had dropped the page's numeric HTML entities, which had
+  silently left `test_unicode_symbols_used` red; the Gallery label now uses numeric entities
+  (`&#183;`, `&#8212;`) so the "unicode symbol, not emoji" invariant holds again.
+
+### Changed
+- `/preview-file/<name>` also resolves from `photos/gallery/` (to serve the archived history).
+
 ## [2.1.2] - 2026-09-19
 
 ### Fixed

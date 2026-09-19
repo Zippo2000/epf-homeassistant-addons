@@ -522,6 +522,9 @@ input[type="submit"]:active { transform: scale(0.98); }
 }
 .gallery-item:hover { transform: scale(1.02); }
 .gallery-item img { width: 100%; height: auto; display: block; cursor: pointer; }
+.gallery-card { background: var(--surface-1); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: var(--space-sm); }
+.gallery-card-label { font-size: var(--fs-caption); color: var(--text-tertiary); margin-bottom: 0.5rem; }
+.gallery-card-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-sm); }
 .gallery-item-info {
     padding: 0.5rem;
     font-size: var(--fs-caption);
@@ -1236,32 +1239,51 @@ footer {
         // Gallery (inline tab)
         var galleryLoaded = false;
         function loadGallery() {
-            if (galleryLoaded) return;
-            var body = safeGet('galleryBody');
-            if (!body) return;
-            body.innerHTML = '<div class="gallery-empty">Loading previews...</div>';
-            fetch('./api/gallery-previews')
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    galleryLoaded = true;
-                    if (!data.files || data.files.length === 0) {
-                        body.innerHTML = '<div class="gallery-empty">No old previews found</div>';
-                        return;
-                    }
-                    var html = '<div class="gallery-grid">';
-                    data.files.forEach(function(f) {
-                        html += '<div class="gallery-item">';
-                        html += '<img src="' + f.url + '" alt="' + f.name + '" onclick="window.open(\'' + f.url + '\', \'_blank\')">';
-                        html += '<div class="gallery-item-info">' + f.name + '<br>' + f.modified + '</div>';
-                        html += '</div>';
-                    });
+    if (galleryLoaded) return;
+    var body = safeGet('galleryBody');
+    if (!body) return;
+    body.innerHTML = '<div class="gallery-empty">Loading previews...</div>';
+    fetch('./api/gallery-previews')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            galleryLoaded = true;
+            if (!data.files || data.files.length === 0) {
+                body.innerHTML = '<div class="gallery-empty">No previews yet &#8212; press &ldquo;Prepare New Photo&rdquo;</div>';
+                return;
+            }
+            var groups = {};
+            data.files.forEach(function(f) {
+                if (!groups[f.id]) { groups[f.id] = []; }
+                groups[f.id].push(f);
+            });
+            var ids = Object.keys(groups).sort(function(a, b) {
+                var la = Math.max.apply(null, groups[a].map(function(x) { return Date.parse(x.modified); }));
+                var lb = Math.max.apply(null, groups[b].map(function(x) { return Date.parse(x.modified); }));
+                return lb - la;
+            });
+            var html = '<div class="gallery-grid">';
+            ids.forEach(function(id) {
+                var items = groups[id].slice().sort(function(a, b) { return a.modified < b.modified ? 1 : -1; });
+                var label = items.length ? items[0].modified : '';
+                html += '<div class="gallery-card">';
+                html += '<div class="gallery-card-label">' + label + ' &#183; ' + id + '</div>';
+                html += '<div class="gallery-card-items">';
+                items.forEach(function(f) {
+                    var tag = (f.kind === 'processed') ? 'E-Paper' : (f.kind === 'delivered' ? 'On frame' : 'Original');
+                    html += '<div class="gallery-item">';
+                    html += '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" alt="' + f.name + '" title="' + tag + '"></a>';
+                    html += '<div class="gallery-item-info">' + tag + '</div>';
                     html += '</div>';
-                    body.innerHTML = html;
-                })
-                .catch(function() {
-                    body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
                 });
-        }
+                html += '</div></div>';
+            });
+            html += '</div>';
+            body.innerHTML = html;
+        })
+        .catch(function() {
+            body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
+        });
+}
 
         // Slider
         function updateSliderValue(slider) {
