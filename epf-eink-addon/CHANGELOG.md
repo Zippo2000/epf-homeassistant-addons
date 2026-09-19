@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-09-19
+
+### Fixed
+- **Entire settings page inert (no button responded).** The 2.1.0 redesign left one extra
+  closing parenthesis in the accent-colour helper (`--accent-glow` line), which aborted the whole
+  `<script>` block at parse time. Once the script fails to compile, **none** of the handlers are
+  defined — so every inline `onclick` (tabs, save, prepare, theme toggle, …) threw a
+  `ReferenceError` and the UI appeared completely dead. Removed the stray `)`; the block now
+  parses and every control works again. No other changes.
+
 ## [2.1.0] - 2026-09-19
 
 ### Added
