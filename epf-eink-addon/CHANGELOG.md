@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-09-19
+
+### Added
+- **Apple-grade settings-page redesign** — a frontend/UX release only; no changes to the
+  image pipeline, the ESP32 wire contract, or the add-on options schema. The web settings UI
+  (`epf-eink-addon/templates/settings.html`) was overhauled with:
+  - a consistent **design-token** system (colour, spacing, radii, shadows, type scale),
+  - a **three-tab layout** (Overview · Configuration · Gallery),
+  - **frosted-glass** ("glassmorphism") surfaces with backdrop blur, and
+  - a **dynamic accent colour** that adapts to the light/dark theme.
+
+  Companion planning doc: `plans/ui-modernisierung.md`.
+
 ## [2.0.3] - 2026-09-17
 
 ### Fixed
