@@ -7,74 +7,169 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>E-paper Photo Frame Settings</title>
     <style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS  (Phase 1 – Foundation)
+   Apple-grade: neutral base, single dynamic accent, generous
+   spacing, large radii, frosted glass, light typography.
+   ═══════════════════════════════════════════════════════════ */
+@property --accent {
+    syntax: '<color>';
+    inherits: true;
+    initial-value: #007aff;
+}
 :root {
-    --primary: #0ea5e9;
-    --primary-dark: #0284c7;
-    --accent: #8b5cf6;
-    --success: #10b981;
-    --error: #ef4444;
-    --warning: #f59e0b;
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-tertiary: #94a3b8;
-    --border: #e2e8f0;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-    --current-photo-bg: #ecfdf5;
-    --current-photo-border: #10b981;
-    --next-photo-bg: #eff6ff;
-    --next-photo-border: #3b82f6;
+    /* ── Surface (backgrounds) ── */
+    --surface-0: #ffffff;              /* page background */
+    --surface-1: #f5f5f7;             /* cards, panels */
+    --surface-2: #e8e8ed;             /* inputs, chips */
+
+    /* ── Accent (dynamic – overridden by Phase 4) ── */
+    --accent: #007aff;                /* default: Apple system blue */
+    --accent-soft: rgba(0, 122, 255, 0.12);
+    --accent-glow: rgba(0, 122, 255, 0.25);
+
+    /* ── Text ── */
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --text-tertiary: #86868b;
+
+    /* ── Border & Separators ── */
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --border: rgba(0, 0, 0, 0.1);
+
+    /* ── Status Colours ── */
+    --success: #30d158;
+    --error: #ff3b30;
+    --warning: #ff9f0a;
+
+    /* ── Shadows (very subtle) ── */
+    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --shadow-3: 0 12px 28px rgba(0, 0, 0, 0.08);
+
+    /* ── Frosted Glass ── */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-blur: 20px;
+    --glass-border: 1px solid rgba(0, 0, 0, 0.06);
+
+    /* ── Typography Scale ── */
+    --fs-display: clamp(2rem, 4vw, 2.75rem);
+    --fs-h2: 1.375rem;
+    --fs-body: 1rem;
+    --fs-small: 0.875rem;
+    --fs-caption: 0.75rem;
+
+    /* ── Spacing ── */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2.5rem;
+    --space-2xl: 4rem;
+
+    /* ── Radius ── */
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* ── Motion ── */
+    --ease-out-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast: 150ms;
+    --dur-med: 250ms;
+    --dur-slow: 400ms;
+
+    /* ── Photo Panel Tints ── */
+    --current-photo-bg: rgba(48, 209, 88, 0.06);
+    --current-photo-border: rgba(48, 209, 88, 0.35);
+    --next-photo-bg: rgba(0, 122, 255, 0.06);
+    --next-photo-border: rgba(0, 122, 255, 0.35);
+
+    /* ── Backward-Compat Aliases (remove in Phase 3) ── */
+    --primary: var(--accent);
+    --primary-dark: var(--accent);
+    --bg-primary: var(--surface-0);
+    --bg-secondary: var(--surface-1);
+    --bg-tertiary: var(--surface-2);
+    --shadow-sm: var(--shadow-1);
+    --shadow-md: var(--shadow-2);
+    --shadow-lg: var(--shadow-3);
+    --shadow-xl: var(--shadow-3);
 }
 [data-theme="dark"] {
-    --primary: #38bdf8;
-    --primary-dark: #0ea5e9;
-    --accent: #a78bfa;
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #64748b;
-    --border: #334155;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
-    --current-photo-bg: #064e3b;
-    --current-photo-border: #059669;
-    --next-photo-bg: #1e3a5f;
-    --next-photo-border: #2563eb;
+    --surface-0: #1c1c1e;
+    --surface-1: #2c2c2e;
+    --surface-2: #3a3a3c;
+
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, 0.15);
+    --accent-glow: rgba(10, 132, 255, 0.3);
+
+    --text-primary: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #636366;
+
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.12);
+
+    --success: #30d158;
+    --error: #ff453a;
+    --warning: #ff9f0a;
+
+    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-3: 0 12px 28px rgba(0, 0, 0, 0.4);
+
+    --glass-bg: rgba(28, 28, 30, 0.72);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+
+    --current-photo-bg: rgba(48, 209, 88, 0.1);
+    --current-photo-border: rgba(48, 209, 88, 0.4);
+    --next-photo-bg: rgba(10, 132, 255, 0.1);
+    --next-photo-border: rgba(10, 132, 255, 0.4);
+
+    /* Backward-compat (same mapping) */
+    --primary: var(--accent);
+    --primary-dark: var(--accent);
+    --bg-primary: var(--surface-0);
+    --bg-secondary: var(--surface-1);
+    --bg-tertiary: var(--surface-2);
+    --shadow-sm: var(--shadow-1);
+    --shadow-md: var(--shadow-2);
+    --shadow-lg: var(--shadow-3);
+    --shadow-xl: var(--shadow-3);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    background: var(--surface-0);
     color: var(--text-primary);
     line-height: 1.6;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    letter-spacing: -0.01em;
+    transition: background-color var(--dur-med) var(--ease-out-soft),
+                color var(--dur-med) var(--ease-out-soft),
+                --accent var(--dur-slow) var(--ease-out-soft);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
-body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-    opacity: 0.05;
-    z-index: -1;
+/* Frosted-glass utility (used by header, modals) */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+    border: var(--glass-border);
 }
 header {
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    padding: 0.75rem 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+    border-bottom: var(--glass-border);
+    padding: 0.875rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: var(--shadow-sm);
 }
 .header-content {
     max-width: 1200px;
@@ -88,44 +183,46 @@ header {
 }
 .header-title { display: flex; align-items: center; gap: 0.75rem; }
 .header-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    border-radius: 8px;
+    width: 36px; height: 36px;
+    background: var(--accent-soft);
+    border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem;
 }
+.header-icon svg { width: 20px; height: 20px; stroke: var(--accent); }
 h1 {
-    font-size: 1.5rem; font-weight: 600;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: var(--fs-h2); font-weight: 300;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
 }
 .header-right { display: flex; align-items: center; gap: 1rem; }
 .battery-status-header {
     display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    background: var(--bg-tertiary);
-    border-radius: 20px;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    font-size: var(--fs-small);
     color: var(--text-secondary);
 }
 .battery-text { display: flex; flex-direction: column; line-height: 1.2; }
-.battery-percentage { font-weight: 600; color: var(--text-primary); }
-.battery-voltage { font-size: 0.7rem; color: var(--text-tertiary); }
-.battery-timestamp { font-size: 0.6rem; color: var(--text-tertiary); }
+.battery-percentage { font-weight: 500; color: var(--text-primary); }
+.battery-voltage { font-size: var(--fs-caption); color: var(--text-tertiary); }
+.battery-timestamp { font-size: var(--fs-caption); color: var(--text-tertiary); }
 .health-status {
     display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.8rem; font-weight: 500;
-    background: var(--bg-tertiary);
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-small); font-weight: 500;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     color: var(--text-tertiary);
 }
 .health-dot {
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--text-tertiary);
-    transition: background-color 0.3s ease;
+    transition: background-color var(--dur-med) var(--ease-out-soft),
+                box-shadow var(--dur-med) var(--ease-out-soft);
 }
 .health-status.healthy .health-dot {
     background: var(--success);
@@ -138,34 +235,40 @@ h1 {
 }
 .health-status.degraded { color: var(--error); }
 .theme-toggle {
-    background: var(--bg-tertiary); border: none;
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
     width: 36px; height: 36px; border-radius: 50%;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; transition: all 0.3s ease;
+    font-size: 1.1rem; color: var(--text-secondary);
+    transition: all var(--dur-fast) var(--ease-out-soft);
 }
-.theme-toggle:hover { transform: rotate(20deg) scale(1.1); }
-.container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1.5rem 2rem; }
+.theme-toggle:hover { background: var(--surface-2); color: var(--text-primary); transform: scale(1.08); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.container { max-width: 1200px; margin: var(--space-lg) auto; padding: 0 var(--space-lg) 2rem; }
 .card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.25rem;
-    box-shadow: var(--shadow-md);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    box-shadow: var(--shadow-1);
+    transition: box-shadow var(--dur-med) var(--ease-out-soft);
 }
+.card:hover { box-shadow: var(--shadow-2); }
 .card-title {
-    font-size: 1.1rem; font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex; align-items: center; gap: 0.5rem;
+    font-size: var(--fs-h2); font-weight: 500;
+    margin-bottom: var(--space-md);
+    display: flex; align-items: center; gap: 0.6rem;
     color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 .card-icon {
-    width: 24px; height: 24px;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    border-radius: 6px;
+    width: 28px; height: 28px;
+    background: var(--accent-soft);
+    border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem;
+    flex-shrink: 0;
 }
+.card-icon svg { width: 16px; height: 16px; stroke: var(--accent); }
 /* Photo Preview Section */
 .photo-preview-section {
     display: flex;
@@ -174,9 +277,10 @@ h1 {
 }
 .photo-panel {
     flex: 1;
-    border-radius: 12px;
-    padding: 1.25rem;
-    border: 2px solid;
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    border: 1.5px solid;
+    transition: border-color var(--dur-med) var(--ease-out-soft);
 }
 .photo-panel.current {
     background: var(--current-photo-bg);
@@ -187,26 +291,26 @@ h1 {
     border-color: var(--next-photo-border);
 }
 .panel-title {
-    font-size: 1rem; font-weight: 700;
-    margin-bottom: 0.75rem;
+    font-size: var(--fs-body); font-weight: 600;
+    margin-bottom: var(--space-sm);
     text-align: center;
 }
 .panel-title.current-title { color: var(--current-photo-border); }
 .panel-title.next-title { color: var(--next-photo-border); }
 .delivered-at {
     text-align: center;
-    font-size: 0.8rem;
+    font-size: var(--fs-small);
     color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-sm);
 }
-.delivered-at strong { color: var(--text-primary); }
+.delivered-at strong { color: var(--text-primary); font-weight: 500; }
 .preview-img-container {
     width: 100%;
     aspect-ratio: 5/3;
-    background: var(--bg-tertiary);
-    border-radius: 8px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,9 +319,9 @@ h1 {
     width: 100%; height: 100%;
     object-fit: contain;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    transition: transform var(--dur-med) var(--ease-out-soft);
 }
-.preview-img-container img:hover { transform: scale(1.03); }
+.preview-img-container img:hover { transform: scale(1.02); }
 .preview-placeholder {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -230,257 +334,297 @@ h1 {
 .next-photo-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
+    gap: var(--space-sm);
 }
 .next-photo-label {
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 600;
     color: var(--text-secondary);
     text-align: center;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.3rem;
 }
 /* Photo Actions */
 .photo-actions-bar {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-sm);
     flex-wrap: wrap;
     align-items: center;
 }
+.prepare-status {
+    margin-top: var(--space-sm);
+    padding: 0.75rem var(--space-md);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    transition: all var(--dur-med) var(--ease-out-soft);
+}
+.prepare-status.loading { background: var(--accent-soft); color: var(--accent); }
+.prepare-status.success { background: rgba(48,209,88,0.1); color: var(--success); }
+.prepare-status.error { background: rgba(255,59,48,0.1); color: var(--error); }
+.hidden { display: none !important; }
 .btn {
     color: white; border: none;
-    padding: 0.7rem 1.5rem;
-    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
+    font-size: var(--fs-body);
+    font-weight: 500;
+    font-family: inherit;
+    transition: all var(--dur-fast) var(--ease-out-soft);
+    box-shadow: var(--shadow-1);
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    -webkit-font-smoothing: antialiased;
 }
-.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.btn:active { transform: translateY(0); }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-prepare { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.btn-cleanup { background: linear-gradient(135deg, var(--warning), #d97706); }
-.btn-gallery { background: linear-gradient(135deg, var(--accent), #6d28d9); }
-.btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
-/* Collapsible Config */
-.config-toggle {
-    width: 100%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
-    margin-bottom: 0;
-}
-.config-toggle:hover { box-shadow: var(--shadow-lg); }
-.config-toggle .arrow {
-    transition: transform 0.3s ease;
-    font-size: 1.2rem;
-}
-.config-toggle.open .arrow { transform: rotate(180deg); }
-.config-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease;
-}
-.config-content.open { max-height: 5000px; }
-.config-inner {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.25rem;
-}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-prepare { background: var(--accent); }
+.btn-cleanup { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+.btn-gallery { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+.btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-small); }
 /* Form */
-.form-group { margin-bottom: 1.25rem; }
-label { display: block; margin-bottom: 0.4rem; font-weight: 500; color: var(--text-primary); font-size: 0.9rem; }
+.form-group { margin-bottom: var(--space-md); }
+label { display: block; margin-bottom: 0.4rem; font-weight: 500; color: var(--text-primary); font-size: var(--fs-small); }
 input[type="text"], select, textarea {
     width: 100%;
     padding: 0.65rem 0.85rem;
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    background: var(--bg-primary);
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-body);
+    font-family: inherit;
+    background: var(--surface-0);
     color: var(--text-primary);
-    transition: border-color 0.3s ease;
+    transition: border-color var(--dur-fast) var(--ease-out-soft),
+                box-shadow var(--dur-fast) var(--ease-out-soft);
 }
 input[type="text"]:focus, select:focus, textarea:focus {
-    border-color: var(--primary);
+    border-color: var(--accent);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
-textarea { resize: vertical; font-family: inherit; }
-.small-text { font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.35rem; }
+textarea { resize: vertical; line-height: 1.5; }
+.small-text { font-size: var(--fs-caption); color: var(--text-tertiary); margin-top: 0.3rem; display: block; line-height: 1.4; }
 /* Slider */
 .slider-container { display: flex; align-items: center; gap: 0.75rem; }
 .slider-container input[type="range"] {
-    flex-grow: 1; height: 6px;
-    -webkit-appearance: none;
-    background: var(--bg-tertiary);
-    border-radius: 3px; outline: none;
+    flex-grow: 1; height: 5px;
+    -webkit-appearance: none; appearance: none;
+    background: var(--surface-2);
+    border-radius: var(--radius-full);
+    outline: none;
 }
 .slider-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px;
+    -webkit-appearance: none; width: 20px; height: 20px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    cursor: pointer; box-shadow: var(--shadow-sm);
+    background: var(--accent);
+    cursor: pointer; box-shadow: var(--shadow-1);
+    transition: transform var(--dur-fast) var(--ease-out-soft);
 }
+.slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 .slider-value {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: white;
-    min-width: 50px; height: 28px;
+    background: var(--surface-2);
+    color: var(--text-primary);
+    min-width: 48px; height: 28px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 14px; font-size: 0.85rem; font-weight: 600;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-small); font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 /* Buttons */
-.button-group { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+.button-group { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); flex-wrap: wrap; }
 input[type="submit"] {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    background: var(--accent);
     color: white; border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    cursor: pointer; font-size: 0.95rem; font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    cursor: pointer; font-size: var(--fs-body); font-weight: 500;
+    font-family: inherit;
+    transition: all var(--dur-fast) var(--ease-out-soft);
+    box-shadow: var(--shadow-1);
 }
-input[type="submit"]:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+input[type="submit"]:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); filter: brightness(1.08); }
+input[type="submit"]:active { transform: scale(0.98); }
 .reset-btn {
-    background: var(--bg-tertiary); color: var(--text-primary);
-    border: 2px solid var(--border);
+    background: var(--surface-1); color: var(--text-secondary);
+    border: 1.5px solid var(--border-subtle);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    cursor: pointer; font-size: var(--fs-body); font-weight: 500;
+    font-family: inherit;
+    transition: all var(--dur-fast) var(--ease-out-soft);
 }
-.reset-btn:hover { background: var(--bg-primary); border-color: var(--primary); }
+.reset-btn:hover { background: var(--surface-2); color: var(--text-primary); border-color: var(--border); }
 .time-input { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.time-input select { width: 70px; padding: 0.5rem; }
+.time-input select { width: 72px; padding: 0.55rem; }
 /* Notification */
 #notification {
-    position: fixed; top: 20px; right: 20px;
+    position: fixed; top: 1.25rem; right: 1.25rem;
     background: var(--success); color: white;
     padding: 0.85rem 1.25rem;
-    border-radius: 10px;
-    box-shadow: var(--shadow-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-3);
     display: none; z-index: 1000;
-    opacity: 0; transition: opacity 0.3s ease;
-}
-#notification.show { opacity: 1; }
-/* Modal */
-.confirm-modal {
-    display: none; position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(5px);
-    align-items: center; justify-content: center;
-    z-index: 1000;
-}
-.confirm-content {
-    background: var(--bg-secondary);
-    padding: 2rem; border-radius: 16px;
-    text-align: center; max-width: 400px; width: 90%;
-    box-shadow: var(--shadow-xl); border: 1px solid var(--border);
-}
-.confirm-content h2 { margin-bottom: 1rem; color: var(--text-primary); }
-.confirm-content p { margin-bottom: 1.5rem; color: var(--text-secondary); }
-.confirm-buttons { display: flex; gap: 0.75rem; justify-content: center; }
-/* Gallery Modal */
-.gallery-modal {
-    display: none; position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(10px);
-    z-index: 1001;
-    overflow-y: auto;
-}
-.gallery-content {
+    font-size: var(--fs-small); font-weight: 500;
+    opacity: 0; transition: opacity var(--dur-med) var(--ease-out-soft),
+                transform var(--dur-med) var(--ease-out-soft);
+    transform: translateY(-8px);
+} /* notification.show */
+/* Tab Bar */
+.tab-bar {
     max-width: 1200px;
-    margin: 2rem auto;
-    padding: 1.5rem;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border-subtle);
 }
-.gallery-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 1.5rem;
+.tab {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.65rem 1rem;
+    font-size: var(--fs-small);
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out-soft),
+                border-color var(--dur-fast) var(--ease-out-soft);
+    letter-spacing: -0.01em;
 }
-.gallery-header h2 { color: white; font-size: 1.3rem; }
-.gallery-close {
-    background: rgba(255,255,255,0.2); color: white;
-    border: none; width: 40px; height: 40px;
-    border-radius: 50%; cursor: pointer;
-    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+.tab:hover { color: var(--text-primary); }
+.tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
 }
-.gallery-close:hover { background: rgba(255,255,255,0.3); }
+/* Tab Panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn var(--dur-med) var(--ease-out-soft); }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Gallery (inline) */
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-md);
 }
 .gallery-item {
-    background: rgba(255,255,255,0.1);
-    border-radius: 8px;
+    background: var(--surface-2);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid var(--border-subtle);
+    transition: transform var(--dur-fast) var(--ease-out-soft);
 }
-.gallery-item img {
-    width: 100%; height: auto;
-    display: block;
-    cursor: pointer;
-}
-.gallery-item img:hover { opacity: 0.8; }
+.gallery-item:hover { transform: scale(1.02); }
+.gallery-item img { width: 100%; height: auto; display: block; cursor: pointer; }
 .gallery-item-info {
     padding: 0.5rem;
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.7);
+    font-size: var(--fs-caption);
+    color: var(--text-secondary);
     text-align: center;
 }
 .gallery-empty {
     text-align: center;
-    color: rgba(255,255,255,0.5);
-    padding: 3rem;
-    font-size: 1.1rem;
+    color: var(--text-tertiary);
+    padding: var(--space-2xl);
+    font-size: var(--fs-body);
 }
+/* Micro-interactions */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.health-status.degraded .health-dot {
+    animation: pulse 2s ease-in-out infinite;
+}
+.spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+/* Modal */
+.confirm-modal {
+    display: none; position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.confirm-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    border: var(--glass-border);
+    padding: 2rem; border-radius: var(--radius-xl);
+    text-align: center; max-width: 420px; width: 90%;
+    box-shadow: var(--shadow-3);
+}
+.confirm-content h2 { margin-bottom: var(--space-sm); color: var(--text-primary); font-size: var(--fs-h2); font-weight: 500; }
+.confirm-content p { margin-bottom: var(--space-lg); color: var(--text-secondary); font-size: var(--fs-body); line-height: 1.5; }
+.confirm-buttons { display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap; }
 /* Generation Status */
 .generation-status-bar {
-    background: var(--bg-tertiary);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem var(--space-md);
+    margin-bottom: var(--space-md);
+    font-size: var(--fs-small);
     color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
 }
 .generation-status-bar.hidden { display: none; }
 /* Footer */
 footer {
-    text-align: center; padding: 1.5rem 0;
-    margin-top: 1.5rem;
-    font-size: 0.8rem;
+    text-align: center; padding: var(--space-lg) 0;
+    margin-top: var(--space-lg);
+    font-size: var(--fs-small);
     color: var(--text-tertiary);
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-subtle);
 }
-.footer-version { margin-top: 0.3rem; font-size: 0.7rem; opacity: 0.7; }
+.footer-version { margin-top: 0.3rem; font-size: var(--fs-caption); opacity: 0.7; }
 /* Responsive */
 @media (max-width: 768px) {
-    .container { padding: 0 1rem 2rem; }
-    .header-content { padding: 0 1rem; flex-direction: column; align-items: stretch; }
+    .container { padding: 0 var(--space-md) 2rem; }
+    .header-content { padding: 0 var(--space-md); flex-direction: column; align-items: stretch; }
     .header-title { justify-content: center; }
     .header-right { justify-content: center; }
-    h1 { font-size: 1.25rem; }
-    .card { padding: 1rem; }
+    h1 { font-size: var(--fs-body); }
+    .card { padding: var(--space-md); }
     .button-group { flex-direction: column; }
     input[type="submit"], .btn { width: 100%; justify-content: center; }
     .photo-preview-section { flex-direction: column; }
     .next-photo-grid { grid-template-columns: 1fr; }
     .photo-actions-bar { flex-direction: column; }
-    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .confirm-content { padding: var(--space-md); }
+}
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }
     </style>
 </head>
@@ -491,7 +635,7 @@ footer {
     <header>
         <div class="header-content">
             <div class="header-title">
-                <div class="header-icon">&#128444;</div>
+                <div class="header-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
                 <h1>E-Paper Photo Frame</h1>
             </div>
             <div class="header-right">
@@ -500,7 +644,7 @@ footer {
                     <span id="healthText">Image source: …</span>
                 </div>
                 <div class="battery-status-header">
-                    <span>&#128267;</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg>
                     <div class="battery-text">
                         <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
                         <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) if battery_voltage > 0 else "0.00" }} V</span>
@@ -512,25 +656,29 @@ footer {
                     </div>
                 </div>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
-                    <span id="themeIcon">&#9790;</span>
+                    <span id="themeIcon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
                 </button>
             </div>
         </div>
+        <!-- Tab Bar -->
+        <nav class="tab-bar" role="tablist">
+            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')" role="tab">Dashboard</button>
+            <button class="tab" data-tab="configuration" onclick="switchTab('configuration')" role="tab">Configuration</button>
+            <button class="tab" data-tab="gallery" onclick="switchTab('gallery')" role="tab">Gallery</button>
+        </nav>
     </header>
 
-    <div class="container">
+    <main class="container">
+        <section id="tab-dashboard" class="tab-panel active">
         {% if error %}
-        <div class="card" style="border-color: var(--error); background: rgba(239,68,68,0.05);">
-            <strong>&#9888;&#65039; {{ error }}</strong>
+        <div class="card" style="border-left: 3px solid var(--error); background: rgba(255,59,48,0.04);">
+            <strong style="display:flex;align-items:center;gap:0.5rem;color:var(--error)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ error }}</strong>
         </div>
         {% endif %}
 
         <!-- Photo Preview & Management -->
         <div class="card" style="padding: 1.25rem;">
-            <div class="card-title">
-                <span class="card-icon">&#128247;</span>
-                Photo Preview &amp; Management
-            </div>
+            <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span> Photo Preview &amp; Management</div>
 
             <!-- Generation Status (ComfyUI only) -->
             <div class="generation-status-bar hidden" id="generationInfo"></div>
@@ -546,7 +694,7 @@ footer {
                         <img id="previewDelivered" src="./preview-delivered" alt="Delivered photo"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="preview-placeholder" style="display: none;">
-                            <span>&#128444;</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
                             <p>No delivered photo yet</p>
                         </div>
                     </div>
@@ -562,7 +710,7 @@ footer {
                                 <img id="previewOriginal" src="./preview-original" alt="Original photo"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="preview-placeholder" style="display: none;">
-                                    <span>&#128247;</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                                     <p>No original yet</p>
                                 </div>
                             </div>
@@ -573,7 +721,7 @@ footer {
                                 <img id="previewProcessed" src="./preview-processed" alt="Processed photo"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="preview-placeholder" style="display: none;">
-                                    <span>&#9881;&#65039;</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
                                     <p>No processed photo yet</p>
                                 </div>
                             </div>
@@ -585,30 +733,26 @@ footer {
             <!-- Action Buttons -->
             <div class="photo-actions-bar">
                 <button class="btn btn-prepare" onclick="prepareNewPhoto()" id="prepareBtn">
-                    &#128247; Prepare New Photo
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Prepare New Photo
                 </button>
                 <button class="btn btn-cleanup btn-sm" onclick="cleanupPreviews()">
-                    &#128465; Cleanup Old Previews
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Cleanup Old Previews
                 </button>
-                <button class="btn btn-gallery btn-sm" onclick="openGallery()">
-                    &#127744; View Old Previews
+                <button class="btn btn-gallery btn-sm" onclick="switchTab('gallery')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> View Old Previews
                 </button>
+            </div>
             </div>
 
             <div class="prepare-status hidden" id="prepareStatus"></div>
         </div>
+        </section>
 
-        <!-- Collapsible Config Section -->
-        <button class="config-toggle" id="configToggle" onclick="toggleConfig()">
-            <span>&#9881;&#65039; Configuration</span>
-            <span class="arrow">&#9660;</span>
-        </button>
-        <div class="config-content" id="configContent">
-            <div class="config-inner">
-                <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
+        <section id="tab-configuration" class="tab-panel">
+        <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
                     <!-- Image Source Selection -->
                     <div class="card" style="margin-bottom: 1rem;">
-                        <div class="card-title"><span class="card-icon">&#128268;</span> Image Source</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Image Source</div>
                         <div class="form-group">
                             <label for="image_source">Source:</label>
                             <select id="image_source" name="image_source" onchange="updateSourceVisibility()">
@@ -622,7 +766,7 @@ footer {
 
                     <!-- Immich Config -->
                     <div class="card" id="immichConfig">
-                        <div class="card-title"><span class="card-icon">&#128268;</span> Immich Server</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Immich Server</div>
                         <div class="form-group">
                             <label for="url">Immich Server URL:</label>
                             <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
@@ -635,7 +779,7 @@ footer {
 
                     <!-- ComfyUI HA Config -->
                     <div class="card" id="comfyuiHAConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon">&#129302;</span> ComfyUI via Home Assistant</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> ComfyUI via Home Assistant</div>
                         <div class="form-group">
                             <label for="ha_url">Home Assistant URL:</label>
                             <input type="text" id="ha_url" name="ha_url" value="{{ config.get('comfyui', {}).get('ha_url', '') }}" placeholder="http://homeassistant:8123">
@@ -675,7 +819,7 @@ footer {
 
                     <!-- ComfyUI Direct Config -->
                     <div class="card" id="comfyuiDirectConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon">&#9881;&#65039;</span> ComfyUI Direct (Expert)</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> ComfyUI Direct (Expert)</div>
                         <div class="form-group">
                             <label for="comfyui_direct_url">ComfyUI Server URL:</label>
                             <input type="text" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui:8188">
@@ -717,7 +861,7 @@ footer {
 
                     <!-- Display Settings -->
                     <div class="card">
-                        <div class="card-title"><span class="card-icon">&#128444;</span> Display Settings</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span> Display Settings</div>
                         <div class="form-group">
                             <label for="rotation">Rotation:</label>
                             <select id="rotation" name="rotation">
@@ -775,7 +919,7 @@ footer {
 
                     <!-- Power Management -->
                     <div class="card">
-                        <div class="card-title"><span class="card-icon">&#128267;</span> Power Management</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg></span> Power Management</div>
                         <div class="form-group">
                             <label for="wakeup_interval">Wake-up Interval (minutes):</label>
                             <input type="text" id="wakeup_interval" name="wakeup_interval" value="{{ config['immich']['wakeup_interval'] }}">
@@ -812,40 +956,35 @@ footer {
 
                     <!-- Buttons -->
                     <div class="button-group">
-                        <input type="submit" value="&#128190; Save Settings">
-                        <button type="button" class="reset-btn" onclick="showResetConfirmation()">&#8634; Reset to Default</button>
+                        <input type="submit" value="Save Settings" style="font-weight:500">
+                        <button type="button" class="reset-btn" onclick="showResetConfirmation()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:0.3rem"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset to Default</button>
                     </div>
                 </form>
+        </section>
+
+        <section id="tab-gallery" class="tab-panel">
+            <div class="card">
+                <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> Preview Gallery</div>
+                <div id="galleryBody">
+                    <div class="gallery-empty">Load previews</div>
+                </div>
             </div>
-        </div>
+        </section>
 
         <footer>
             <div>&copy; <span id="copyrightYear"></span> E-Paper Photo Frame</div>
             <div class="footer-version">v{{ addon_version }} | Built: {{ build_timestamp }}</div>
         </footer>
-    </div>
+    </main>
 
     <!-- Reset Confirmation Modal -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-content">
-            <h2>&#9888;&#65039; Reset Settings?</h2>
+            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;margin-right:0.4rem;display:inline-block"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reset Settings?</h2>
             <p>This will reset all settings to their default values. You will need to click Save to apply them.</p>
             <div class="confirm-buttons">
-                <button onclick="confirmReset()">&#9989; Yes, Reset</button>
-                <button class="reset-btn" onclick="cancelReset()">&#10060; Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gallery Modal -->
-    <div class="gallery-modal" id="galleryModal">
-        <div class="gallery-content">
-            <div class="gallery-header">
-                <h2>&#127744; Preview Gallery</h2>
-                <button class="gallery-close" onclick="closeGallery()">&#10005;</button>
-            </div>
-            <div id="galleryBody">
-                <div class="gallery-empty">Loading previews...</div>
+                <button onclick="confirmReset()" style="background:var(--accent);color:white;border:none;padding:0.6rem 1.2rem;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--fs-body);font-weight:500">Yes, Reset</button>
+                <button class="reset-btn" onclick="cancelReset()" style="padding:0.6rem 1.2rem;font-size:var(--fs-body)">Cancel</button>
             </div>
         </div>
     </div>
@@ -855,20 +994,32 @@ footer {
         const NOTIFICATION_DURATION = 4000;
         const SLIDER_DEFAULTS = { enhanced: '1.8', contrast: '0.9', strength: '1.0' };
 
+        // SVG icon constants
+        const ICONS = {
+            moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+            sun: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
+            camera: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+        };
+        const PREPARE_BTN_HTML = ICONS.camera + ' Prepare New Photo';
+
         function safeGet(id) {
             var el = document.getElementById(id);
             if (!el) console.warn('Element not found: #' + id);
             return el;
         }
 
-        // Config Toggle
-        function toggleConfig() {
-            var toggle = safeGet('configToggle');
-            var content = safeGet('configContent');
-            if (toggle && content) {
-                toggle.classList.toggle('open');
-                content.classList.toggle('open');
-            }
+        // Tab Switching
+        function switchTab(tabName) {
+            var panels = document.querySelectorAll('.tab-panel');
+            var tabs = document.querySelectorAll('.tab');
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            var target = safeGet('tab-' + tabName);
+            if (target) target.classList.add('active');
+            var btn = document.querySelector('[data-tab="' + tabName + '"]');
+            if (btn) btn.classList.add('active');
+            // Lazy-load gallery on first open
+            if (tabName === 'gallery') loadGallery();
         }
 
         // Source Visibility
@@ -891,8 +1042,47 @@ footer {
             var currentTheme = body.getAttribute('data-theme');
             var newTheme = currentTheme === 'light' ? 'dark' : 'light';
             body.setAttribute('data-theme', newTheme);
-            themeIcon.textContent = newTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
+            themeIcon.innerHTML = newTheme === 'light' ? ICONS.moon : ICONS.sun;
             localStorage.setItem('theme', newTheme);
+        }
+
+        // Dynamic accent from photo
+        var _accentTimer = null;
+        function extractAccentFromPhoto() {
+            var img = safeGet('previewDelivered');
+            if (!img || !img.complete || !img.naturalWidth) return;
+            try {
+                var canvas = document.createElement('canvas');
+                canvas.width = 16; canvas.height = 16;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 16, 16);
+                var data = ctx.getImageData(0, 0, 16, 16).data;
+                // Average colour
+                var r = 0, g = 0, b = 0, n = data.length / 4;
+                for (var i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
+                r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
+                // Convert to HSL, boost saturation + adjust lightness for a pleasant accent
+                var max = Math.max(r,g,b)/255, min = Math.min(r,g,b)/255;
+                var h = 0, s = 0, l = (max+min)/2;
+                if (max !== min) {
+                    var d = max - min;
+                    s = l > 0.5 ? d/(2-max) : d/(2*min);
+                    switch(max) {
+                        case r/255: h = ((g/255-b/255)/d + (g/255<b/255?6:0))/6; break;
+                        case g/255: h = ((b/255-r/255)/d + 2)/6; break;
+                        default:     h = ((r/255-g/255)/d + 4)/6;
+                    }
+                }
+                // Clamp: hue free, sat 0.4-0.7, light 0.45-0.55 → muted, pleasant
+                s = Math.min(0.7, Math.max(0.4, s * 0.6 + 0.35));
+                l = Math.min(0.55, Math.max(0.45, l * 0.5 + 0.25));
+                var hDeg = Math.round(h * 360);
+                var accent = 'hsl(' + hDeg + ',' + Math.round(s*100) + '%,' + Math.round(l*100) + '%)';
+                document.documentElement.style.setProperty('--accent', accent);
+                // Derived soft + glow
+                document.documentElement.style.setProperty('--accent-soft', accent.replace(')', ', 0.12)').replace('hsl', 'hsla'));
+                document.documentElement.style.setProperty('--accent-glow', accent.replace(')', ', 0.25)').replace('hsl', 'hsla')));
+            } catch(e) { /* CORS / decode error – ignore */ }
         }
 
         // Health Check
@@ -987,6 +1177,8 @@ footer {
                     if (delivered) delivered.src = './preview-delivered' + ts;
                     if (original) original.src = './preview-original' + ts;
                     if (processed) processed.src = './preview-processed' + ts;
+                    // Extract accent colour after image has a chance to load
+                    setTimeout(extractAccentFromPhoto, 800);
                 })
                 .catch(function() {});
         }
@@ -1015,14 +1207,14 @@ footer {
                         status.textContent = 'Error: ' + (data.error || 'Unknown error');
                     }
                     btn.disabled = false;
-                    btn.innerHTML = '&#128247; Prepare New Photo';
+                    btn.innerHTML = PREPARE_BTN_HTML;
                     setTimeout(function() { status.style.display = 'none'; }, 5000);
                 })
                 .catch(function(err) {
                     status.className = 'prepare-status error';
                     status.textContent = 'Error: ' + err.message;
                     btn.disabled = false;
-                    btn.innerHTML = '&#128247; Prepare New Photo';
+                    btn.innerHTML = PREPARE_BTN_HTML;
                     setTimeout(function() { status.style.display = 'none'; }, 5000);
                 });
         }
@@ -1041,18 +1233,17 @@ footer {
                 .catch(function() { showNotification('Cleanup request failed', 'error'); });
         }
 
-        // Gallery
-        function openGallery() {
-            var modal = safeGet('galleryModal');
+        // Gallery (inline tab)
+        var galleryLoaded = false;
+        function loadGallery() {
+            if (galleryLoaded) return;
             var body = safeGet('galleryBody');
-            if (!modal || !body) return;
-
+            if (!body) return;
             body.innerHTML = '<div class="gallery-empty">Loading previews...</div>';
-            modal.style.display = 'block';
-
             fetch('./api/gallery-previews')
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
+                    galleryLoaded = true;
                     if (!data.files || data.files.length === 0) {
                         body.innerHTML = '<div class="gallery-empty">No old previews found</div>';
                         return;
@@ -1070,11 +1261,6 @@ footer {
                 .catch(function() {
                     body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
                 });
-        }
-
-        function closeGallery() {
-            var modal = safeGet('galleryModal');
-            if (modal) modal.style.display = 'none';
         }
 
         // Slider
@@ -1192,9 +1378,12 @@ footer {
             }, NOTIFICATION_DURATION);
         }
 
-        // Close gallery on escape
+        // Close on escape (no-op now – gallery is a tab, not a modal)
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeGallery();
+            if (e.key === 'Escape') {
+                var m = safeGet('confirmModal');
+                if (m) m.style.display = 'none';
+            }
         });
 
         // Init
@@ -1202,7 +1391,7 @@ footer {
             var savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             var themeIcon = safeGet('themeIcon');
-            if (themeIcon) themeIcon.textContent = savedTheme === 'light' ? '\u263E' : '\u2600\uFE0F';
+            if (themeIcon) themeIcon.innerHTML = savedTheme === 'light' ? ICONS.moon : ICONS.sun;
 
             var yearEl = safeGet('copyrightYear');
             if (yearEl) yearEl.textContent = new Date().getFullYear();
