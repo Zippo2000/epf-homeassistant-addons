@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] - 2026-09-19
+
+### Fixed
+- **Gallery tab always empty.** The gallery route listed preview files with wildcard patterns
+  (`latest_original_*.jpg` / `latest_processed_*.jpg` / `latest_delivered_*.jpg`), but the
+  pipeline writes them with **fixed** names (`latest_original.jpg`, `latest_processed.jpg`,
+  `latest_delivered.jpg`). The wildcards never matched, so the gallery could never show anything.
+  The reader now lists the real filenames; after a “Prepare New Photo” the Gallery shows the
+  current original + processed (and, once the frame pulls it, delivered) previews. Separate from
+  the 2.1.1 script fix — a pre-existing reader/writer naming mismatch, which is why it was already
+  empty before the 2.1.x redesign.
+
 ## [2.1.1] - 2026-09-19
 
 ### Fixed

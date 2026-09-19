@@ -988,7 +988,7 @@ def gallery_previews() -> Any:
     """Return list of all preview files for gallery view."""
     try:
         files: List[Dict[str, str]] = []
-        patterns: List[str] = ['latest_original_*.jpg', 'latest_processed_*.jpg', 'latest_delivered_*.jpg']
+        patterns: List[str] = ['latest_original.jpg', 'latest_processed.jpg', 'latest_delivered.jpg']
         
         for pattern in patterns:
             matching = glob_module.glob(os.path.join(photo_dir, pattern))
