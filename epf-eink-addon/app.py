@@ -1060,7 +1060,9 @@ def gallery_previews() -> Any:
                     files.append({
                         'id': shot,
                         'kind': kind,
-                        'url': '/preview-file/' + base,
+                        # Relative URL: the UI is embedded under HA ingress (/api/ingress/<token>/).
+                        # An absolute '/preview-file/...' would resolve to the HA root and 404.
+                        'url': './preview-file/' + base,
                         'name': base,
                         'modified': datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S'),
                         'timestamp': mtime,

@@ -151,7 +151,8 @@ class TestReader:
         kinds = sorted(f['kind'] for f in data['files'])
         assert kinds == ['original', 'processed']
         for f in data['files']:
-            assert f['url'].startswith('/preview-file/')
+            # Relative (ingress-safe) URL, not an absolute one hitting the HA root
+            assert f['url'].startswith('./preview-file/')
 
 
 # --------------------------------------------------------------------------
