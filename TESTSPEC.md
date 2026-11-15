@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.0 (2026-11-15)
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.1 (2026-11-15)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -90,7 +90,7 @@ Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `t
 | `TestFR013ImageDelivery` | FR-013 | prepared delivered; **on-the-fly** delivery; `batteryCap`-Recording |
 | `TestFR014PreparePhoto` | FR-014 | `POST /prepare-photo` → success + Status `new` |
 | `TestFR015PreviewServing` | FR-015 | `/preview-photo`/`/preview-original`/… 200 |
-| `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges |
+| `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges, **keine Doppel-Namen im Formular + Geteiltes-ComfyUI-Block-Roundtrip (2.4.1)** |
 | `TestFR033WorkflowSelection` (2.4.0) | FR-033 | Workflow-Dropdown + Slots, Save-Roundtrip ins Runtime-YAML, Validierung (Duplikat/UI-Format/Größe/Auswahl), „POST ohne Felder behält die Liste" |
 
 ### `tests/test_nonfunctional.py` → **NFR + IFR + SEC + PER**
@@ -130,8 +130,8 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.4.0):** **192** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **200**,
+> **Coverage-Grob (Stand 2.4.1):** **195** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **203**,
 > 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
 > ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
@@ -140,8 +140,8 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.0 / 200 Tests / 100 %** (L0 20,1 s,
-   L1 26,0 s, nachgezählt am 2026-11-15). Code, Specs und Report sind wieder auf demselben Stand
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.1 / 203 Tests / 100 %** (L0 19,5 s,
+   L1 26,3 s, nachgezählt am 2026-11-15). Code, Specs und Report sind wieder auf demselben Stand
    (33 FR, volles Provider-Modul, sechs Test-Dateien). Vor jedem Release neu fahren und neu zählen —
    sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf

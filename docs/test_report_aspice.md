@@ -2,11 +2,12 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.4.0
+**Version:** 2.4.1
 **Date:** 2026-11-15
-**Baseline:** branch `main` — code base **v2.4.0** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Baseline:** branch `main` — code base **v2.4.1** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
-2.3.1 + settings vocabulary & channel visibility 2.3.2)
+2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
+settings-form duplicate-field fix 2.4.1)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Status:** Completed — all tiers green (L0 offline, L1 live Immich, L3 production-image smoke)
 
@@ -44,6 +45,14 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 > time. Eleven new provider cases and seven new functional cases → offline suite **192** cases; the
 > live tier grew to **8** cases (three of them ComfyUI, one running a real exported graph). L0, L1 and
 > the production-image smoke were re-run green on 2026-11-15 (§6.1, §6.4).
+>
+> The **2.4.1** revision closes a field-reported defect: six ComfyUI settings were rendered **twice**
+> in the single settings form (once per source card), and a duplicated `name` means the browser
+> submits both values and Flask keeps the first — the second card's edit was silently dropped (§6.5,
+> defect list). The shared settings are now rendered once in their own card. Three new functional
+> cases → offline suite **195**; the **8** live cases are unchanged. L0, L1 and the production-image
+> smoke were re-run green on 2026-11-15 (§6.5). The catalogue side of this is a **TC-FR-021** test-object
+> extension (EPF-TST-001 rev 2.4.1); the requirement itself did not change.
 
 ---
 
@@ -51,14 +60,14 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **200** (192 offline + 8 opt-in live) |
-| **Passed** | **200** — 192 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
+| **Total Test Cases** | **203** (195 offline + 8 opt-in live) |
+| **Passed** | **203** — 195 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 20.1 s (2026-11-15) · L1 26.0 s incl. three real GPU generations (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
+| **Execution Time** | L0 19.5 s (2026-11-15) · L1 26.3 s incl. three real GPU generations (2026-11-15) · L3 production smoke incl. one real ComfyUI generation, 12.4 s end to end (2026-11-15) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3) and the named-workflow selection works end to end, including a real exported graph (§6.4) |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), and the settings form now delivers every field it renders (§6.5) |
 | **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
 
 ---
@@ -99,7 +108,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) | **90** | **90** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) | **93** | **93** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -125,8 +134,8 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 200 collected — 192 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
-→ 200/200, 0 failed (100 %).**
+**Total: 203 collected — 195 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
+→ 203/203, 0 failed (100 %).**
 
 ---
 
@@ -184,6 +193,19 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
   renamed** (`url`, `album`, `rotation`, `enhanced`, `strength`): `settings()` resolves the canonical
   name first and keeps the short name as a legacy alias, so stored configs keep working.
 
+Defect found and fixed on the **2.4.1** track (reported from a real installation, not from the suite):
+
+- **Product** — the settings page is **one form**, and the two ComfyUI cards each rendered the six
+  shared settings (prompt, negative prompt, width, height, seed, max generations per day) under the
+  **same** field name. Both controls are submitted — a `display: none` card is still a submitted card —
+  and Flask keeps the first occurrence, so an edit made in the second card never reached the runtime
+  YAML while the save still reported success. Symptom in the field: a seed change from `0` to `-1`
+  "saved" and did nothing, and ComfyUI kept answering the following runs from cache with the previous
+  file. Fixed by rendering those six settings **once**, in a shared **ComfyUI — Common Settings** card;
+  guarded by `test_form_field_names_are_unique` plus the two companion cases (§6.5).
+- **Product (cosmetic, accepted)** — `batteryTimestampHeader` appears as an id twice in the template,
+  but the two elements live in mutually exclusive Jinja branches, so only one ever renders. No action.
+
 ---
 
 ## 6. Test Execution Log (excerpt)
@@ -191,14 +213,14 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 200 items
+collected 203 items
 
-tests/test_functional.py      :: 90 passed
+tests/test_functional.py      :: 93 passed
 tests/test_nonfunctional.py  :: 27 passed
 tests/test_providers.py      :: 54 passed
 tests/test_gallery_history.py :: 21 passed
 tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
-======================= 192 passed, 8 skipped in 20.08s ========================
+======================= 195 passed, 8 skipped in 19.47s ========================
 ```
 
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
@@ -307,6 +329,31 @@ reference server of §7.1 doing the actual diffusion:
 **One product fix came out of building this:** the settings-page labels pointed at field ids the slot
 inputs did not have (`for` ≠ `id`); the slot inputs now carry ids, so the labels are real labels.
 
+### 6.5 L0/L1/L3 re-run for 2.4.1 — the form delivers every field it renders (run 2026-11-15)
+
+Trigger was a field report: on a real installation running `image_source=comfyui_direct`, a seed change
+on the settings page saved "successfully" and changed nothing, and the ComfyUI server answered the
+runs after it from cache with the previous file. Root cause is the duplicated field name in §5 — the
+pipeline itself was never involved. The shipped production image was rebuilt and driven through the
+browser's own path (form `POST` → runtime YAML → watchdog → provider → generation on the reference
+server of §7.1):
+
+| Check | Result |
+|-------|--------|
+| Rendered page | 109 KB, **no field name appears twice**, no duplicate rendered id ✓ (the guard is now an automated test as well) |
+| Footer version (derived) | **v2.4.1** ✓ |
+| `GET /health` before the save | reports the seeded source (Immich) ✓ |
+| Form `POST` exactly as the browser sends it (`image_source=comfyui_direct`, canonical names) | `302` → runtime YAML now carries `prompt`, `negative_prompt`, `width: 1024`, `height: 768`, **`seed: -1`**, `max_generations_per_day: 12`, `active_workflow: qwen` and the slot entry ✓ — every shared field arrives |
+| Watchdog / provider rebuild after the save | fires ✓ |
+| `POST /prepare-photo` (real GPU generation, named workflow active) | `200` in **12.4 s** — log `Generating image via ComfyUI Direct: workflow=qwen seed=1806705723`, **new file** on the server (`…00036`), three previews stored, gallery archive hook fires ✓ |
+| `/download` contract (regression) | `frame.txt`, `text/plain`, 16 tokens/row, **no `};` tail** ✓ |
+| L0 offline suite | **195 passed, 8 skipped** (the three new functional cases included) ✓ |
+| L1 live tier | **8 passed**, including the real exported graph ✓ |
+
+**What this proves:** every field the form renders reaches the runtime YAML — the loss was a rendering
+accident, not the pipeline — and a named workflow with a random seed produces a genuinely new image on
+the real server, which is what the field report said it did not.
+
 ---
 
 ## 7. Reproduction
@@ -362,10 +409,11 @@ exported workflow graph the live tier posts is a `.env` value too):
 
 ---
 
-*Regenerated for code base **v2.4.0** on branch `main`, 2026-11-15: **192** offline cases pass,
+*Regenerated for code base **v2.4.1** on branch `main`, 2026-11-15: **195** offline cases pass,
 the **8** live cases pass against a real Immich *and* a real ComfyUI (including a real exported
 workflow graph), and the production image passes the L3 smoke (form vocabulary §6.2, named workflows
-§6.4) plus the live ComfyUI-direct leg (§6.3) — the release gate of `AGENTS.md` is satisfied.
+§6.4, form-delivers-every-field §6.5) plus the live ComfyUI-direct leg (§6.3) — the release gate of
+`AGENTS.md` is satisfied.
 Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
 see `plans/findings.md`.*

@@ -400,3 +400,34 @@ am 2026-11-15 wiederholt.
 
 *Plan erstellt: 2025-*
 *Nächster Schritt: Phase 1 (Token-Definition) – kann sofort losgehen.*
+
+---
+
+## 9 · Settings-Formular: ein Name pro Feld (umgesetzt in 2.4.1)
+
+**Fund (Feldbericht, nicht aus der Suite):** Das Settings-Formular ist *ein* `<form>`. Beide
+ComfyUI-Karten haben die sechs geteilten Felder (Prompt, Negativ-Prompt, Breite, Höhe, Seed, Max/Tag) mit
+demselben `name` gerendert. Der Browser sendet beide Karten — `display: none` hindert eine Karte nicht am
+Absenden — und Flask liest den **ersten** Wert: die Editierung der zweiten Karte war stilllos verloren.
+Symptom beim Nutzer: Seed `0` → `-1`, Meldung „Settings saved", keine Wirkung — und ComfyUI antwortete auf
+die Folgeläufe aus dem Cache mit derselben Datei (bei gleichem Seed + gleichem Prompt ist die Ausgabe
+identisch, bei `-1` wäre sie neu gewesen).
+
+**Umgesetzt** (Render-Fix — Feldnamen, YAML-Schlüssel und Verhalten sind unverändert):
+
+- Neue Karte **ComfyUI — Common Settings** (`#comfyuiCommonConfig`) direkt unter den Quellenkarten:
+  Prompt, Negativ-Prompt, Breite, Höhe, Seed, Max/Tag — **einmal**, für beide ComfyUI-Quellen.
+- Die Quellenkarten behalten ausschließlich ihre quellspezifischen Felder (`entity_id` + Token-Status bei
+  der HA-Karte, URL / Workflow / Checkpoint / Slots bei der Direkt-Karte) und verweisen auf den
+  gemeinsamen Block.
+- JS: der Block wird sichtbar, wenn `image_source` auf `comfyui_ha` **oder** `comfyui_direct` steht
+  (`updateSourceVisibility`); Kartenlogik und Speicherpfad unverändert.
+- Tests (`TestFR021SettingsVocabulary`): kein gerendeter Feldname doppelt · die geteilten ComfyUI-Felder
+  genau einmal · Speichern über die Direkt-Quelle schreibt Prompt / Größe / Seed / Max ins Runtime-YAML.
+
+**Offen für den nächsten Release (bewusst nicht Teil dieses Passes):**
+
+1. **Slot ohne Name** wird beim Speichern stilllos verworfen (2.4.0-Verhalten, Nutzer hatte JSON
+   eingefügt und nichts bekam) — Rückmeldung beim Speichern wäre fair: Name Pflicht, sobald JSON drin ist.
+2. **Leere Felder beim Speichern** überschreiben bestehende Werte mit leer (bestehend seit 2.3.2, durch
+   die neuen Slots sichtbarer geworden) — Guard-Test + UI-Hinweis sinnvoll.

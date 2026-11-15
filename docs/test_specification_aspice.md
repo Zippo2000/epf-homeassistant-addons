@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.4.0  
+**Version:** 2.4.1  
 **Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.4.0)  
+**Baseline:** Repository commit (main branch, v2.4.1)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
@@ -20,6 +20,14 @@
 > Selection)**: 18 automated cases (11 provider + 7 settings-page) in the offline tier, plus three live
 > cases (TC-L09/L10/L10b) that run a real generation through the selection on the reference server.
 > Status "Executed — Passed". Results in EPF-RPT-001 (re-baselined for 2.4.0).
+>
+> **Revision 2.4.1 (2026-11-15):** **TC-FR-021** gains three automated cases for a settings-form
+> regression found in field use: the single settings form rendered six ComfyUI fields twice (both
+> cards are submitted, Flask keeps the first), so an edit in the second card was silently dropped.
+> The form must now contain no duplicate field name, the shared ComfyUI block must render each field
+> exactly once, and a direct-source save must round-trip prompt / dimensions / seed / daily maximum
+> into the runtime YAML — **10 automated cases**, status "Executed — Passed". This is a test-object
+> extension, the requirement itself is unchanged. Results in EPF-RPT-001 (re-baselined for 2.4.1).
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
 ---
@@ -531,10 +539,10 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Priority** | High |
 | **Preconditions** | SUT running; browser or HTTP client available |
 | **Test Input** | GET/POST request to `/` |
-| **Test Steps** | 1. Send GET to `/`<br>2. Verify HTML settings page is returned<br>3. Verify 3-column photo preview grid exists (delivered, original, processed)<br>4. Verify server connection fields (URL, album)<br>5. Verify display settings (rotation, display mode, image order, dithering method)<br>6. Verify enhancement sliders (color, contrast, dithering strength)<br>7. Verify power management controls (sleep time range, wakeup interval)<br>8. Verify battery status display<br>9. Verify dark/light theme toggle<br>10. Verify prepare new photo button<br>11. Submit form with modified values<br>12. Verify configuration is saved to YAML<br>13. Verify hot-reload is triggered<br>14. Verify the form field names match the add-on option names (`immich_url`, `album_name`, `rotation_angle`, `color_enhance`, `dithering_strength`, `comfyui_entity_id`) (2.3.2)<br>15. Verify a POST with the canonical names and a POST with the legacy short names both land in the same runtime-YAML keys (2.3.2)<br>16. Verify the env-only secrets and the log level are echoed as read-only status and never as inputs (2.3.2)<br>17. Verify each card is labelled with its configuration channel (2.3.2) |
-| **Expected Result** | All UI elements are present and functional; form submission saves config and triggers hot-reload; page is responsive; the channel a value comes from is visible on the page (2.3.2) |
+| **Test Steps** | 1. Send GET to `/`<br>2. Verify HTML settings page is returned<br>3. Verify 3-column photo preview grid exists (delivered, original, processed)<br>4. Verify server connection fields (URL, album)<br>5. Verify display settings (rotation, display mode, image order, dithering method)<br>6. Verify enhancement sliders (color, contrast, dithering strength)<br>7. Verify power management controls (sleep time range, wakeup interval)<br>8. Verify battery status display<br>9. Verify dark/light theme toggle<br>10. Verify prepare new photo button<br>11. Submit form with modified values<br>12. Verify configuration is saved to YAML<br>13. Verify hot-reload is triggered<br>14. Verify the form field names match the add-on option names (`immich_url`, `album_name`, `rotation_angle`, `color_enhance`, `dithering_strength`, `comfyui_entity_id`) (2.3.2)<br>15. Verify a POST with the canonical names and a POST with the legacy short names both land in the same runtime-YAML keys (2.3.2)<br>16. Verify the env-only secrets and the log level are echoed as read-only status and never as inputs (2.3.2)<br>17. Verify each card is labelled with its configuration channel (2.3.2)<br>18. Verify no field name appears twice in the rendered form — both cards of a single form are submitted, and the second value of a duplicated name is dropped (2.4.1)<br>19. Verify the shared ComfyUI settings render exactly once and that the source cards point to them (2.4.1)<br>20. Verify a save from the direct source carries prompt, negative prompt, dimensions, seed and daily maximum through to the runtime YAML (2.4.1) |
+| **Expected Result** | All UI elements are present and functional; form submission saves config and triggers hot-reload; page is responsive; the channel a value comes from is visible on the page (2.3.2); every field name in the form is unique and every shared setting is rendered once (2.4.1) |
 | **Verification Method** | Test (Manual/Automated) |
-| **Actual Result** | 7 automated cases in `tests/test_functional.py` (`TestFR021WebSettings`, `TestFR021SettingsVocabulary`) — all green, 2026-11-15 |
+| **Actual Result** | 10 automated cases in `tests/test_functional.py` (`TestFR021WebSettings`, `TestFR021SettingsVocabulary`) — all green, 2026-11-15 |
 | **Status** | Executed — Passed |
 
 #### TC-FR-022: Image Tracking
@@ -1084,7 +1092,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-FR-019 | FR-019 | Test | Not Executed |
 | TC-FR-020-START | FR-020 | Test | Not Executed |
 | TC-FR-020-HOT | FR-020 | Test | Not Executed |
-| TC-FR-021 | FR-021 | Test | Executed — Passed (7 cases, 2026-11-15) |
+| TC-FR-021 | FR-021 | Test | Executed — Passed (10 cases, 2026-11-15) |
 | TC-FR-022 | FR-022 | Test | Not Executed |
 | TC-FR-023 | FR-023 | Test | Not Executed |
 | TC-FR-024 | FR-024 | Test | Not Executed |
@@ -1123,12 +1131,12 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 | Category | Requirements | Test Cases | Coverage |
 |----------|-------------|------------|----------|
-| Functional | 25 | 30 | 100% |
+| Functional | 25 | 33 | 100% |
 | Non-Functional | 8 | 8 | 100% |
 | Interface | 5 | 5 | 100% |
 | Security | 4 | 4 | 100% |
 | Performance | 3 | 3 | 100% |
-| **Total** | **45** | **50** | **100%** |
+| **Total** | **45** | **53** | **100%** |
 
 ### 5.2 Verification Method Distribution
 
