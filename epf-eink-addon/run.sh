@@ -17,6 +17,7 @@ export COMFYUI_MAX_GENERATIONS=$(bashio::config 'comfyui_max_generations' '50')
 export COMFYUI_ENTITY_ID=$(bashio::config 'comfyui_entity_id')
 export COMFYUI_DIRECT_URL=$(bashio::config 'comfyui_direct_url')
 export COMFYUI_WORKFLOW_JSON=$(bashio::config 'comfyui_workflow_json')
+export COMFYUI_CHECKPOINT=$(bashio::config 'comfyui_checkpoint')
 export ROTATION_ANGLE=$(bashio::config 'rotation_angle' '270')
 export COLOR_ENHANCE=$(bashio::config 'color_enhance' '1.8')
 export CONTRAST=$(bashio::config 'contrast' '0.9')
@@ -59,6 +60,7 @@ bashio::log.info "  Album: ${ALBUM_NAME}"
 bashio::log.info "  HA URL: ${HA_URL}"
 bashio::log.info "  ComfyUI Prompt: ${COMFYUI_PROMPT}"
 bashio::log.info "  ComfyUI Direct URL: ${COMFYUI_DIRECT_URL}"
+bashio::log.info "  ComfyUI Checkpoint: ${COMFYUI_CHECKPOINT:-auto}"
 bashio::log.info "  Rotation: ${ROTATION_ANGLE}°"
 bashio::log.info "  Color Enhance: ${COLOR_ENHANCE}"
 bashio::log.info "  Contrast: ${CONTRAST}"

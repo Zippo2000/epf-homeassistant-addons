@@ -410,6 +410,69 @@ class TestComfyUIDirectProvider:
         seed2 = workflow2['3']['inputs']['seed']
         assert seed1 != seed2
 
+    def test_build_workflow_uses_explicit_checkpoint(self, tmp_path):
+        """The explicit checkpoint option wins over the built-in default."""
+        provider = ComfyUIDirectProvider(
+            url='http://comfyui.local',
+            prompt='test',
+            photo_dir=str(tmp_path),
+            checkpoint='mock/checkpoint-a.ckpt'
+        )
+        workflow = provider._build_workflow()
+        assert workflow['4']['inputs']['ckpt_name'] == 'mock/checkpoint-a.ckpt'
+
+    @responses.activate
+    def test_checkpoint_auto_detected_from_object_info(self, tmp_path):
+        """Without an explicit option, the first checkpoint the server reports wins."""
+        comfyui_url = 'http://mock-comfyui.local:8188'
+        server_report = {'CheckpointLoaderSimple': {'input': {'required': {'ckpt_name': [
+            ['mock/checkpoint-a.ckpt', 'mock/checkpoint-b.safetensors'], {}
+        ]}}}}
+        responses.add(
+            responses.GET,
+            f'{comfyui_url}/object_info/CheckpointLoaderSimple',
+            json=server_report,
+            status=200,
+        )
+        provider = ComfyUIDirectProvider(
+            url=comfyui_url,
+            prompt='test',
+            photo_dir=str(tmp_path)
+        )
+        assert provider._resolve_checkpoint() == 'mock/checkpoint-a.ckpt'
+        assert provider._build_workflow()['4']['inputs']['ckpt_name'] == 'mock/checkpoint-a.ckpt'
+
+    @responses.activate
+    def test_checkpoint_falls_back_to_builtin_default(self, tmp_path):
+        """A server that reveals no checkpoint list must not break generation."""
+        comfyui_url = 'http://mock-comfyui.local:8188'
+        responses.add(
+            responses.GET,
+            f'{comfyui_url}/object_info/CheckpointLoaderSimple',
+            json={'error': 'not found'},
+            status=404,
+        )
+        provider = ComfyUIDirectProvider(
+            url=comfyui_url,
+            prompt='test',
+            photo_dir=str(tmp_path)
+        )
+        assert provider._resolve_checkpoint() == ComfyUIDirectProvider.DEFAULT_CHECKPOINT
+        assert provider._build_workflow()['4']['inputs']['ckpt_name'] == ComfyUIDirectProvider.DEFAULT_CHECKPOINT
+
+    @responses.activate
+    def test_custom_workflow_skips_checkpoint_lookup(self, tmp_path):
+        """A user-supplied workflow JSON carries its own model node: no lookup happens."""
+        provider = ComfyUIDirectProvider(
+            url='http://mock-comfyui.local:8188',
+            prompt='test',
+            photo_dir=str(tmp_path),
+            workflow_json='{"1": {"class_type": "EmptyLatentImage", "inputs": {}}}'
+        )
+        workflow = provider._build_workflow()
+        assert '1' in workflow
+        assert len(responses.calls) == 0
+
 
 # ============================================================
 # Provider Factory Tests

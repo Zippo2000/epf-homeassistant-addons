@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.1] - 2026-11-15
+
+### Added
+- **`comfyui_checkpoint`** add-on option (manifest + `run.sh` + settings page): the model checkpoint
+  for the built-in ComfyUI-direct workflow.
+
+### Changed
+- The built-in workflow no longer hardcodes a checkpoint of one particular server. With
+  `comfyui_checkpoint` empty it asks the target server (`/object_info/CheckpointLoaderSimple`, queried
+  once per provider instance) and uses the first checkpoint reported; the previously hardcoded name
+  stays as the last-resort fallback. A custom workflow JSON keeps its own model node and triggers no
+  lookup at all.
+- `IMMICH_URL` fallback is empty now instead of a specific LAN address — in line with `HA_URL` and
+  `COMFYUI_DIRECT_URL` (`run.sh` already treats it as fatal for the Immich source).
+- `.env.example` carries a placeholder album name again.
+
+### Tests
+- Four new cases in `tests/test_providers.py`: explicit option wins, auto-detect from a mocked
+  `/object_info`, fallback when the server reports nothing, and no lookup when a custom workflow is
+  configured. Offline suite: **166** cases green, 5 opt-in live cases green.
+
 ## [2.3.0] - 2026-11-15
 
 ### Added

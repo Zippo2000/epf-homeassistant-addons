@@ -97,6 +97,13 @@ This add-on provides a Flask server that:
 - Leave empty to use default workflow
 - The prompt, dimensions, and seed will be injected into the workflow
 
+**comfyui_checkpoint** (optional)
+- Model checkpoint for the built-in workflow
+- Leave empty to **auto-detect**: the first checkpoint the server reports on
+  `/object_info/CheckpointLoaderSimple` is used (queried once per run, never for a
+  custom workflow JSON)
+- Also editable on the settings page; ignored when `comfyui_workflow_json` is set
+
 ### Display Settings
 
 **rotation_angle**

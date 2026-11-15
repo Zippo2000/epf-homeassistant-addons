@@ -860,6 +860,11 @@ footer {
                             <label for="comfyui_workflow_json">Workflow JSON (Optional):</label>
                             <textarea id="comfyui_workflow_json" name="comfyui_workflow_json" rows="4" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ config.get('comfyui', {}).get('workflow_json', '') }}</textarea>
                         </div>
+                        <div class="form-group">
+                            <label for="comfyui_checkpoint">Checkpoint (Optional):</label>
+                            <input type="text" id="comfyui_checkpoint" name="comfyui_checkpoint" value="{{ config.get('comfyui', {}).get('checkpoint', '') }}" placeholder="auto-detect - first checkpoint on the server">
+                            <small class="small-text">Leave empty to auto-detect from the server. Only used by the built-in workflow; a custom workflow JSON carries its own model node.</small>
+                        </div>
                     </div>
 
                     <!-- Display Settings -->

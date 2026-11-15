@@ -130,7 +130,7 @@ except ImportError as e:
 DEFAULT_CONFIG: Dict[str, Any] = {
     'image_source': os.getenv('IMAGE_SOURCE', 'immich'),
     'immich': {
-        'url': os.getenv('IMMICH_URL', 'http://192.168.1.10'),
+        'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
         'rotation': int(os.getenv('ROTATION_ANGLE', '270')),
         'enhanced': float(os.getenv('COLOR_ENHANCE', '1.8')),
@@ -155,6 +155,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         'max_generations_per_day': int(os.getenv('COMFYUI_MAX_GENERATIONS', '50')),
         'direct_url': os.getenv('COMFYUI_DIRECT_URL', ''),
         'workflow_json': os.getenv('COMFYUI_WORKFLOW_JSON', ''),
+        'checkpoint': os.getenv('COMFYUI_CHECKPOINT', ''),
     },
     'gallery': {
         'max_count': int(os.getenv('GALLERY_MAX_COUNT', '50')),
@@ -715,6 +716,7 @@ def settings() -> Any:
                 'max_generations_per_day': int(request.form.get('comfyui_max_generations', current_config.get('comfyui', {}).get('max_generations_per_day', 50))),
                 'direct_url': request.form.get('comfyui_direct_url', current_config.get('comfyui', {}).get('direct_url', '')),
                 'workflow_json': request.form.get('comfyui_workflow_json', current_config.get('comfyui', {}).get('workflow_json', '')),
+                'checkpoint': request.form.get('comfyui_checkpoint', current_config.get('comfyui', {}).get('checkpoint', '')),
             },
             'gallery': {
                 'max_count': int(request.form.get('gallery_max_count', current_config.get('gallery', {}).get('max_count', 50))),

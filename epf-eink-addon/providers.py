@@ -510,11 +510,15 @@ class ComfyUIHAProvider(ImageProvider):
 
 class ComfyUIDirectProvider(ImageProvider):
     """Provider for direct ComfyUI API (expert mode)."""
+
+    #: Last-resort fallback only — never an assumption about a specific server.
+    DEFAULT_CHECKPOINT: str = "v1-5-pruned-emaonly.safetensors"
     
     def __init__(self, url: str, prompt: str, negative_prompt: str = "",
                  width: int = 800, height: int = 480, seed: int = -1,
                  max_generations_per_day: int = 50, photo_dir: str = 'photos',
-                 workflow_json: Optional[str] = None):
+                 workflow_json: Optional[str] = None,
+                 checkpoint: Optional[str] = None):
         self.url: str = url.rstrip('/')
         self.prompt: str = prompt
         self.negative_prompt: str = negative_prompt
@@ -523,12 +527,59 @@ class ComfyUIDirectProvider(ImageProvider):
         self.seed: int = seed
         self.max_generations_per_day: int = max_generations_per_day
         self.workflow_json: Optional[str] = workflow_json
+        self.checkpoint: Optional[str] = checkpoint or None
+        self._resolved_checkpoint: Optional[str] = None
         self.photo_dir: str = photo_dir
         
         generations_file: str = os.path.join(photo_dir, 'generations.json')
         self.tracker: GenerationTracker = GenerationTracker(generations_file)
     
-    def _build_workflow(self) -> Dict[str, Any]:
+    def _resolve_checkpoint(self) -> str:
+        """Pick a checkpoint that actually exists on the target ComfyUI server.
+
+        Priority: explicit ``checkpoint`` option -> first checkpoint the server reports
+        on ``/object_info/CheckpointLoaderSimple`` -> built-in default. The lookup runs
+        once per provider instance (providers are rebuilt on config reload) and never
+        raises: a server that cannot be queried simply falls back to the built-in name,
+        which is what the pre-2.3.1 behaviour relied on.
+        """
+        if self.checkpoint:
+            return self.checkpoint
+        if self._resolved_checkpoint:
+            return self._resolved_checkpoint
+
+        try:
+            response = requests.get(
+                f"{self.url}/object_info/CheckpointLoaderSimple", timeout=10
+            )
+            if response.status_code == 200:
+                info: Dict[str, Any] = response.json()
+                options: List[Any] = (
+                    info.get("CheckpointLoaderSimple", {})
+                    .get("input", {}).get("required", {})
+                    .get("ckpt_name", [[]])[0]
+                )
+                if options:
+                    self._resolved_checkpoint = str(options[0])
+                    logger.info(
+                        f"ComfyUI Direct: using checkpoint '{self._resolved_checkpoint}' "
+                        f"as reported by {self.url}"
+                    )
+                    return self._resolved_checkpoint
+            logger.warning(
+                f"ComfyUI Direct: no checkpoint list from {self.url}; "
+                f"using built-in default '{self.DEFAULT_CHECKPOINT}'"
+            )
+        except Exception as e:
+            logger.warning(
+                f"ComfyUI Direct: checkpoint lookup failed ({e}); "
+                f"using built-in default '{self.DEFAULT_CHECKPOINT}'"
+            )
+
+        self._resolved_checkpoint = self.DEFAULT_CHECKPOINT
+        return self._resolved_checkpoint
+
+    def _build_workflow(self, checkpoint: Optional[str] = None) -> Dict[str, Any]:
         """Build default ComfyUI workflow API JSON."""
         current_seed: int = self.seed if self.seed != -1 else random.randint(0, 2**32 - 1)
         
@@ -567,7 +618,7 @@ class ComfyUIDirectProvider(ImageProvider):
                     "latent_image": ["5", 0]
                 }
             },
-            "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "v1-5-pruned-emaonly.safetensors"}},
+            "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": checkpoint or self.checkpoint or self._resolved_checkpoint or self.DEFAULT_CHECKPOINT}},
             "5": {"class_type": "EmptyLatentImage", "inputs": {"width": self.width, "height": self.height, "batch_size": 1}},
             "6": {"class_type": "CLIPTextEncode", "inputs": {"text": resolve_prompt_variables(self.prompt), "clip": ["4", 1]}},
             "7": {"class_type": "CLIPTextEncode", "inputs": {"text": self.negative_prompt, "clip": ["4", 1]}},
@@ -584,7 +635,12 @@ class ComfyUIDirectProvider(ImageProvider):
             )
         
         current_seed: int = self.seed if self.seed != -1 else random.randint(0, 2**32 - 1)
-        workflow: Dict[str, Any] = self._build_workflow()
+        # Only the built-in workflow needs a checkpoint decision; a user-supplied
+        # workflow JSON carries its own model node, so we do not hit /object_info then.
+        resolved_checkpoint: Optional[str] = (
+            self._resolve_checkpoint() if not self.workflow_json else self.checkpoint
+        )
+        workflow: Dict[str, Any] = self._build_workflow(checkpoint=resolved_checkpoint)
         
         client_id: str = f"epf_{int(time.time())}"
         
@@ -730,7 +786,8 @@ def create_provider(config: Dict[str, Any], photo_dir: str) -> ImageProvider:
             seed=comfyui_config.get('seed', -1),
             max_generations_per_day=comfyui_config.get('max_generations_per_day', 50),
             photo_dir=photo_dir,
-            workflow_json=comfyui_config.get('workflow_json', None)
+            workflow_json=comfyui_config.get('workflow_json', None),
+            checkpoint=comfyui_config.get('checkpoint', '')
         )
     
     else:
