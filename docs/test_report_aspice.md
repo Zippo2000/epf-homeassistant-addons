@@ -2,10 +2,11 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.3.0
+**Version:** 2.3.1
 **Date:** 2026-11-15
-**Baseline:** branch `main` — code base **v2.3.0** (post §14 remediation + UI-track 2.1.0–2.1.2 +
-gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0)
+**Baseline:** branch `main` — code base **v2.3.1** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
+2.3.1)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Status:** Completed — all tiers green (L0 offline, L1 live Immich, L3 production-image smoke)
 
@@ -26,6 +27,11 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0)
 > milestone M2), which added **4** cases to `tests/test_gallery_history.py` → offline suite **162**
 > cases (21 in that file). L0, L1 and the L3 smoke were re-run green on 2026-11-15. The gallery
 > feature now also has a requirement (**FR-032**) and a test case (**TC-FR-032**) in the catalogues.
+>
+> The **2.3.1** revision closes live finding 1 of §6.3 (the built-in ComfyUI workflow hardcoded one
+> server's checkpoint name): the checkpoint is now an option, and empty means *ask the server*.
+> Four new provider cases → offline suite **166** cases; L0, L1 and the ComfyUI-direct live leg were
+> re-run green on 2026-11-15. Environment values observed on the reference machine moved to §7.1.
 
 ---
 
@@ -33,14 +39,14 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0)
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **167** (162 offline + 5 opt-in live) |
-| **Passed** | **167** — 162 offline (L0) **+ 5 live against a real Immich (L1)** |
+| **Total Test Cases** | **171** (166 offline + 5 opt-in live) |
+| **Passed** | **171** — 166 offline (L0) **+ 5 live against a real Immich (L1)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 5 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 18.1 s (2026-11-15) · L1 0.9 s (2026-11-15) |
+| **Execution Time** | L0 17.7 s (2026-11-15) · L1 1.9 s (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), verified against a live server |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3) and the second source (ComfyUI direct) works against a live server (§6.3) |
 | **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
 
 ---
@@ -93,7 +99,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0)
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `ImmichProvider`, `ComfyUI-HA`, `ComfyUI-Direct`, `ProviderFactory`, `MultiSourceIntegration` | **36** | **36** | **0** | **100%** |
+| `ImmichProvider`, `ComfyUI-HA`, `ComfyUI-Direct` (incl. checkpoint resolution, 2.3.1), `ProviderFactory`, `MultiSourceIntegration` | **40** | **40** | **0** | **100%** |
 
 ### 3.4 Gallery history — `tests/test_gallery_history.py`  *(new in v2.2.0; option cases added in v2.3.0)*
 
@@ -101,8 +107,8 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0)
 |-------|-------|--------|--------|-----------|
 | Shot-id sanitisation, archiving a pair, grouped reader, per-pattern pruning, live-slot safety, end-to-end prepare, option round-trip (M2) | **21** | **21** | **0** | **100%** |
 
-**Total: 167 collected — 162 passed offline + 5 skipped; the 5 live cases pass in the L1 run (§6.1)
-→ 167/167, 0 failed (100 %).**
+**Total: 171 collected — 166 passed offline + 5 skipped; the 5 live cases pass in the L1 run (§6.1)
+→ 171/171, 0 failed (100 %).**
 
 ---
 
@@ -154,14 +160,14 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 167 items
+collected 171 items
 
 tests/test_functional.py      :: 78 passed
 tests/test_nonfunctional.py  :: 27 passed
-tests/test_providers.py      :: 36 passed
+tests/test_providers.py      :: 40 passed
 tests/test_gallery_history.py :: 21 passed
 tests/test_live.py           :: 5 skipped (opt-in, no .env in the offline run)
-======================= 162 passed, 5 skipped in 18.06s ========================
+======================= 166 passed, 5 skipped in 17.72s ========================
 ```
 
 ### 6.1 L1 — live tier against a real Immich (run 2026-11-15)
@@ -175,12 +181,13 @@ tests/test_live.py::test_l02_search_metadata_paginated PASSED
 tests/test_live.py::test_l03_original_download PASSED
 tests/test_live.py::test_l04_provider_fetch_image PASSED
 tests/test_live.py::test_l05_download_end_to_end PASSED
-============================== 5 passed in 0.91s ==============================
+============================== 5 passed in 1.86s ==============================
 ```
 
 This is the tier that can falsify a real-API assumption: album resolution, the paged
 `POST /api/search/metadata` listing, the original download and the add-on's own `/download` route
-all hold against the current server.
+all hold against the current server. Server/album used are the reference environment of §7.1 — the
+values live in the git-ignored `.env`, never in the code.
 
 ### 6.2 L3 — production-image smoke (shipped `Dockerfile`, run 2026-11-15)
 
@@ -220,20 +227,24 @@ This is the live proof of the multi-source claim (FR-027/FR-030) and of the 2.3.
 | Configured cap honoured live | with cap **3**: after the second archive the gallery holds exactly 3 files per pattern (4 pruned) ✓ |
 | `GET /api/gallery-previews` | groups by shot id, reports the shot count ✓ |
 | `POST /cleanup-previews` | removes nothing from the gallery — by design the gallery is pruned **at archive time**; the route cleans the legacy live-slot previews only ✓ |
+| Checkpoint **auto-detection** (2.3.1), no workflow JSON | empty option → the add-on queried `/object_info/CheckpointLoaderSimple`, used the first checkpoint the server reports (log: `using checkpoint '…' as reported by …`) and generated for real in **4.6 s** ✓ |
+| Explicit `comfyui_checkpoint` (2.3.1) through the settings form | form → YAML → hot reload → generation ran on the named checkpoint (**59 s**, the second reference checkpoint — visibly a different model) ✓; the explicit value short-circuits the lookup ✓ |
 
-**Two things this run exposed** (both pre-existing, neither introduced by 2.3.0):
+**Things this run exposed** (all pre-existing, none introduced by 2.3.0):
 
-1. **The built-in default ComfyUI workflow does not fit a real server.** It hardcodes
-   `ckpt_name: "v1-5-pruned-emaonly.safetensors"` (`providers.py`, node 4); the test server has
-   `SD1.5/v1-5-pruned-emaonly.ckpt`, so `/prompt` answers `prompt_outputs_failed_validation` /
-   `value_not_in_list`. The offline mocks cannot see this — only a live run can. Working today:
-   paste a workflow JSON on the settings page (proven above). **Decision needed:** resolve the
-   checkpoint from `/object_info` when the default workflow is used, and/or add a `comfyui_checkpoint`
-   option.
+1. **The built-in default ComfyUI workflow did not fit a real server — closed in 2.3.1.** It used to
+   hardcode one server's checkpoint name (`providers.py`, node 4), so a real `/prompt` answered
+   `prompt_outputs_failed_validation` / `value_not_in_list`, and only a pasted workflow JSON made it
+   work. The offline mocks cannot see this — only a live run can. **Decision taken and implemented:**
+   a `comfyui_checkpoint` option (manifest + settings page), and *empty means ask the server*
+   (`/object_info/CheckpointLoaderSimple`, queried once per provider instance, never when a custom
+   workflow JSON is configured), with the previously hardcoded name kept as the last-resort fallback.
+   Both paths proven live in the two rows above; four offline cases cover option precedence,
+   auto-detection, fallback and the no-lookup rule.
 2. **The per-pattern cap can split a pair.** Pruning counts files *per pattern*, so a shot can be left
    with only its original or only its processed file (seen live: `sim2` kept its original, lost its
    processed file) — the plan worded the limit as "max. **pairs**". Either document the semantics or
-   prune per shot. Related, already accepted as the 14.12 trade-off: the generation counter lives per
+   prune per shot — **decision still open**. Related, already accepted as the 14.12 trade-off: the generation counter lives per
    process and is rebuilt on hot reload — the live run reported `count_today: 1` after two generations.
 
 ---
@@ -260,6 +271,23 @@ sh epf-eink-addon/run-live-tests.sh
 > the path and Docker reports a misleading "no such file"), rely on the image `CMD`. Absolute build
 > contexts / volume specs get mangled the same way — keep them relative.
 
+### 7.1 Reference test environment (of record)
+
+Values observed on the reference machine during the live runs of §6.1 and §6.3 — recorded here so the
+report can be reproduced, **not** product assumptions. Nothing in code, templates or the manifest may
+hardcode them (connection details come from add-on options / the git-ignored `.env`):
+
+| Item | Reference value |
+|------|-----------------|
+| Immich server / album | as configured in `epf-eink-addon/.env` (never committed) |
+| ComfyUI server | 0.38.2 (checked 2026-11-15) |
+| Checkpoints on the reference server | three installed; auto-detection picked the first one (names not committed) |
+| Home Assistant | private instance — URL comes from the `ha_url` add-on option (not committed); this leg is still untested |
+| Host runtime | Docker Desktop, Debian Bookworm base, Python 3.11 |
+
+> The `comfyui_ha` source is the one live leg still missing: it needs a Long-Lived Token and an
+> `ai_task` entity id from the user, and the `ai_task` integration on the HA side.
+
 ---
 
 ## 8. Approval
@@ -272,8 +300,9 @@ sh epf-eink-addon/run-live-tests.sh
 
 ---
 
-*Regenerated for code base **v2.3.0** on branch `main`, 2026-11-15: **162** offline cases pass,
-the **5** live cases pass against a real Immich, and the production image passes the L3 smoke
-documented above — the release gate of `AGENTS.md` is satisfied. Still open (not automatable here):
+*Regenerated for code base **v2.3.1** on branch `main`, 2026-11-15: **166** offline cases pass,
+the **5** live cases pass against a real Immich, and the production image passes the L3 smoke plus the
+live ComfyUI-direct leg (§6.3, checkpoint auto-detection and explicit option both proven) — the
+release gate of `AGENTS.md` is satisfied. Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
 see `plans/findings.md`.*

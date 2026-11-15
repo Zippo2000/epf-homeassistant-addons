@@ -253,7 +253,7 @@ Manifest/Schema-Drift klein bleibt (siehe AGENTS: „schema & run.sh halten im G
 
 | Schlüssel | Default | Bedeutung | Phase |
 |-----------|---------|-----------|-------|
-| `GALLERY_MAX_COUNT` | `50` | max. Paare (original+processed) im Archiv | M1 (Env), M2 (Option) |
+| `GALLERY_MAX_COUNT` | `50` | max. Paare (original+processed) im Archiv — **aber:** die Implementierung zählt pro Pattern (Live-Befund 2.3.0, Report §6.3; Entscheidung offen) | M1 (Env), M2 (Option) |
 | `GALLERY_RETENTION_DAYS` | `7` | max. Alter eines Archiv-Eintrags | M1 (Env), M2 (Option) |
 | `gallery/` (Verz.) | auto | Zielverzeichnis, liegt im `photos/`-Bind-Mount | M1 |
 
