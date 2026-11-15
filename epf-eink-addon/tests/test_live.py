@@ -26,10 +26,18 @@ Covered:
   * TC-L03  original image download       via GET  /api/assets/{id}/original
   * TC-L04  the add-on's ImmichProvider   end-to-end (fetch_image())
   * TC-L05  the add-on's /download route  end-to-end (frame.txt, no "};" tail)
+  * TC-L09  the REAL ComfyUI server, built-in graph (behaviour unchanged)
+  * TC-L10  named-workflow selection round trip against that server (2.4.0)
+
+The live ComfyUI tier reads:
+
+      COMFYUI_URL            base URL of the ComfyUI server   (opt-in)
+      COMFYUI_WORKFLOW_JSON  optional "Save (Export)" API graph of a real workflow
 """
 import os
 import re
 import sys
+import json
 import tempfile
 
 import pytest
@@ -237,3 +245,83 @@ def test_l05_download_end_to_end(immich):
     assert re.search(r"[0-9a-f]", body), "body does not look like packed hex nibbles"
     # Add-on contract: frame.txt has NO closing C-array marker (unlike base EPF).
     assert not body.rstrip().endswith("};"), "add-on frame.txt must not end with ';}'"
+
+
+# ---------------------------------------------------------------------------
+# TC-L09 / TC-L10: named ComfyUI workflows against the REAL server (2.4.0)
+# ---------------------------------------------------------------------------
+@pytest.fixture(scope="module")
+def comfyui():
+    """Target ComfyUI server for the live workflow tier; skips when not provided."""
+    if not LIVE_ENABLED:
+        pytest.skip("live tests disabled (set EPF_LIVE_TESTS=1)")
+    url = os.environ.get("COMFYUI_URL", "").rstrip("/")
+    if not url:
+        pytest.skip("COMFYUI_URL not provided (see .env.example)")
+
+    import requests
+    try:
+        r = requests.get(f"{url}/system_stats", timeout=10)
+        r.raise_for_status()
+    except Exception as exc:  # noqa: BLE001 - skip, don't fail
+        pytest.skip(f"ComfyUI at {url} not reachable ({exc})")
+
+    return {"url": url, "workflow_json": os.environ.get("COMFYUI_WORKFLOW_JSON", "")}
+
+
+def _direct_provider(info, tmp_prefix, workflows=None, active=""):
+    """A provider pointed at the live server, with a throwaway photo dir."""
+    from providers import ComfyUIDirectProvider
+
+    photo_dir = tempfile.mkdtemp(prefix=tmp_prefix)
+    return ComfyUIDirectProvider(
+        url=info["url"],
+        prompt="a small red cube on a white table",
+        negative_prompt="text, watermark",
+        width=512,
+        height=512,
+        seed=4321,
+        steps=4,               # live tier: keep the GPU work small, this is a wiring test
+        photo_dir=photo_dir,
+        workflows=workflows,
+        active_workflow=active,
+    )
+
+
+def test_l09_builtin_graph_still_works(comfyui):
+    """No list, no selection -> the built-in graph on a real server, as before 2.4.0."""
+    image, source = _direct_provider(comfyui, "epf_live_wf_builtin_").fetch_image()
+    assert isinstance(image, PILImage), "no image back from the real server"
+    assert image.size[0] > 0 and image.size[1] > 0
+    assert source, "no source/filename reported"
+
+
+def test_l10_named_workflow_selection_round_trip(comfyui):
+    """List -> selection -> injection -> a real generation with the entry's own values."""
+    probe = _direct_provider(comfyui, "epf_live_wf_probe_")
+    # Exactly what fetch_image() would submit: the built-in graph with the checkpoint the
+    # live server actually reports (the built-in default name is not on this server).
+    graph = probe._build_workflow(checkpoint=probe._resolve_checkpoint())
+    entry = {"name": "selected", "api_json": json.dumps(graph),
+             "prompt_node": "6", "prompt_input": "text", "steps": 4}
+    provider = _direct_provider(comfyui, "epf_live_wf_pick_", workflows=[entry], active="selected")
+
+    assert provider.active_entry()["name"] == "selected"
+    submitted = provider._build_workflow()
+    assert submitted["6"]["inputs"]["text"] == provider.prompt, "prompt never reached the node"
+    assert submitted["3"]["inputs"]["steps"] == 4, "entry sampling value ignored"
+
+    image, source = provider.fetch_image()
+    assert isinstance(image, PILImage), "the real server did not return an image"
+    assert source, "no source/filename reported"
+
+
+def test_l10b_real_exported_workflow(comfyui):
+    """A genuine "Save (Export)" graph from the reference server, picked by name."""
+    if not comfyui["workflow_json"]:
+        pytest.skip("COMFYUI_WORKFLOW_JSON not provided (.env) - paste a Save (Export) graph")
+    entry = {"name": "exported", "api_json": comfyui["workflow_json"], "steps": 4}
+    provider = _direct_provider(comfyui, "epf_live_wf_export_", workflows=[entry], active="exported")
+    image, source = provider.fetch_image()
+    assert isinstance(image, PILImage), "the real server did not return an image"
+    assert source, "no source/filename reported"

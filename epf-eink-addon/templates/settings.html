@@ -407,6 +407,12 @@ input[type="text"]:focus, select:focus, textarea:focus {
 textarea { resize: vertical; line-height: 1.5; }
 .small-text { font-size: var(--fs-caption); color: var(--text-tertiary); margin-top: 0.3rem; display: block; line-height: 1.4; }
 .channel-badge { display: inline-block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-tertiary); }
+/* Named ComfyUI workflows (2.4.0) */
+.wf-slot { border-top: 1px solid var(--border); padding-top: var(--space-sm); margin-top: var(--space-sm); }
+.wf-summary { cursor: pointer; font-size: var(--fs-body); font-weight: 600; color: var(--text-secondary); list-style: none; }
+.wf-summary::-webkit-details-marker { display: none; }
+.wf-summary::before { content: "\25B8"; display: inline-block; margin-right: 0.4rem; transition: transform 0.15s ease; }
+details[open] > .wf-summary::before { transform: rotate(90deg); }
 .field-status { font-size: var(--fs-body); color: var(--text-secondary); padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); }
 /* Slider */
 .slider-container { display: flex; align-items: center; gap: 0.75rem; }
@@ -873,9 +879,95 @@ footer {
                             <input type="text" id="comfyui_max_generations_direct" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
                         </div>
                         <div class="form-group">
-                            <label for="comfyui_workflow_json">Workflow JSON (Optional):</label>
+                            <label for="comfyui_workflow_json">Workflow JSON (Optional, legacy single field):</label>
                             <textarea id="comfyui_workflow_json" name="comfyui_workflow_json" rows="4" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ config.get('comfyui', {}).get('workflow_json', '') }}</textarea>
+                            <small class="small-text">Used when the active workflow below is <em>(built-in)</em>. Named slots below win over this field.</small>
                         </div>
+                        <div class="form-group">
+                            <label for="active_workflow">Active Workflow:</label>
+                            <select id="active_workflow" name="active_workflow">
+                                <option value="" {% if not config.get('comfyui', {}).get('active_workflow') %}selected{% endif %}>(built-in workflow)</option>
+                                {% for entry in config.get('comfyui', {}).get('workflows', []) %}
+                                <option value="{{ entry.name }}" {% if config.get('comfyui', {}).get('active_workflow') == entry.name %}selected{% endif %}>{{ entry.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="small-text">The list shows the named slots below; a slot becomes selectable as soon as it has a name. Applies immediately &mdash; no add-on restart.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Named Workflows:</label>
+                            <small class="small-text">Paste the graph in ComfyUI <strong>API format</strong> &mdash; in ComfyUI use <em>&quot;Save (Export)&quot;</em>, that is the format the API takes. An empty slot is dropped on save. Prompt, dimensions and seed from above are injected into the graph; a value set on the slot wins over the global one. Delete the name to remove a workflow.</small>
+                        </div>
+                        {% set workflows = config.get('comfyui', {}).get('workflows', []) %}
+                        {% for slot in range(1, max_workflows + 1) %}
+                        {% set entry = workflows[slot - 1] if slot - 1 < workflows|length else {} %}
+                        <details class="wf-slot" {% if slot <= 2 %}open{% endif %}>
+                            <summary class="wf-summary">Slot {{ slot }}{% if entry.get('name') %} &mdash; {{ entry.get('name') }}{% else %} (empty){% endif %}</summary>
+                            <div class="form-group">
+                                <label for="wf_{{ slot }}_name">Name:</label>
+                                <input type="text" id="wf_{{ slot }}_name" name="wf_{{ slot }}_name" value="{{ entry.get('name', '') }}" placeholder="flux-dev">
+                            </div>
+                            <div class="form-group">
+                                <label for="wf_{{ slot }}_api_json">API JSON:</label>
+                                <textarea id="wf_{{ slot }}_api_json" name="wf_{{ slot }}_api_json" rows="5" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ entry.get('api_json', '') }}</textarea>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="wf_{{ slot }}_prompt" style="font-size: 0.8rem; color: var(--text-secondary);">Prompt override:</label>
+                                    <textarea id="wf_{{ slot }}_prompt" name="wf_{{ slot }}_prompt" rows="2" placeholder="(global prompt)">{{ entry.get('prompt', '') }}</textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="wf_{{ slot }}_negative_prompt" style="font-size: 0.8rem; color: var(--text-secondary);">Negative prompt override:</label>
+                                    <textarea id="wf_{{ slot }}_negative_prompt" name="wf_{{ slot }}_negative_prompt" rows="2" placeholder="(global negative prompt)">{{ entry.get('negative_prompt', '') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Node mapping (only needed if the graph has no plain <code>CLIPTextEncode.text</code> prompt node):</label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div>
+                                        <label for="wf_{{ slot }}_prompt_node" style="font-size: 0.8rem; color: var(--text-secondary);">Prompt node id:</label>
+                                        <input type="text" id="wf_{{ slot }}_prompt_node" name="wf_{{ slot }}_prompt_node" placeholder="e.g. 459:452" value="{{ entry.get('prompt_node', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_prompt_input" style="font-size: 0.8rem; color: var(--text-secondary);">its input name:</label>
+                                        <input type="text" id="wf_{{ slot }}_prompt_input" name="wf_{{ slot }}_prompt_input" placeholder="text" value="{{ entry.get('prompt_input', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_negative_node" style="font-size: 0.8rem; color: var(--text-secondary);">Negative node id:</label>
+                                        <input type="text" id="wf_{{ slot }}_negative_node" name="wf_{{ slot }}_negative_node" placeholder="(none)" value="{{ entry.get('negative_node', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_negative_input" style="font-size: 0.8rem; color: var(--text-secondary);">its input name:</label>
+                                        <input type="text" id="wf_{{ slot }}_negative_input" name="wf_{{ slot }}_negative_input" placeholder="text" value="{{ entry.get('negative_input', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_seed_node" style="font-size: 0.8rem; color: var(--text-secondary);">Seed node id:</label>
+                                        <input type="text" id="wf_{{ slot }}_seed_node" name="wf_{{ slot }}_seed_node" placeholder="(auto)" value="{{ entry.get('seed_node', '') }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Sampling (only applied when set here):</label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div>
+                                        <label for="wf_{{ slot }}_steps" style="font-size: 0.8rem; color: var(--text-secondary);">Steps:</label>
+                                        <input type="text" id="wf_{{ slot }}_steps" name="wf_{{ slot }}_steps" placeholder="(graph value)" value="{{ entry.get('steps', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_cfg" style="font-size: 0.8rem; color: var(--text-secondary);">CFG:</label>
+                                        <input type="text" id="wf_{{ slot }}_cfg" name="wf_{{ slot }}_cfg" placeholder="(graph value)" value="{{ entry.get('cfg', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_sampler" style="font-size: 0.8rem; color: var(--text-secondary);">Sampler:</label>
+                                        <input type="text" id="wf_{{ slot }}_sampler" name="wf_{{ slot }}_sampler" placeholder="(graph value)" value="{{ entry.get('sampler', '') }}">
+                                    </div>
+                                    <div>
+                                        <label for="wf_{{ slot }}_scheduler" style="font-size: 0.8rem; color: var(--text-secondary);">Scheduler:</label>
+                                        <input type="text" id="wf_{{ slot }}_scheduler" name="wf_{{ slot }}_scheduler" placeholder="(graph value)" value="{{ entry.get('scheduler', '') }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                        {% endfor %}
                         <div class="form-group">
                             <label for="comfyui_checkpoint">Checkpoint (Optional):</label>
                             <input type="text" id="comfyui_checkpoint" name="comfyui_checkpoint" value="{{ config.get('comfyui', {}).get('checkpoint', '') }}" placeholder="auto-detect - first checkpoint on the server">

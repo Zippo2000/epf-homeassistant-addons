@@ -18,6 +18,7 @@ import yaml
 import requests
 import os
 import io
+import json
 import random
 import rawpy
 import numpy as np
@@ -127,6 +128,25 @@ except ImportError as e:
     logger.error(f"Cython not available: {e}")
 
 # =============== DEFAULT CONFIGURATION ===============
+def _seed_workflows(raw: str) -> List[Dict[str, Any]]:
+    """HA-option seed for the named-workflow list: a JSON-array string from run.sh (2.4.0).
+
+    The settings page owns the list from the first save onwards; a broken seed must not
+    stop the add-on, so it degrades to an empty list with a warning.
+    """
+    if not raw:
+        return []
+    try:
+        parsed: Any = json.loads(raw)
+    except json.JSONDecodeError:
+        logger.warning("COMFYUI_WORKFLOWS seed is not valid JSON; starting with an empty list")
+        return []
+    if not isinstance(parsed, list):
+        logger.warning("COMFYUI_WORKFLOWS seed is not a JSON array; starting with an empty list")
+        return []
+    return [w for w in parsed if isinstance(w, dict) and w.get('name')]
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     'image_source': os.getenv('IMAGE_SOURCE', 'immich'),
     'immich': {
@@ -157,6 +177,15 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         'direct_url': os.getenv('COMFYUI_DIRECT_URL', ''),
         'workflow_json': os.getenv('COMFYUI_WORKFLOW_JSON', ''),
         'checkpoint': os.getenv('COMFYUI_CHECKPOINT', ''),
+        # 2.4.0: named workflows. The runtime YAML is the editing channel; the HA options
+        # only seed the list, and these keys are the global defaults an entry can override
+        # (they must survive a settings save).
+        'workflows': _seed_workflows(os.getenv('COMFYUI_WORKFLOWS', '')),
+        'active_workflow': os.getenv('COMFYUI_ACTIVE_WORKFLOW', ''),
+        'steps': int(os.getenv('COMFYUI_STEPS', '20')),
+        'cfg': float(os.getenv('COMFYUI_CFG', '8.0')),
+        'sampler': os.getenv('COMFYUI_SAMPLER', 'euler'),
+        'scheduler': os.getenv('COMFYUI_SCHEDULER', 'normal'),
     },
     'gallery': {
         'max_count': int(os.getenv('GALLERY_MAX_COUNT', '50')),
@@ -165,6 +194,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 current_config: Dict[str, Any] = DEFAULT_CONFIG.copy()
+
+# =============== NAMED COMFYUI WORKFLOWS (2.4.0) ===============
+#: Number of workflow slots in the settings form (the YAML list can hold more).
+MAX_WORKFLOWS: int = 4
+#: A ComfyUI "Save (Export)" API graph is tens of KB; beyond this something is wrong.
+WORKFLOW_JSON_MAX_BYTES: int = 65536
+WORKFLOW_NAME_MAX_CHARS: int = 40
 
 # =============== GLOBAL VARIABLES ===============
 image_source: str = current_config.get('image_source', 'immich')
@@ -682,6 +718,86 @@ def form_field(canonical: str, legacy: str, default: Any) -> Any:
     return default if value is None else value
 
 
+#: Fields a workflow slot carries (form name = `wf_<slot>_<field>`, YAML key = `<field>`).
+WF_SLOT_FIELDS: Tuple[str, ...] = (
+    'name', 'api_json', 'prompt', 'negative_prompt',
+    'prompt_node', 'prompt_input', 'negative_node', 'negative_input', 'seed_node',
+    'steps', 'cfg', 'sampler', 'scheduler',
+)
+
+
+def parse_workflow_slots(form: Any, current_config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
+    """Rebuild the named-workflow list from the settings form slots (2.4.0).
+
+    Slots without a name are dropped; names must be unique and short. A pasted workflow
+    has to be ComfyUI **API** JSON — what "Save (Export)" produces — because that is what
+    `POST /prompt` takes; the format ComfyUI stores by default is a UI graph (`nodes` /
+    `links`) and cannot be submitted. We say so at save time instead of letting the next
+    generation fail. A POST that carries no `wf_*` field at all leaves the stored list
+    untouched (legacy callers and the pre-2.4.0 tests).
+
+    Returns `(workflows, active_workflow, error)`; `error` is set on rejection.
+    """
+    previous: Dict[str, Any] = current_config.get('comfyui', {}) or {}
+    if not any(str(key).startswith('wf_') for key in form.keys()):
+        return list(previous.get('workflows') or []), str(previous.get('active_workflow') or ''), None
+    
+    workflows: List[Dict[str, Any]] = []
+    seen: Set[str] = set()
+    
+    for slot in range(1, MAX_WORKFLOWS + 1):
+        name: str = (form.get(f'wf_{slot}_name') or '').strip()
+        if not name:
+            continue
+        if len(name) > WORKFLOW_NAME_MAX_CHARS:
+            return [], '', f'workflow name too long: {name[:20]}... (max {WORKFLOW_NAME_MAX_CHARS} characters)'
+        if name in seen:
+            return [], '', f'duplicate workflow name: {name}'
+        seen.add(name)
+        
+        entry: Dict[str, Any] = {'name': name}
+        raw_json: str = (form.get(f'wf_{slot}_api_json') or '').strip()
+        if raw_json:
+            if len(raw_json.encode('utf-8')) > WORKFLOW_JSON_MAX_BYTES:
+                return [], '', f"workflow '{name}': JSON larger than {WORKFLOW_JSON_MAX_BYTES // 1024} KiB"
+            try:
+                parsed: Any = json.loads(raw_json)
+            except json.JSONDecodeError as exc:
+                return [], '', f"workflow '{name}': API JSON not parsable ({exc.msg} at line {exc.lineno})"
+            if (not isinstance(parsed, dict) or not parsed
+                    or not all(isinstance(node, dict) and 'class_type' in node for node in parsed.values())):
+                return [], '', (f"workflow '{name}': not ComfyUI API format (expected "
+                                f'{{"<node id>": {{"class_type": ...}}}} — use "Save (Export)" in '
+                                'ComfyUI, not the normal save)')
+            entry['api_json'] = raw_json
+        
+        for field in ('prompt', 'negative_prompt', 'prompt_node', 'prompt_input',
+                      'negative_node', 'negative_input', 'seed_node', 'sampler', 'scheduler'):
+            value: str = (form.get(f'wf_{slot}_{field}') or '').strip()
+            if value:
+                entry[field] = value
+        
+        for field, cast, low, high in (('steps', int, 1, 200), ('cfg', float, 0.0, 30.0)):
+            raw_value: str = (form.get(f'wf_{slot}_{field}') or '').strip()
+            if not raw_value:
+                continue
+            try:
+                number: float = cast(raw_value)
+            except ValueError:
+                return [], '', f"workflow '{name}': {field} is not a number: {raw_value}"
+            if not (low <= float(number) <= high):
+                return [], '', f"workflow '{name}': {field} out of range ({low}-{high}): {raw_value}"
+            entry[field] = number
+        
+        workflows.append(entry)
+    
+    active: str = (form.get('active_workflow') or '').strip()
+    if active and active not in seen:
+        return workflows, '', f'active workflow "{active}" has no slot with that name'
+    
+    return workflows, active, None
+
+
 @bp.route('/', methods=['GET', 'POST'])
 def settings() -> Any:
     global current_config, last_battery_voltage, last_battery_update
@@ -733,6 +849,14 @@ def settings() -> Any:
                 'direct_url': request.form.get('comfyui_direct_url', current_config.get('comfyui', {}).get('direct_url', '')),
                 'workflow_json': request.form.get('comfyui_workflow_json', current_config.get('comfyui', {}).get('workflow_json', '')),
                 'checkpoint': request.form.get('comfyui_checkpoint', current_config.get('comfyui', {}).get('checkpoint', '')),
+                # global defaults a named workflow may override — not form fields, kept from
+                # the running config so a save never drops them (see 2.4.0 plan §2.2).
+                'steps': int(current_config.get('comfyui', {}).get('steps', 20)),
+                'cfg': float(current_config.get('comfyui', {}).get('cfg', 8.0)),
+                'sampler': current_config.get('comfyui', {}).get('sampler', 'euler'),
+                'scheduler': current_config.get('comfyui', {}).get('scheduler', 'normal'),
+                'workflows': [],
+                'active_workflow': '',
             },
             'gallery': {
                 'max_count': int(request.form.get('gallery_max_count', current_config.get('gallery', {}).get('max_count', 50))),
@@ -742,6 +866,15 @@ def settings() -> Any:
         
         if new_config['immich']['rotation'] not in [0, 90, 180, 270]:
             return "Invalid rotation", 400
+        
+        workflows, active_workflow, wf_error = parse_workflow_slots(request.form, current_config)
+        if wf_error:
+            logger.warning(f"Settings rejected: {wf_error}")
+            return f"Invalid workflow configuration: {wf_error}", 400
+        new_config['comfyui']['workflows'] = workflows
+        new_config['comfyui']['active_workflow'] = active_workflow
+        if workflows or active_workflow:
+            logger.info(f"ComfyUI workflows: {[w['name'] for w in workflows]}, active='{active_workflow or '(built-in)'}'")
         
         try:
             with open(config_path, 'w') as f:
@@ -764,7 +897,8 @@ def settings() -> Any:
             'immich_api_key_set': bool(os.getenv('IMMICH_API_KEY', '')),
             'ha_api_token_set': bool(os.getenv('HA_API_TOKEN', '')),
             'log_level': LOG_LEVEL,
-        }
+        },
+        max_workflows=MAX_WORKFLOWS
     )
 
 @bp.route('/health', methods=['GET', 'HEAD'])

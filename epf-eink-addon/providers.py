@@ -520,7 +520,11 @@ class ComfyUIDirectProvider(ImageProvider):
                  width: int = 800, height: int = 480, seed: int = -1,
                  max_generations_per_day: int = 50, photo_dir: str = 'photos',
                  workflow_json: Optional[str] = None,
-                 checkpoint: Optional[str] = None):
+                 checkpoint: Optional[str] = None,
+                 workflows: Optional[List[Dict[str, Any]]] = None,
+                 active_workflow: str = '',
+                 steps: int = 20, cfg: float = 8.0,
+                 sampler: str = 'euler', scheduler: str = 'normal'):
         self.url: str = url.rstrip('/')
         self.prompt: str = prompt
         self.negative_prompt: str = negative_prompt
@@ -532,9 +536,92 @@ class ComfyUIDirectProvider(ImageProvider):
         self.checkpoint: Optional[str] = checkpoint or None
         self._resolved_checkpoint: Optional[str] = None
         self.photo_dir: str = photo_dir
+        # 2.4.0: named workflow list + the selected entry (runtime YAML only).
+        self.workflows: List[Dict[str, Any]] = [w for w in (workflows or []) if isinstance(w, dict)]
+        self.active_workflow: str = active_workflow or ''
+        self.steps: int = int(steps)
+        self.cfg: float = float(cfg)
+        self.sampler: str = sampler
+        self.scheduler: str = scheduler
         
         generations_file: str = os.path.join(photo_dir, 'generations.json')
         self.tracker: GenerationTracker = GenerationTracker(generations_file)
+    
+    def active_entry(self) -> Optional[Dict[str, Any]]:
+        """The selected workflow entry, or None (= global values / built-in graph).
+
+        An unknown name must not break generation: it falls back to the pre-2.4.0
+        behaviour (built-in graph or the single ``workflow_json`` field) and says so.
+        """
+        if not self.active_workflow:
+            return None
+        for entry in self.workflows:
+            if entry.get('name') == self.active_workflow:
+                return entry
+        logger.warning(
+            f"ComfyUI Direct: active workflow '{self.active_workflow}' is not in the "
+            f"workflow list; falling back to the global settings"
+        )
+        return None
+    
+    def _effective(self, entry: Optional[Dict[str, Any]], key: str, default: Any) -> Any:
+        """Workflow-entry value wins, the global value fills the gap."""
+        if entry:
+            value: Any = entry.get(key)
+            if value not in (None, ''):
+                return value
+        return default
+    
+    def _inject(self, workflow: Dict[str, Any], entry: Optional[Dict[str, Any]],
+                prompt: str, negative: str, seed: int) -> Dict[str, Any]:
+        """Put this run's prompt / seed (and dimensions) into a pasted graph.
+
+        Explicit node mapping from the workflow entry wins — which is how a graph whose
+        prompt node is not a plain ``CLIPTextEncode.text`` (e.g. Qwen's ``prompt`` input)
+        gets the add-on prompt at all. Everything unmapped keeps the pre-2.4.0 scan.
+        """
+        touched: set = set()
+        if entry:
+            for node_key, input_key, value, fallback_input in (
+                ('prompt_node', 'prompt_input', prompt, 'text'),
+                ('negative_node', 'negative_input', negative, 'text'),
+                ('seed_node', 'seed_input', seed, 'seed'),
+            ):
+                node_id: str = str(entry.get(node_key) or '')
+                if not node_id:
+                    continue
+                spec: Optional[Dict[str, Any]] = workflow.get(node_id)
+                if not isinstance(spec, dict):
+                    logger.warning(
+                        f"ComfyUI Direct: workflow '{entry.get('name')}' maps {node_key} to "
+                        f"unknown node '{node_id}'; value ignored"
+                    )
+                    continue
+                input_name: str = str(entry.get(input_key) or fallback_input)
+                spec.setdefault('inputs', {})[input_name] = value
+                touched.add((node_id, input_name))
+        
+        for node_id, spec in workflow.items():
+            if not isinstance(spec, dict) or 'inputs' not in spec:
+                continue
+            inputs: Dict[str, Any] = spec['inputs']
+            for name, value in (('text', prompt), ('text_g', prompt), ('seed', seed),
+                                ('width', self.width), ('height', self.height)):
+                if name in inputs and (node_id, name) not in touched:
+                    inputs[name] = value
+        
+        # Sampling parameters only apply when the entry sets them explicitly: a pasted
+        # graph carries its own numbers, and silently overriding them would surprise.
+        if entry:
+            for name, value in (('steps', entry.get('steps')), ('cfg', entry.get('cfg')),
+                                ('sampler_name', entry.get('sampler')),
+                                ('scheduler', entry.get('scheduler'))):
+                if value in (None, ''):
+                    continue
+                for spec in workflow.values():
+                    if isinstance(spec, dict) and name in spec.get('inputs', {}):
+                        spec['inputs'][name] = value
+        return workflow
     
     def _resolve_checkpoint(self) -> str:
         """Pick a checkpoint that actually exists on the target ComfyUI server.
@@ -581,38 +668,38 @@ class ComfyUIDirectProvider(ImageProvider):
         self._resolved_checkpoint = self.DEFAULT_CHECKPOINT
         return self._resolved_checkpoint
 
-    def _build_workflow(self, checkpoint: Optional[str] = None) -> Dict[str, Any]:
-        """Build default ComfyUI workflow API JSON."""
+    def _build_workflow(self, checkpoint: Optional[str] = None,
+                        entry: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Build the ComfyUI API JSON for this run (entry wins over globals)."""
+        entry = entry if entry is not None else self.active_entry()
+        prompt: str = self._effective(entry, 'prompt', self.prompt)
+        negative: str = self._effective(entry, 'negative_prompt', self.negative_prompt)
+        steps: int = int(self._effective(entry, 'steps', self.steps))
+        cfg: float = float(self._effective(entry, 'cfg', self.cfg))
+        sampler: str = self._effective(entry, 'sampler', self.sampler)
+        scheduler: str = self._effective(entry, 'scheduler', self.scheduler)
+        workflow_json: Optional[str] = (entry or {}).get('api_json') or self.workflow_json
         current_seed: int = self.seed if self.seed != -1 else random.randint(0, 2**32 - 1)
         
-        if self.workflow_json:
+        if workflow_json:
             try:
-                workflow: Dict[str, Any] = json.loads(self.workflow_json)
-                for node in workflow.values():
-                    if "inputs" in node:
-                        if "text" in node["inputs"]:
-                            node["inputs"]["text"] = resolve_prompt_variables(self.prompt)
-                        if "text_g" in node["inputs"]:
-                            node["inputs"]["text_g"] = resolve_prompt_variables(self.prompt)
-                        if "seed" in node["inputs"]:
-                            node["inputs"]["seed"] = current_seed
-                        if "width" in node["inputs"]:
-                            node["inputs"]["width"] = self.width
-                        if "height" in node["inputs"]:
-                            node["inputs"]["height"] = self.height
-                return workflow
-            except json.JSONDecodeError:
-                logger.warning("Invalid workflow JSON, using default")
+                workflow: Dict[str, Any] = json.loads(workflow_json)
+                if not isinstance(workflow, dict) or not workflow:
+                    raise ValueError('not a non-empty node dictionary')
+                return self._inject(workflow, entry, resolve_prompt_variables(prompt),
+                                    negative, current_seed)
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning(f"Invalid workflow JSON, using default ({e})")
         
         return {
             "3": {
                 "class_type": "KSampler",
                 "inputs": {
                     "seed": current_seed,
-                    "steps": 20,
-                    "cfg": 8.0,
-                    "sampler_name": "euler",
-                    "scheduler": "normal",
+                    "steps": steps,
+                    "cfg": cfg,
+                    "sampler_name": sampler,
+                    "scheduler": scheduler,
                     "denoise": 1.0,
                     "model": ["4", 0],
                     "positive": ["6", 0],
@@ -622,8 +709,8 @@ class ComfyUIDirectProvider(ImageProvider):
             },
             "4": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": checkpoint or self.checkpoint or self._resolved_checkpoint or self.DEFAULT_CHECKPOINT}},
             "5": {"class_type": "EmptyLatentImage", "inputs": {"width": self.width, "height": self.height, "batch_size": 1}},
-            "6": {"class_type": "CLIPTextEncode", "inputs": {"text": resolve_prompt_variables(self.prompt), "clip": ["4", 1]}},
-            "7": {"class_type": "CLIPTextEncode", "inputs": {"text": self.negative_prompt, "clip": ["4", 1]}},
+            "6": {"class_type": "CLIPTextEncode", "inputs": {"text": resolve_prompt_variables(prompt), "clip": ["4", 1]}},
+            "7": {"class_type": "CLIPTextEncode", "inputs": {"text": negative, "clip": ["4", 1]}},
             "8": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0], "vae": ["4", 2]}},
             "9": {"class_type": "SaveImage", "inputs": {"images": ["8", 0], "filename_prefix": "epf"}}
         }
@@ -637,16 +724,19 @@ class ComfyUIDirectProvider(ImageProvider):
             )
         
         current_seed: int = self.seed if self.seed != -1 else random.randint(0, 2**32 - 1)
-        # Only the built-in workflow needs a checkpoint decision; a user-supplied
-        # workflow JSON carries its own model node, so we do not hit /object_info then.
-        resolved_checkpoint: Optional[str] = (
-            self._resolve_checkpoint() if not self.workflow_json else self.checkpoint
-        )
-        workflow: Dict[str, Any] = self._build_workflow(checkpoint=resolved_checkpoint)
+        entry: Optional[Dict[str, Any]] = self.active_entry()
+        # Only the built-in workflow needs a checkpoint decision; a workflow that carries its
+        # own model node (entry api_json or the single legacy field) never hits /object_info.
+        uses_custom_graph: bool = bool((entry or {}).get('api_json') or self.workflow_json)
+        resolved_checkpoint: Optional[str] = None if uses_custom_graph else self._resolve_checkpoint()
+        workflow: Dict[str, Any] = self._build_workflow(checkpoint=resolved_checkpoint, entry=entry)
         
         client_id: str = f"epf_{int(time.time())}"
         
-        logger.info(f"Generating image via ComfyUI Direct: seed={current_seed}")
+        logger.info(
+            f"Generating image via ComfyUI Direct: workflow="
+            f"{(entry or {}).get('name', '(built-in)')} seed={current_seed}"
+        )
         
         try:
             response = requests.post(
@@ -676,7 +766,7 @@ class ComfyUIDirectProvider(ImageProvider):
             
             image: PILImage = Image.open(io.BytesIO(image_response.content)).convert('RGB')
             
-            resolved_prompt: str = resolve_prompt_variables(self.prompt)
+            resolved_prompt: str = resolve_prompt_variables(self._effective(entry, 'prompt', self.prompt))
             self.tracker.log_generation(resolved_prompt, current_seed, "comfyui_direct")
             
             generation_id: str = f"gen_{current_seed}_{int(time.time())}"
@@ -735,6 +825,7 @@ class ComfyUIDirectProvider(ImageProvider):
             "prompt": self.prompt[:50] + "..." if len(self.prompt) > 50 else self.prompt,
             "seed": str(self.seed),
             "dimensions": f"{self.width}x{self.height}",
+            "workflow": self.active_workflow or "(built-in)",
             "generations_today": f"{count_today}/{self.max_generations_per_day}"
         }
         
@@ -790,7 +881,13 @@ def create_provider(config: Dict[str, Any], photo_dir: str) -> ImageProvider:
             max_generations_per_day=comfyui_config.get('max_generations_per_day', 50),
             photo_dir=photo_dir,
             workflow_json=comfyui_config.get('workflow_json', None),
-            checkpoint=comfyui_config.get('checkpoint', '')
+            checkpoint=comfyui_config.get('checkpoint', ''),
+            workflows=comfyui_config.get('workflows') or [],
+            active_workflow=comfyui_config.get('active_workflow', ''),
+            steps=comfyui_config.get('steps', 20),
+            cfg=comfyui_config.get('cfg', 8.0),
+            sampler=comfyui_config.get('sampler', 'euler'),
+            scheduler=comfyui_config.get('scheduler', 'normal')
         )
     
     else:

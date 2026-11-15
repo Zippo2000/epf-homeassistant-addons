@@ -528,6 +528,109 @@ class TestComfyUIDirectProvider:
         assert len(responses.calls) == 0
 
 
+class TestComfyUIWorkflowSelection:
+    """FR-033: pick a named ComfyUI workflow instead of editing one JSON field."""
+
+    def _provider(self, tmp_path, workflows=None, active='', **kwargs):
+        return ComfyUIDirectProvider(
+            url='http://mock-comfyui.local:8188',
+            prompt='global prompt',
+            negative_prompt='global negative',
+            seed=7,
+            photo_dir=str(tmp_path),
+            workflows=workflows,
+            active_workflow=active,
+            **kwargs
+        )
+
+    def test_without_list_behaviour_is_unchanged(self, tmp_path):
+        """No list, no selection -> exactly the pre-2.4.0 built-in graph."""
+        workflow = self._provider(tmp_path)._build_workflow()
+        assert workflow['6']['inputs']['text'] == 'global prompt'
+        assert workflow['7']['inputs']['text'] == 'global negative'
+
+    def test_active_entry_is_picked_from_the_list(self, tmp_path):
+        provider = self._provider(tmp_path, workflows=[
+            {'name': 'flux', 'api_json': '{"1": {"class_type": "SaveImage", "inputs": {}}}'},
+            {'name': 'qwen', 'api_json': '{"2": {"class_type": "SaveImage", "inputs": {}}}'},
+        ], active='qwen')
+        assert provider.active_entry()['name'] == 'qwen'
+
+    def test_unknown_active_name_falls_back_to_global(self, tmp_path):
+        """A stale selection must not break generation."""
+        provider = self._provider(tmp_path, workflows=[{'name': 'flux'}], active='ghost')
+        assert provider.active_entry() is None
+        assert provider._build_workflow()['6']['inputs']['text'] == 'global prompt'
+
+    def test_node_mapping_reaches_a_nonstandard_prompt_input(self, tmp_path):
+        """The Qwen case: prompt lives in a custom node's `prompt` input, where the plain
+        scan never looks — without the mapping the graph would run with its embedded text."""
+        graph = {
+            '459:452': {'class_type': 'TextEncodeQwenImage21', 'inputs': {'prompt': 'embedded prompt'}},
+            '373': {'class_type': 'KSampler', 'inputs': {'seed': 0, 'steps': 4}},
+        }
+        provider = self._provider(tmp_path, workflows=[{
+            'name': 'qwen', 'api_json': json.dumps(graph),
+            'prompt_node': '459:452', 'prompt_input': 'prompt', 'seed_node': '373',
+        }], active='qwen')
+        workflow = provider._build_workflow()
+        assert workflow['459:452']['inputs']['prompt'] == 'global prompt'
+        assert workflow['373']['inputs']['seed'] == 7
+
+    def test_plain_text_nodes_are_still_filled_by_the_scan(self, tmp_path):
+        graph = {'6': {'class_type': 'CLIPTextEncode', 'inputs': {'text': 'embedded'}}}
+        provider = self._provider(tmp_path, workflows=[{'name': 'flux', 'api_json': json.dumps(graph)}], active='flux')
+        assert provider._build_workflow()['6']['inputs']['text'] == 'global prompt'
+
+    def test_entry_prompt_override_wins_over_global(self, tmp_path):
+        graph = {'6': {'class_type': 'CLIPTextEncode', 'inputs': {'text': 'embedded'}}}
+        provider = self._provider(tmp_path, workflows=[
+            {'name': 'flux', 'api_json': json.dumps(graph), 'prompt': 'entry prompt'}], active='flux')
+        assert provider._build_workflow()['6']['inputs']['text'] == 'entry prompt'
+
+    def test_entry_sampling_override_is_applied_when_set(self, tmp_path):
+        graph = {'3': {'class_type': 'KSampler', 'inputs': {
+            'seed': 0, 'steps': 20, 'cfg': 8.0, 'sampler_name': 'euler', 'scheduler': 'normal'}}}
+        provider = self._provider(tmp_path, workflows=[{
+            'name': 'flux', 'api_json': json.dumps(graph),
+            'steps': 12, 'cfg': 2.5, 'sampler': 'dpmpp_2m', 'scheduler': 'karras',
+        }], active='flux')
+        inputs = provider._build_workflow()['3']['inputs']
+        assert (inputs['steps'], inputs['cfg'], inputs['sampler_name'], inputs['scheduler']) \
+            == (12, 2.5, 'dpmpp_2m', 'karras')
+
+    def test_graph_values_survive_when_nothing_is_set(self, tmp_path):
+        """A pasted graph keeps its own sampling numbers unless the slot says otherwise."""
+        graph = {'3': {'class_type': 'KSampler', 'inputs': {
+            'seed': 0, 'steps': 4, 'cfg': 1.0, 'sampler_name': 'euler', 'scheduler': 'simple'}}}
+        provider = self._provider(tmp_path, workflows=[{'name': 'flux', 'api_json': json.dumps(graph)}], active='flux')
+        assert provider._build_workflow()['3']['inputs']['steps'] == 4
+
+    def test_unparsable_entry_json_falls_back_to_builtin(self, tmp_path):
+        provider = self._provider(tmp_path, workflows=[{'name': 'flux', 'api_json': '{not json'}], active='flux')
+        workflow = provider._build_workflow()
+        assert workflow['3']['class_type'] == 'KSampler'
+        assert workflow['6']['inputs']['text'] == 'global prompt'
+
+    @responses.activate
+    def test_named_graph_skips_checkpoint_lookup(self, tmp_path):
+        """A graph with its own model node never asks the server for a checkpoint list."""
+        provider = self._provider(tmp_path, workflows=[
+            {'name': 'flux', 'api_json': '{"1": {"class_type": "SaveImage", "inputs": {}}}'}], active='flux')
+        provider._build_workflow()
+        assert len(responses.calls) == 0
+
+    def test_factory_passes_the_list_through(self, tmp_path):
+        provider = create_provider({
+            'image_source': 'comfyui_direct',
+            'comfyui': {'direct_url': 'http://mock-comfyui.local:8188',
+                         'workflows': [{'name': 'flux'}, {'name': 'qwen'}],
+                         'active_workflow': 'flux'},
+        }, str(tmp_path))
+        assert [w['name'] for w in provider.workflows] == ['flux', 'qwen']
+        assert provider.active_entry()['name'] == 'flux'
+
+
 # ============================================================
 # Provider Factory Tests
 # ============================================================

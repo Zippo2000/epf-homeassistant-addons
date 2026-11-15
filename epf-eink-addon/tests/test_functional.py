@@ -17,6 +17,7 @@ from PIL import Image
 
 import pytest
 import responses
+import yaml
 
 from conftest import (
     MOCK_IMMICH_URL, MOCK_API_KEY, MOCK_ALBUM_NAME, MOCK_ALBUM_ID,
@@ -1366,3 +1367,72 @@ class TestFR021SettingsVocabulary:
         assert html.count('&mdash; not set') == 1
         assert 'name="immich_api_key"' not in html
         assert 'name="ha_api_token"' not in html
+
+
+# ============================================================
+# TC-FR-033: Named ComfyUI Workflows (settings side)
+# ============================================================
+
+class TestFR033WorkflowSelection:
+    """FR-033: several named ComfyUI workflows, selectable from the settings page."""
+
+    API_JSON = '{"3": {"class_type": "KSampler", "inputs": {"seed": 0}}, "9": {"class_type": "SaveImage", "inputs": {}}}'
+
+    def test_slots_and_dropdown_render(self, client_with_mocks):
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        for fragment in ('name="wf_1_name"', 'name="wf_1_api_json"', 'id="active_workflow"',
+                         'wf-slot', 'Save (Export)'):
+            assert fragment in html
+
+    def test_post_named_workflow_round_trip(self, client_with_mocks, app_module, test_config_path):
+        """What the form posts is what the YAML and the live config carry afterwards."""
+        resp = client_with_mocks.post('/', data={
+            'image_source': 'comfyui_direct',
+            'wf_1_name': 'flux-dev',
+            'wf_1_api_json': self.API_JSON,
+            'wf_1_prompt_node': '3',
+            'active_workflow': 'flux-dev',
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        comfyui = app_module.current_config['comfyui']
+        assert comfyui['active_workflow'] == 'flux-dev'
+        assert comfyui['workflows'] == [{'name': 'flux-dev', 'api_json': self.API_JSON, 'prompt_node': '3'}]
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['comfyui']['active_workflow'] == 'flux-dev'
+        assert saved['comfyui']['workflows'][0]['name'] == 'flux-dev'
+
+    def test_duplicate_names_rejected(self, client_with_mocks):
+        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'wf_2_name': 'flux'},
+                                       follow_redirects=False)
+        assert resp.status_code == 400
+        assert 'duplicate' in resp.data.decode('utf-8')
+
+    def test_ui_format_is_rejected_with_a_hint(self, client_with_mocks):
+        """ComfyUI's normal save format is a UI graph; only API JSON can be posted."""
+        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux',
+                                                 'wf_1_api_json': '{"nodes": [], "links": []}'},
+                                       follow_redirects=False)
+        assert resp.status_code == 400
+        assert 'Save (Export)' in resp.data.decode('utf-8')
+
+    def test_oversized_json_rejected(self, client_with_mocks):
+        big = json.dumps({'1': {'class_type': 'Note', 'inputs': {'text': 'x' * 70000}}})
+        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'wf_1_api_json': big},
+                                       follow_redirects=False)
+        assert resp.status_code == 400
+
+    def test_active_name_must_match_a_slot(self, client_with_mocks):
+        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'active_workflow': 'ghost'},
+                                       follow_redirects=False)
+        assert resp.status_code == 400
+
+    def test_post_without_slots_keeps_the_stored_list(self, client_with_mocks, app_module):
+        """A caller that posts no workflow fields must not wipe an existing list."""
+        app_module.current_config['comfyui']['workflows'] = [
+            {'name': 'flux-dev', 'api_json': '{"1": {"class_type": "SaveImage", "inputs": {}}}'}]
+        app_module.current_config['comfyui']['active_workflow'] = 'flux-dev'
+        client_with_mocks.post('/', data={'image_source': 'comfyui_direct'}, follow_redirects=True)
+        comfyui = app_module.current_config['comfyui']
+        assert comfyui['active_workflow'] == 'flux-dev'
+        assert comfyui['workflows'][0]['name'] == 'flux-dev'

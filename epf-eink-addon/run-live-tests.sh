@@ -1,11 +1,13 @@
 #!/bin/sh
 # =============================================================================
-# Run the LIVE integration tests against a real Immich v3 server.
+# Run the LIVE integration tests against the real backends (Immich v3, ComfyUI).
 #
 # Connection details are read from the local, git-ignored ./.env file:
 #     IMMICH_URL      base URL of the Immich server
 #     IMMICH_API_KEY  the server's API key (needs the "asset.download" grant)
 #     IMMICH_ALBUM    album the tests exercise
+#     COMFYUI_URL     base URL of the ComfyUI server (TC-L09/L10; skip if unset)
+#     COMFYUI_WORKFLOW_JSON  optional "Save (Export)" graph of a real workflow
 # so nothing sensitive is ever a command-line argument. The two non-secret
 # values may be overridden for a one-off run:
 #
@@ -55,6 +57,8 @@ docker run --rm \
     -e IMMICH_URL="$IMMICH_URL" \
     -e IMMICH_API_KEY="$IMMICH_API_KEY" \
     -e IMMICH_ALBUM="$IMMICH_ALBUM" \
+    -e COMFYUI_URL="${COMFYUI_URL:-}" \
+    -e COMFYUI_WORKFLOW_JSON="${COMFYUI_WORKFLOW_JSON:-}" \
     -e IMMICH_PHOTO_DEST=/tmp/epf_live_photos \
     "$IMAGE" \
     bash -c 'cd /app && python3 -m pytest -v tests/test_live.py'
