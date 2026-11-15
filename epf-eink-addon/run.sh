@@ -31,6 +31,10 @@ export SLEEP_END_HOUR=$(bashio::config 'sleep_end_hour' '6')
 export SLEEP_END_MINUTE=$(bashio::config 'sleep_end_minute' '0')
 export LOG_LEVEL=$(bashio::config 'log_level' 'info')
 
+# Gallery history limits (defaults: 50 shots, 7 days)
+export GALLERY_MAX_COUNT=$(bashio::config 'gallery_max_count' '50')
+export GALLERY_RETENTION_DAYS=$(bashio::config 'gallery_retention_days' '7')
+
 # Set INGRESS_PATH directly (Home Assistant provides this automatically)
 # If running in Ingress mode, HA handles the routing without needing the token
 export INGRESS_PATH="/api/hassio_ingress"
@@ -65,6 +69,8 @@ bashio::log.info "  Dithering Method: ${DITHERING_METHOD}"
 bashio::log.info "  Wake Up Interval: ${WAKEUP_INTERVAL} minutes"
 bashio::log.info "  Sleep Time: ${SLEEP_START_HOUR}:${SLEEP_START_MINUTE} - ${SLEEP_END_HOUR}:${SLEEP_END_MINUTE}"
 bashio::log.info "  Log Level: ${LOG_LEVEL}"
+bashio::log.info "  Gallery Max Count: ${GALLERY_MAX_COUNT}"
+bashio::log.info "  Gallery Retention Days: ${GALLERY_RETENTION_DAYS}"
 
 cd /app || exit 1
 

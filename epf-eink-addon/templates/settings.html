@@ -957,6 +957,20 @@ footer {
                         </div>
                     </div>
 
+                    <div class="card">
+                        <div class="card-title">Photo Gallery</div>
+                        <div class="form-group">
+                            <label for="gallery_max_count">Max entries (per pattern):</label>
+                            <input type="text" id="gallery_max_count" name="gallery_max_count" value="{{ config.get('gallery', {}).get('max_count', 50) }}">
+                            <small class="small-text">Range: 1 - 500. How many archived shots the Gallery keeps before cleanup prunes.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="gallery_retention_days">Retention (days):</label>
+                            <input type="text" id="gallery_retention_days" name="gallery_retention_days" value="{{ config.get('gallery', {}).get('retention_days', 7) }}">
+                            <small class="small-text">Range: 1 - 365. Older archived previews are deleted on the next cleanup.</small>
+                        </div>
+                    </div>
+
                     <!-- Buttons -->
                     <div class="button-group">
                         <input type="submit" value="Save Settings" style="font-weight:500">

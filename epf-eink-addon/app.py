@@ -155,6 +155,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         'max_generations_per_day': int(os.getenv('COMFYUI_MAX_GENERATIONS', '50')),
         'direct_url': os.getenv('COMFYUI_DIRECT_URL', ''),
         'workflow_json': os.getenv('COMFYUI_WORKFLOW_JSON', ''),
+    },
+    'gallery': {
+        'max_count': int(os.getenv('GALLERY_MAX_COUNT', '50')),
+        'retention_days': int(os.getenv('GALLERY_RETENTION_DAYS', '7')),
     }
 }
 
@@ -258,8 +262,13 @@ MAX_PREVIEW_COUNT: int = 50
 
 # =============== PREVIEW GALLERY HISTORY ===============
 GALLERY_PATTERNS: List[str] = ['original_*.jpg', 'processed_*.jpg', 'delivered_*.jpg']
+# Limits are seeded from the add-on options (run.sh exports GALLERY_MAX_COUNT /
+# GALLERY_RETENTION_DAYS) and are refreshed by update_app_config() whenever the
+# settings page rewrites the runtime YAML. The names stay module-level on purpose:
+# cleanup_gallery() reads them at call time and the tests rebind them directly.
 GALLERY_MAX_COUNT: int = int(os.getenv('GALLERY_MAX_COUNT', '50'))
-GALLERY_MAX_AGE_SECONDS: int = 86400 * int(os.getenv('GALLERY_RETENTION_DAYS', '7'))
+GALLERY_RETENTION_DAYS: int = int(os.getenv('GALLERY_RETENTION_DAYS', '7'))
+GALLERY_MAX_AGE_SECONDS: int = 86400 * GALLERY_RETENTION_DAYS
 
 def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None, patterns: Optional[List[str]] = None) -> int:
     target_dir: str = directory or photo_dir
@@ -604,6 +613,7 @@ class ConfigFileHandler(FileSystemEventHandler):
 def update_app_config(new_config: Dict[str, Any]) -> None:
     global current_config, image_source, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
+    global GALLERY_MAX_COUNT, GALLERY_RETENTION_DAYS, GALLERY_MAX_AGE_SECONDS
     
     if new_config is None or 'immich' not in new_config:
         logger.warning("Invalid config received, ignoring update")
@@ -624,6 +634,11 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
     sleep_end_minute = new_config['immich']['sleep_end_minute']
+
+    gallery_cfg = new_config.get('gallery') or {}
+    GALLERY_MAX_COUNT = int(gallery_cfg.get('max_count', GALLERY_MAX_COUNT))
+    GALLERY_RETENTION_DAYS = int(gallery_cfg.get('retention_days', GALLERY_RETENTION_DAYS))
+    GALLERY_MAX_AGE_SECONDS = 86400 * GALLERY_RETENTION_DAYS
     
     reset_provider()
     
@@ -700,6 +715,10 @@ def settings() -> Any:
                 'max_generations_per_day': int(request.form.get('comfyui_max_generations', current_config.get('comfyui', {}).get('max_generations_per_day', 50))),
                 'direct_url': request.form.get('comfyui_direct_url', current_config.get('comfyui', {}).get('direct_url', '')),
                 'workflow_json': request.form.get('comfyui_workflow_json', current_config.get('comfyui', {}).get('workflow_json', '')),
+            },
+            'gallery': {
+                'max_count': int(request.form.get('gallery_max_count', current_config.get('gallery', {}).get('max_count', 50))),
+                'retention_days': int(request.form.get('gallery_retention_days', current_config.get('gallery', {}).get('retention_days', 7))),
             }
         }
         

@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-11-15
+
+### Added
+- **Gallery limits are first-class add-on options** (milestone M2 of the gallery plan):
+  `gallery_max_count` (default **50**) and `gallery_retention_days` (default **7**) in the manifest,
+  exported by `run.sh` as `GALLERY_MAX_COUNT` / `GALLERY_RETENTION_DAYS`, and editable on the
+  settings page (Configuration → Photo Gallery) — so they hot-reload through the runtime YAML like
+  every other display setting. Before this the values were env-only.
+
+### Tests
+- Four new cases in `tests/test_gallery_history.py` (`TestGalleryOptions`): manifest defaults, the
+  settings-POST round-trip into the runtime YAML (including the hot-reload of the effective limits),
+  a form submitted without gallery fields keeps the defaults, and cleanup honours a configured cap.
+  Offline suite: **162** cases (158 + 4), all green; the 5 live cases pass against a real Immich.
+
+## [2.2.1] - 2026-09-20
+
+### Fixed
+- **Gallery thumbnails broke under Home Assistant ingress.** The gallery API returned
+  **absolute** `"/preview-file/<name>.jpg"` URLs. Under ingress the settings page lives at
+  `/api/ingress/<token>/`, so the browser resolved those against the HA root — broken images in
+  the grid and a 404 when opening an entry. The gallery reader now returns **relative**
+  `"./preview-file/<name>.jpg"` URLs, the same convention the rest of the UI already uses, so it
+  works both via ingress and when the page is opened directly on port 5000. Test assertion in
+  `tests/test_gallery_history.py` adjusted accordingly (no other behaviour changed).
+
 ## [2.2.0] - 2026-09-19
 
 ### Added

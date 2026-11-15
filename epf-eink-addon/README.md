@@ -134,6 +134,18 @@ This add-on provides a Flask server that:
 - Options: `atkinson`, `floyd-steinberg`
 - Default: `atkinson`
 
+### Gallery
+
+**gallery_max_count**
+- Maximum number of shots the Gallery keeps (per preview kind before cleanup)
+- Range: 1 - 500
+- Default: 50
+
+**gallery_retention_days**
+- How long archived previews are kept; older ones are deleted on cleanup
+- Range: 1 - 365
+- Default: 7
+
 ### Power Management
 
 **wakeup_interval**

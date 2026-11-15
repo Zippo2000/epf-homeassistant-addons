@@ -16,6 +16,8 @@ decoded here), and the filesystem is the fixture's tmp_path photo_dir.
 import os
 import time
 
+import yaml
+
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
@@ -210,3 +212,51 @@ class TestPreparePhotoHooksArchive:
         # and the live status flips to "new" (hand-shake contract intact)
         with open(os.path.join(app_module.photo_dir, 'latest.status')) as fh:
             assert fh.read().strip() == 'new'
+
+
+# --------------------------------------------------------------------------
+# M2: gallery limits as first-class add-on options (options -> env -> config -> runtime)
+# --------------------------------------------------------------------------
+
+class TestGalleryOptions:
+    """The two limits are editable options (settings page / manifest), not env-only constants."""
+
+    def test_defaults_match_the_manifest(self, app_module):
+        # config.yaml defaults are 50 / 7 and the fixture injects no GALLERY_* env, so
+        # DEFAULT_CONFIG (and therefore the module globals) must carry exactly those.
+        assert app_module.DEFAULT_CONFIG['gallery'] == {'max_count': 50, 'retention_days': 7}
+        assert app_module.GALLERY_MAX_COUNT == 50
+        assert app_module.GALLERY_RETENTION_DAYS == 7
+        assert app_module.GALLERY_MAX_AGE_SECONDS == 86400 * 7
+
+    def test_settings_post_writes_gallery_section(self, app_module, test_config_path):
+        client = app_module.app.test_client()
+        resp = client.post('/', data={'gallery_max_count': '12', 'gallery_retention_days': '3'},
+                           follow_redirects=True)
+        assert resp.status_code == 200
+
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['gallery'] == {'max_count': 12, 'retention_days': 3}
+
+        # POST also calls update_app_config() -> the new limits apply without a restart
+        assert app_module.GALLERY_MAX_COUNT == 12
+        assert app_module.GALLERY_RETENTION_DAYS == 3
+        assert app_module.GALLERY_MAX_AGE_SECONDS == 86400 * 3
+
+    def test_form_without_gallery_fields_keeps_defaults(self, app_module, test_config_path):
+        client = app_module.app.test_client()
+        resp = client.post('/', data={}, follow_redirects=True)
+        assert resp.status_code == 200
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['gallery'] == {'max_count': 50, 'retention_days': 7}
+
+    def test_cleanup_uses_the_configured_cap(self, app_module, test_config_path):
+        client = app_module.app.test_client()
+        client.post('/', data={'gallery_max_count': '2'}, follow_redirects=True)
+        assert app_module.GALLERY_MAX_COUNT == 2          # the hot-reload path fired
+        _seed_pairs(app_module, 4, time.time())
+        app_module.cleanup_gallery()
+        # cap of 2 per pattern -> 2 originals + 2 processed survive
+        assert _gallery_file_count(app_module) == 4

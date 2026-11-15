@@ -1,5 +1,5 @@
 name: "E-Paper Photo Frame (EPF)"
-version: "2.2.1"
+version: "2.3.0"
 slug: "epf-eink-addon"
 description: "E-Ink Photo Frame with Immich and ComfyUI integration for displaying photos on E-Ink displays"
 url: "https://github.com/Zippo2000/epf-homeassistant-addons"
@@ -43,6 +43,8 @@ options:
   display_mode: "fill"
   image_order: "random"
   dithering_method: "atkinson"
+  gallery_max_count: 50
+  gallery_retention_days: 7
   wakeup_interval: 1440
   sleep_start_hour: 23
   sleep_start_minute: 0
@@ -72,6 +74,8 @@ schema:
   display_mode: "list(fit|fill)"
   image_order: "list(random|newest)"
   dithering_method: "list(atkinson|floyd-steinberg)"
+  gallery_max_count: "int(1,500)"
+  gallery_retention_days: "int(1,365)"
   wakeup_interval: "int(30,1440)"
   sleep_start_hour: "int(0,23)"
   sleep_start_minute: "int(0,59)"
