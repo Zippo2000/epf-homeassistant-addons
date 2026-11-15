@@ -196,6 +196,7 @@ fi
 **14.9 (Paletten, M / Untersuchung)** — *offener Task:*
 - [ ] **Foto-Verifizierung** der effektiven Farb-Slot-Zuordnung gegen eine Waveshare-Referenzkarte (welche Slots werden wie belegt; `indices[indices>3]+=1` → Slot 4/`EPD_7IN3E_RED` wird nie ausgegeben).
 - [ ] Ergebnis in `ANALYSE.md` §14.9 abschließen (entwirren **oder** explizit als „so intended“ dokumentieren). Falls unentschieden → als **explizit offener Verifikations-Punkt** belassen (nicht verheimlichen).
+- [ ] _2026-11-15: bewusst **aufgeschoben** (Nutzerentscheid). Prüfaufwand ist rein handwerklich: Foto am echten Rahmen bzw. die Waveshare-Referenzkarte — im Labor nicht automatisierbar (L4)._ 
 
 **14.12 (Locking, S/opt. **Entscheidung**)** — *Empfehlung:* als **bekannte Einschränkung** vermerken (relevant **nur** bei mehreren Frames gegen eine Instanz); *optional* leichte Lock-Datei/`fcntl` auf `tracking.txt`/`generations.json`. *(Kein Pflicht-Code.)*
 

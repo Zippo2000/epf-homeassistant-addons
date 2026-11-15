@@ -2,10 +2,14 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.0.0  
-**Date:** 2026-04-03  
-**Baseline:** Repository commit (main branch, v2.0.0)  
-**Status:** Released  
+**Version:** 2.3.0  
+**Date:** 2026-11-15  
+**Baseline:** Repository commit (main branch, v2.3.0)  
+**Status:** Released
+
+> **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
+> against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
+> baseline; actual results are recorded in EPF-RPT-001 (re-baselined for 2.3.0).  
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
 ---
@@ -17,7 +21,7 @@ This document specifies the software test cases for verifying the EPF (E-Paper P
 
 ### 1.2 Scope
 The scope encompasses all functional, non-functional, interface, security, and performance requirements for the `epf-eink-addon`. This includes:
-- 31 Functional Requirements (FR-001 to FR-031)
+- 32 Functional Requirements (FR-001 to FR-032)
 - 8 Non-Functional Requirements (NFR-001 to NFR-008)
 - 5 Interface Requirements (IFR-001 to IFR-005)
 - 4 Security Requirements (SEC-001 to SEC-004)
@@ -653,6 +657,24 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 ---
 
+#### TC-FR-032: Preview Gallery History
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-032 |
+| **Requirement** | FR-032 |
+| **Title** | Verify the archived preview gallery (correlation, grouping, limits, live-slot safety) |
+| **Priority** | Medium |
+| **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path`; placeholder preview files (never decoded by these cases) |
+| **Test Input** | 21 automated cases in `tests/test_gallery_history.py` (offline tier L0) |
+| **Test Steps** | 1. Verify shot-id sanitisation (filename-safe charset, separator stripping, 64-char cap, ts+uuid fallback)<br>2. Verify the archive hook copies the live pair into `photos/gallery/` under the shot id<br>3. Verify the reader groups by shot id, sorts newest first and reports the shot count<br>4. Verify entry URLs are relative `./preview-file/...` (ingress-safe)<br>5. Verify pruning caps each pattern independently by count and by age<br>6. Verify the live single slot (`latest.*`) is never pruned<br>7. Verify POST /prepare-photo fires the archive and leaves the hand-shake status at `new`<br>8. Verify the option round-trip: settings form -> runtime YAML -> effective limits (defaults 50 / 7 days)<br>9. Verify a form submitted without gallery fields keeps the defaults |
+| **Expected Result** | One archived pair per shot; grouped reader output; per-pattern pruning within both limits; live slot untouched; configured options take effect without a restart |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | 21/21 passed (offline tier L0, 2026-11-15) |
+| **Status** | Executed — Passed |
+
+---
+
 ### 3.2 Non-Functional Requirements Test Cases
 
 #### TC-NFR-001: Multi-Architecture Support
@@ -1050,6 +1072,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-010 | NFR-010 | Inspection | Not Executed |
 | TC-FR-025 | FR-025 | Test | Not Executed |
 | TC-FR-026 | FR-026 | Test | Not Executed |
+| TC-FR-032 | FR-032 | Test | Executed — Passed (21 cases, 2026-11-15) |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
 | TC-IFR-002 | IFR-002 | Test | Not Executed |
 | TC-IFR-003 | IFR-003 | Test | Not Executed |
@@ -1071,18 +1094,18 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 | Category | Requirements | Test Cases | Coverage |
 |----------|-------------|------------|----------|
-| Functional | 23 | 28 | 100% |
+| Functional | 24 | 29 | 100% |
 | Non-Functional | 8 | 8 | 100% |
 | Interface | 5 | 5 | 100% |
 | Security | 4 | 4 | 100% |
 | Performance | 3 | 3 | 100% |
-| **Total** | **43** | **48** | **100%** |
+| **Total** | **44** | **49** | **100%** |
 
 ### 5.2 Verification Method Distribution
 
 | Method | Count |
 |--------|-------|
-| Test | 39 |
+| Test | 40 |
 | Inspection | 7 |
 | Analysis | 1 |
 | Test + Inspection | 1 |

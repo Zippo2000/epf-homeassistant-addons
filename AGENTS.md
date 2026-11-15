@@ -280,6 +280,17 @@ pass counts.**
   rather than a shebang; (3) note `run.test.sh` itself is **git-ignored**, so the *committed*
   robustness lives entirely in `.gitattributes` plus the Dockerfile.
 
+- **The production image cannot self-start outside Home Assistant.** `run.sh`'s shebang is
+  `#!/usr/bin/with-contenv bashio`, and the HA base image has no `bashio` — the plain (non-supervised)
+  container dies at `exec: fatal: unable to exec bashio`, and s6 strips the environment of services it
+  starts (that is exactly what `with-contenv` exists to restore). For the **L3 smoke**, run the shipped
+  image with the same gunicorn line through `with-contenv`, and pass secrets via `--env-file` with a
+  **relative** path. Also: never hand Git-Bash an absolute container path (`/run.sh`) as an argument —
+  MSYS rewrites it and Docker blames a "missing file".
+- **Build context for the production `Dockerfile` is the add-on directory**, not the repo root
+  (`cd epf-eink-addon && docker build -f Dockerfile -t epf-eink:local .`) — the `COPY` lines are
+  relative to it; from the root it fails on `/run.sh`.
+
 - **The Cython module is compiled at image-build time.** There is no `cpy.so` in the repo:
   both Dockerfiles run `python setup.py build_ext --inplace` (from `cpy.pyx`) during the build.
   Never hand-edit the `.so` — edit `cpy.pyx` and let the Docker build regenerate it.
@@ -299,8 +310,12 @@ pass counts.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  141-case suite, 2.0.3). If a PR adds or removes tests, update the report's counts in the same
-  PR — the "100 %" claim silently rots otherwise (that is how 14.6 found the v1.1.0 drift).
+  **158 offline + 5 live = 163**-case suite, **2.2.1**, re-counted 2026-11-15 — L0, L1 against a real
+  Immich and the L3 production-image smoke all re-run green). If a PR adds or removes tests, update the
+  report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
+  the v1.1.0 drift). The gallery-history feature (2.2.0) still has **no** requirement/test-case ID in
+  EPF-REQ-001 / EPF-TST-001 — its 17 cases are listed unnumbered in the report until the catalogues
+  catch up.
 - **Fonts for the date overlay.** The prod `Dockerfile` installs `fonts-dejavu-core` (14.7)
   so the date overlay renders with the intended typeface; without it Pillow would silently fall
   back to the tiny bitmap default.

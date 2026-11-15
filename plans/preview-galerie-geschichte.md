@@ -1,6 +1,6 @@
 # Preview-Galerie mit Historie – „Archiv- statt Single-Slot"
 
-> **Status:** Plan / nicht begonnen
+> **Status:** ✅ **CLOSED (M1 + M2-Optionen)** — geliefert in **2.2.0** (`d825e7b`) + Ingress-Fix **2.2.1** (`ef1a0d1`, relative `./preview-file/`-URLs) + **M2-Optionen in 2.3.0** (`gallery_max_count` / `gallery_retention_days` als Add-on-Optionen + Settings-Felder). **M2-Rest:** `_archive_delivered()` offen. **M3 teilweise** (Lazy-Load + Cleanup-Button sind da, Paginierung nicht). DoD: L0 ✅ (162+5) + L3 ✅ am 2026-11-15 (Produktions-Image + echtes Immich: Prepare → archiviertes Paar, gruppierte Reader-Ausgabe, relative URLs — Report §6.2); **L4-Feld offen**. Siehe §12/§13.
 > **Betreff:** `epf-eink-addon/app.py` (Prepare/Deliver-Pipeline, `cleanup_old_previews()`,
 > `/api/gallery-previews`) + `epf-eink-addon/templates/settings.html` (Gallery-Tab)
 > **Ziel:** Die Preview-Galerie soll eine echte **Geschichte** ansammeln (z. B. die letzten 50
@@ -19,7 +19,7 @@
 | Galerie-Reader | `/api/gallery-previews` listet `gallery/*_*.jpg`, gruppiert per UI nach `id` (Paare), sortiert absteigend, begrenzt auf die Konfig. |
 | Aufräumen | **Existierende** `cleanup_old_previews()` wiederverwenden, nur `target_dir = gallery/` + Archiv-Pattern; Max-Zahl (50) + Max-Alter (7 Tage) bleiben Parameter. |
 | Persistenz/Disziplin | Neues **`gallery/`**-Verz. lives in dem selben Bind-Mount wie `latest.*` (d. h. in `photos/`). Nothing to hand-migrate; leerer Zustand = leerer Ordner. |
-| Konfiguration | Defaults via `os.getenv` (kein Manifest-Zwang). *Optional* (Phase M2): echte Add-on-Optionen `gallery_max_count` / `gallery_retention_days`. |
+| Konfiguration | Defaults via `os.getenv`; **M2 umgesetzt (2.3.0)**: echte Add-on-Optionen `gallery_max_count` / `gallery_retention_days` (Manifest + `run.sh` + Settings-Felder). |
 | Release | Neues **Minor** `2.2.0` (Feature, nicht Patch) + CHANGELOG-Eintrag. |
 | Test | Neues `tests/test_gallery_history.py` + Erweiterung des funktionellen `/prepare-photo`/`/download`-Regressionstests. Gate: L0 grün (DoD), L3-Smoke, L4 Feld. |
 
@@ -257,8 +257,8 @@ Manifest/Schema-Drift klein bleibt (siehe AGENTS: „schema & run.sh halten im G
 | `GALLERY_RETENTION_DAYS` | `7` | max. Alter eines Archiv-Eintrags | M1 (Env), M2 (Option) |
 | `gallery/` (Verz.) | auto | Zielverzeichnis, liegt im `photos/`-Bind-Mount | M1 |
 
-Wirklich „knöpfen" lässt sich das erst in M2 via Add-on-Optionen; bis dahin gelten die Env-Defaults
-(HA-User ändert ggf. über die Add-on-Options, sobald M2 gelandet ist).
+M2 ist teils geliefert: **2.3.0** hat die beiden Add-on-Optionen (`config.yaml` + `run.sh` +
+`DEFAULT_CONFIG` + Settings-Felder, hot-reloadfähig). Offen bleibt `_archive_delivered()` (siehe §6.3).
 
 ---
 
@@ -329,11 +329,11 @@ Erweiterungen: `tests/test_functional.py` (Prepare/Deliver-Regression), `tests/t
 
 ## 12 · Meilensteine (Phasen)
 
-| Phase | Scope | Deploy-/Testbar eigenständig? |
-|-------|-------|-------------------------------|
-| **M1** (Kern) | `_shot_id` + `_archive_previews()` (orig+proc) · Hook in `prepare_photo` · Reader → `gallery/` (gruppiert) · `cleanup_old_previews(directory=gallery)` · UI paariert rendert · `test_gallery_history.py` (inkl. ESP32-Regression) · `2.2.0` | **Ja** – delivers the value (History + safe) |
-| **M2** (optional) | `_archive_delivered()` im `/download`-Zweig · Add-on-Optionen `gallery_max_count`/`gallery_retention_days` (config.yaml + `run.sh` + `DEFAULT_CONFIG`) | Ja (nice-to-have) |
-| **M3** (polish) | UI: „Galerie leeren" (neuer `/cleanup-previews`-Button), Lazy-Load-Thumbs, Hover-Lightbox; ggf. Paginierung | Ja (kosmetisch) |
+| Phase | Status | Scope | Deploy-/Testbar eigenständig? |
+|-------|--------|-------|-------------------------------|
+| **M1** (Kern) | ✅ **geliefert** (`2.2.0` / `d825e7b`) | `_shot_id` + `_archive_previews()` (orig+proc) · Hook in `prepare_photo` · Reader → `gallery/` (gruppiert) · `cleanup_old_previews(directory=gallery)` · UI paariert rendert · `test_gallery_history.py` (inkl. ESP32-Regression) · `2.2.0` | **Ja** – delivers the value (History + safe) |
+| **M2** (optional) | 🔶 teils geliefert (2.3.0) | ✅ Add-on-Optionen `gallery_max_count`/`gallery_retention_days` (config.yaml + `run.sh` + `DEFAULT_CONFIG` + Settings-Felder + Tests) · **offen:** `_archive_delivered()` im `/download`-Zweig | Ja (nice-to-have) |
+| **M3** (polish) | 🔶 teilweise | UI: „Galerie leeren" (neuer `/cleanup-previews`-Button) ✅ · Lazy-Load-Thumbs ✅ (Gallery-Tab lädt beim ersten Öffnen) · Hover-Lightbox ✅ (Modal) · Paginierung ❌ | Ja (kosmetisch) |
 
 > Empfehlung: **M1** ist das komplette, lohnende Feature. M2/M3 sind Ergänzungen, die separat
 > gecuttet werden können, ohne M1 zu blockieren.
@@ -347,6 +347,21 @@ Erweiterungen: `tests/test_functional.py` (Prepare/Deliver-Regression), `tests/t
 2. **Sortierung primär nach Zeit oder nach `id`?** (Empfehlung: Zeit/`modified`, `id` nur zum Gruppieren.)
 3. **Soll die Galerie auch den letzten ESP32-Lieferzeitpunkt** zeigen? (würde die `delivered_`-Semantik brauchen → M2.)
 4. **Cap-Einheit:** „Paare" (empfohlen, hält Paare zusammen) vs. einzelne Dateien bei der Pruning?
+
+**Antworten — durch die Umsetzung entschieden (2.2.0):**
+
+1. Paar (original + processed) — umgesetzt; „delivered" wird in M1 **nicht** archiviert (M2).
+2. Sortierung nach Dateimalter (`modified`, absteigend), `id` nur zur Gruppierung — umgesetzt.
+3. Nein — der Liefer-Nachweis bleibt der Live-Slot (`latest_delivered.jpg`); Galerie zeigt Original + Processed.
+4. **Abweichung zur Empfehlung:** gekappt wird **pro Muster** (`original_*`, `processed_*`, `delivered_*`
+   je `GALLERY_MAX_COUNT`), nicht pro Paar — ein Paar kann also beim Pruning auseinandergerissen werden.
+   Belegt durch `test_prunes_each_kind_to_max_count`; der gemeinsame Zähler-Bug (nur das erste Muster
+   gekappt) wurde in 2.2.0 behoben.
+
+> **Doku-Lücke:** für das Feature existieren **kein** Requirement und **kein** Testfall in
+> `docs/requirements_specification_aspice.md` / `docs/test_specification_aspice.md` (EPF-REQ/TST-001).
+> Die 17 Fälle in `tests/test_gallery_history.py` hängen an keinem ID — nachziehen, wenn der Report
+> formal vollständig sein soll.
 
 ---
 

@@ -2,10 +2,14 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.0.0  
-**Date:** 2026-04-03  
-**Baseline:** Repository commit (main branch, v2.0.0)  
+**Version:** 2.3.0  
+**Date:** 2026-11-15  
+**Baseline:** Repository commit (main branch, v2.3.0)  
 **Status:** Released
+
+> **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
+> 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
+> the only implemented feature without a requirement ID; the catalogue now has 32 FRs.
 
 ---
 
@@ -446,6 +450,20 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 
 ---
 
+#### FR-032: Preview Gallery History
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-032 |
+| **Title** | Archived preview history for the gallery |
+| **Priority** | Medium |
+| **Description** | The system SHALL archive every prepared shot as a correlated pair (`original_<shot-id>.jpg`, `processed_<shot-id>.jpg`) under `photos/gallery/`, keyed by a sanitised shot id derived from the image-source identifier (fallback: timestamp + uuid). The gallery reader `/api/gallery-previews` SHALL group entries by shot id, sort newest first, report the number of shots, and return **relative** `./preview-file/...` URLs so the UI works behind Home Assistant ingress. Cleanup SHALL prune **per pattern** by count (option `gallery_max_count`, default 50) and by age (option `gallery_retention_days`, default 7 days); both are add-on options, editable in the settings UI and hot-reloaded through the runtime YAML. Cleanup SHALL never touch the live single-slot files (`latest.*`) used by the ESP32 hand-shake. |
+| **Input** | POST /prepare-photo (archive hook), POST /cleanup-previews, GET /api/gallery-previews |
+| **Output** | Archived pairs on disk; JSON list of shots grouped by id; cleanup returns removed-file count |
+| **Verification** | Test |
+| **Traceability** | `app.py:_shot_id, _gallery_dir, _archive_previews, gallery_previews, cleanup_gallery`, `templates/settings.html (Gallery tab)`, `tests/test_gallery_history.py` |
+
+---
+
 ### 3.2 Non-Functional Requirements (NFR)
 
 #### NFR-001: Multi-Architecture Support
@@ -727,6 +745,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-029 | providers.py:ComfyUIDirectProvider | Test | Implemented |
 | FR-030 | providers.py:resolve_prompt_variables | Test | Implemented |
 | FR-031 | app.py:generation_status, providers.py:GenerationTracker | Test | Implemented |
+| FR-032 | app.py, templates/settings.html, tests/test_gallery_history.py | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |

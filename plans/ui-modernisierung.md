@@ -1,7 +1,7 @@
 # UI-Modernisierung – „Apple-Grade" Evolutionsstufe
 
-> **Status:** Plan / nicht begonnen
-> **Betreff:** `epf-eink-addon/templates/settings.html` (aktuell ~1 220 Zeilen, Einseiter)
+> **Status:** ✅ **CLOSED** — Phasen 1–5 umgesetzt (`85a0918`, Release **2.1.0**; Nacharbeiten **2.1.1** = stray `)` im Script, **2.1.2** = Gallery-Reader-Dateinamen). Phase 6: L0 ✅ **158+5** (Lauf 2026-11-15), L3 ✅ (Produktions-Image, Report §6.2 — Seite rendert, 3 Tabs, Health-Feld/Tooltip), **Browser-Optik-Check (Light/Dark/Mobil/CSP) steht aus**. Siehe §1.3.
+> **Betreff:** `epf-eink-addon/templates/settings.html` (aktuell ~1 430 Zeilen, Einseiter)
 > **Ziel:** Komplett neues visuelles Erscheinungsbild – ruhig, präzise, Apple-Website-inspiriert –
 > umgesetzt als **inkrementelle Phasen**, jeweils eigenständig deploy- & test-bar.
 
@@ -91,6 +91,21 @@ Line-height: 1.6 (body), 1.2 (headings). Letter-spacing: `-0.01em` (display), `0
 ```
 
 All animations use `transform` + `opacity` only (GPU-composited, no layout thrash).
+
+---
+
+## 1.3 · Umsetzungs-Status je Phase (Stand 2026-11-15)
+
+| Phase | Status | Beleg / Abweichung |
+|-------|--------|--------------------|
+| **1 — Tokens & Foundation** | ✅ umgesetzt | `:root`/`[data-theme="dark"]`-Token-Blöcke, Base-Styles, `.glass`-Utility (`settings.html` L158), Inline-SVG-Icon-Set (23×) |
+| **2 — Layout & Navigation** | ✅ umgesetzt | Sticky-Frosted-Header, 3 Tabs (`data-tab=dashboard|configuration|gallery`), `fadeIn`-Panel-Animation, Hero, Next-Photo-Panels, Quick-Actions, Sub-Cards, Gallery-Grid, Mobile-Breakpoint 768 px. **Abweichung:** iOS-*Segmented Control* für die Quell-Wahl ist **nicht** gebaut — es bleibt das `<select id="image_source">` (L761) |
+| **3 — Komponenten-Restyle** | ✅ umgesetzt | Inputs/Sliders (`::-webkit-slider-thumb`)/Buttons/Chips/Modals/Toasts/Cards/Error-Banner (`border-left: 3px`, L677)/Footer folgen dem Token-System |
+| **4 — Dynamische Akzentfarbe** | ✅ umgesetzt | `extractAccentFromPhoto()` (L1054) + Trigger nach Foto-Update (L1184), `@property`-Registration für `--accent` |
+| **5 — Micro-Interactions** | ✅ umgesetzt (reduziert) | Keyframes `fadeIn`/`pulse`/`shimmer`/`spin`, `prefers-reduced-motion`-Block (L626). **Nicht umgesetzt:** gestaffelte Scroll-Reveal-Animation (IntersectionObserver) und Value-Bubble am Slider |
+| **6 — QA, Regression, Release** | 🔶 teils offen | L0: **158 passed / 5 skipped** (2026-11-15) ✅ · L3 **Server-Seite** ✅ 2026-11-15 (Produktions-Image + echtes Immich — Seite rendert, 3 Tabs, Health-Feld/Tooltip, Report §6.2) · Version-Bump ✅ (`config.yaml`) · Docs/CHANGELOG ✅ · **offen:** Browser-Optik (Chrome/Firefox/Safari, Light+Dark, 375/768/1440 px, CSP nur `self`, Theme-Persistenz, 3 Akzent-Wechsel) — braucht eine laufende HA-Instanz |
+
+> Die Checkboxen in §2 bleiben als Planungs-Historie stehen; maßgeblich ist diese Tabelle.
 
 ---
 

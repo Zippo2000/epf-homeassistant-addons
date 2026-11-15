@@ -1,7 +1,7 @@
 # Findings — Settings-UI (Footer / Header)
 
 **Repo:** `Zippo2000/epf-homeassistant-addons` · Add-on `epf-eink-addon` · **Stand:** v2.0.2
-**Status:** `ALMOST CLOSED` — Phasen A ✅ (`05c0f23` + `9328979`), B ✅ (`9fce0e9`), C ✅ (Doku + Report 2.0.3) — verbleibt: **L3-Feld-Smokes** bei echter HA (Header ×2 Quellen, Footer) · **Sprache:** Deutsch · **Bezogen auf:** [`findings-14.md`](findings-14.md) (separater §14-Track, dort `CLOSED`)
+**Status:** `ALMOST CLOSED` — Phasen A ✅ (`05c0f23` + `9328979`), B ✅ (`9fce0e9`), C ✅ (Doku + Report, jetzt **2.2.1-Baseline**) — **L3 teils erbracht am 2026-11-15** (Produktions-Image + echtes Immich: Footer ✅, Source-Feld/Tooltip ✅). Verbleibt: **Browser-Optik-Check** (Light/Dark/Mobil/CSP) + **L3 zweite Quelle** (ComfyUI) + L4-Feld · **Sprache:** Deutsch · **Bezogen auf:** [`findings-14.md`](findings-14.md) (separater §14-Track, dort `CLOSED`)
 
 > **Lesetipp:** Dieses File enthält **zwei** offene UI-Findings. Beide wurden gegen den
 > aktuellen Code (v2.0.2) verifiziert. Jeder Abschnitt: *Beobachtung → Ursache → Plan →
@@ -76,9 +76,11 @@ beantwortet **mit einer Lüge** (Startzeit ≠ Buildzeit).
 ### 1.5 Verifizierung (Gate)
 
 - [x] **Test-Suite:** `docker run --rm epf-eink-tests:local /run.sh` → **141 passed / 5 skipped** (inkl. neuem `TestFR017BFooterBuildInfo`), 2026-09-17.
+- [x] **L0 neu gefahren am 2026-11-15** (Image aus `Dockerfile.test`, Code v2.2.1): **158 passed / 5 skipped** · Exit 0 — inkl. der 17 Galerie-Fälle.
+- [x] **L1 (Live-Tier, echtes Immich) am 2026-11-15:** `sh run-live-tests.sh` → **5 passed** (Album-Auflösung, paged `search/metadata`, Original-Download, Provider `fetch_image()`, `/download` end-to-end).
 - [x] **Produktions-Image ohne Args** (`epf-eink:local`): `import app` → `2.0.2 | 2026-09-17 20:08:49 UTC` — Version aus dem Manifest, Datum = echter Build-Zeitpunkt (`.build_stamp`); Startup-Log identisch.
 - [x] **Produktions-Image mit Override** (`--build-arg ADDON_VERSION=9.9.9-override`): Override schlägt Manifest (`9.9.9-override`).
-- [ ] **Manuell (L3):** Settings-UI in echter HA → Footer zeigt **Manifest-Version** + **heutiges** UTC-Build-Datum. *(steht aus — Add-on nach dem 2.0.2-Commit/Push neu bauen; zusammen mit den Finding-2-Smokes)*
+- [x] **Manuell (L3):** Settings-UI in echter HA → Footer zeigt **Manifest-Version** + **heutiges** UTC-Build-Datum. ✅ **erbracht 2026-11-15** am Produktions-Image (v2.2.1, echter `Dockerfile`-Build): Footer `v2.2.1 | Built: 2026-11-15 … UTC`, Startup-Log identisch — Manifest-Version + echter Build-Zeitpunkt, nichts handgepflegt. (Browser-Optik-Check in echter HA steht separat aus.)
 
 ---
 
@@ -142,7 +144,7 @@ Rechts oben in der Settings-Seite steht neben Akku-Datum und Theme-Button ein In
 ### 2.4 Verifizierung (Gate)
 
 - [x] `run.test.sh` → Exit 0 (inkl. neuer `source`-Assertion) — **140 passed, 5 skipped** (2026-09-17, Image `epf-eink-tests:local`).
-- [ ] **L3-Smoke (manuell):** Settings-UI mit `image_source=immich` → Indikator zeigt „Immich online“ (bzw. „Immich unreachable“ bei gestopptem Immich); Tooltip korrekt. *(steht noch aus — braucht echte HA-Instanz)*
+- [x] **L3-Smoke (manuell):** Settings-UI mit `image_source=immich` → Indikator zeigt „Immich online“ (bzw. „Immich unreachable“ bei gestopptem Immich); Tooltip korrekt. ✅ **API-/HTML-Seite erbracht 2026-11-15** (Produktions-Image + echtes Immich): `/health` liefert `source=Immich`, `source_status=connected`, `status=healthy`; Tooltip-Text und serverseitiger Init-Platzhalter („Image source: …“) sitzen im gerendeten HTML. **Rest:** visuelles Label im Browser (erster Poll) noch nie mit Auge gesehen.
 - [ ] **L3-Smoke (2. Quelle):** `image_source=comfyui_ha` (oder Direct) → Label wechselt entsprechend → beweist Quell-agnostik. *(steht noch aus — braucht echte HA-Instanz)*
 
 ---
@@ -182,4 +184,4 @@ Ein Finding ist **done**, wenn: (a) alle §-Verifizierungs-Boxen (1.5 bzw. 2.4) 
 | 2026-09-17 | A | 2+Rule | Language unified to **English** across `epf-eink-addon/` (UI strings + Dockerfile comments); rule anchored in `AGENTS.md` (“everything inside `epf-eink-addon/` is English”) | ✅ `9328979` |
 | – | B | 1 | In-image-Derivation: Version ← Manifest (oder ARG-Override), Datum ← `.build_stamp`; **141/141 grün**; Prod-Smoke: `2.0.2 | 2026-09-17 20:08:49 UTC` + Override-Test | ✅ `9fce0e9` |
 | 2026-09-17 | C | 1+2 | `AGENTS.md`-Gotchas nach §14 aufgebereinigt + Footer-Mechanismus-Entry; README „Building & Releasing“; `ANALYSE.md` §8-Header; `test_report_aspice.md` auf **141/146** (2.0.3); CHANGELOG 2.0.3; **Tag v2.0.2** (`614ab9c`) + v2.0.3; **Push nach origin/main** (damit die L3-Feld-Smokes lauffähig sind) | ✅ `614ab9c` + C-Commit |
-| – | L3 | 1+2 | Feld-Smokes in echter HA: Header „Immich online/unreachable“ (+ 2. Quelle), Footer Manifest-Version + Build-Datum | ☐ *(nach 2.0.3-Update in HA)* |
+| – | L3 | 1+2 | Feld-Smokes in echter HA: Header „Immich online/unreachable“ (+ 2. Quelle), Footer Manifest-Version + Build-Datum | 🔶 **2026-11-15 zum Teil erbracht** am Produktions-Image (echter Build + echtes Immich): Footer ✅, `/health`-Feld `source`/Tooltip ✅ · **offen:** Browser-Optik (Light/Dark/Mobil/CSP) + **zweite Quelle** (ComfyUI) |
