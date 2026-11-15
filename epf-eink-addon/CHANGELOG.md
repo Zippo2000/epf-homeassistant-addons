@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.1] - 2026-11-15
+
+### Fixed
+- **A settings field that existed twice silently dropped one of its values.** The settings page is a
+  single form, and the "ComfyUI via Home Assistant" and "ComfyUI Direct" cards each rendered their own
+  prompt / negative prompt / width / height / seed / max-generations input under the **same** `name`.
+  The browser submits both — a `display: none` card is still a submitted card — and Flask keeps the
+  first occurrence, so an edit made in the second card never reached the runtime YAML. Observed in the
+  field: a seed change from `0` to `-1` saved "successfully" and did nothing, and ComfyUI kept
+  replaying the previous image from cache.
+
+### Changed
+- Those six settings are rendered **once**, in a shared **ComfyUI — Common Settings** card that appears
+  for both ComfyUI sources. The two source cards keep only what is genuinely source-specific
+  (`ha_url` / `comfyui_entity_id` versus `comfyui_direct_url` / the workflow slots /
+  `comfyui_checkpoint`) and point at the shared card. Field names and YAML keys are unchanged — this
+  is a rendering fix, not a schema change.
+- The seed field now says what a fixed seed means in practice: an unchanged prompt plus a fixed seed
+  makes every run byte-identical, and ComfyUI then answers from cache with the previous file.
+- Regression tests: the rendered form must not contain any field name twice (this guard would have
+  caught the bug in 2.0.x), the shared block renders each field exactly once, and a direct-source save
+  round-trips prompt / dimensions / seed / daily maximum into the runtime YAML.
+
 ## [2.4.0] - 2026-11-15
 
 ### Added

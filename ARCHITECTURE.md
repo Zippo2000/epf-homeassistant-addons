@@ -218,6 +218,11 @@ Size ≈ **576 KB** of text per refresh.
    `strength`) and are **not** renamed — `settings()` resolves canonical-name-first with the short name
    as a legacy alias (`form_field()`). Keep that alias: stored configs and old bookmarks post it. The
    page labels each card with its channel and echoes the env-only secrets as read-only status.
+   Since 2.4.1 the form also has **one field name per config key** — it is a single `<form>`, so a name
+   used twice means one of the two values is silently dropped (the browser submits both, Flask keeps the
+   first). The six settings both ComfyUI sources share (prompt, negative prompt, width/height, seed,
+   daily maximum) are therefore rendered once, in a **ComfyUI — Common Settings** card, and each source
+   card keeps only its own fields. A regression test asserts no rendered name appears twice.
    Since 2.4.0 the same applies to the **named ComfyUI workflow list**: it lives in the runtime YAML,
    the add-on options (`comfyui_workflows`, `comfyui_active_workflow`) only seed the first start, and
    a POST that carries no workflow fields must never wipe a stored list.

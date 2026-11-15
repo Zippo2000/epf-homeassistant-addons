@@ -51,6 +51,10 @@ This add-on provides a Flask server that:
 
 ### ComfyUI via Home Assistant (image_source: comfyui_ha)
 
+> **Shared settings:** prompt, negative prompt, width/height, seed and the daily maximum apply to
+> **both** ComfyUI sources. The settings page renders them once, in the **ComfyUI — Common Settings**
+> card (since 2.4.1); the options below are the seed/fallback read at first start.
+
 **ha_url** (required)
 - URL to your Home Assistant instance
 - Example: `http://192.168.1.100:8123`
@@ -81,7 +85,8 @@ This add-on provides a Flask server that:
 **comfyui_seed**
 - Random seed for generation
 - `-1` = random (different image each time)
-- Fixed number = reproducible results
+- Fixed number = reproducible results — but if nothing else in the graph changes either, every run is
+  byte-identical and ComfyUI answers from its cache with the previous file (nothing new appears)
 - Default: `-1`
 
 **comfyui_max_generations**
@@ -95,6 +100,9 @@ This add-on provides a Flask server that:
 - Also editable on the settings page; the value from that file wins, this option is the seed/fallback
 
 ### ComfyUI Direct - Expert Mode (image_source: comfyui_direct)
+
+> **Shared settings:** prompt, negative prompt, width/height, seed and the daily maximum live in the
+> **ComfyUI — Common Settings** card on the settings page — each of them exists exactly once there.
 
 **comfyui_direct_url** (required)
 - Direct URL to your ComfyUI server
@@ -131,7 +139,9 @@ dropdown: the built-in workflow, or any named slot. Slots 1-4 take:
 | Node mapping | For graphs whose text node is not a plain `CLIPTextEncode` node — Qwen-Image, for example, keeps the prompt in a custom node's `prompt` input: node id + input name to write to |
 | Steps / CFG / Sampler / Scheduler | Sampling for this workflow; empty keeps the values inside the graph |
 
-Dimensions and seed are injected as before. Selecting a workflow and saving applies **immediately**
+Dimensions and seed come from the shared **ComfyUI — Common Settings** card and are injected as
+before (a node the add-on cannot reach — one whose value arrives through a link — keeps its own).
+Selecting a workflow and saving applies **immediately**
 (no add-on restart). If the selected name has no slot any more, generation falls back to the
 built-in workflow and says so in the log.
 

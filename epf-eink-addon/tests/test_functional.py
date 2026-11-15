@@ -9,8 +9,10 @@ No real Home Assistant or Immich server is required.
 import os
 import io
 import json
+import re
 import time
 import requests
+from collections import Counter
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 from PIL import Image
@@ -1367,6 +1369,51 @@ class TestFR021SettingsVocabulary:
         assert html.count('&mdash; not set') == 1
         assert 'name="immich_api_key"' not in html
         assert 'name="ha_api_token"' not in html
+
+    def test_form_field_names_are_unique(self, client_with_mocks):
+        """2.4.1 regression guard: the single rendered form must not name any field twice.
+
+        Two controls sharing one name are both submitted, and Flask keeps only the first,
+        so the second card's value was silently dropped (this is what made a seed change
+        on the ComfyUI-Direct card vanish).
+        """
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        names = re.findall(r'<(?:input|textarea|select)[^>]*name="([^"]+)"', html)
+        duplicates = sorted(name for name, count in Counter(names).items() if count > 1)
+        assert duplicates == [], f"duplicate form field names: {duplicates}"
+
+    def test_common_comfyui_block_is_single_sourced(self, client_with_mocks):
+        """The shared ComfyUI settings render exactly once, in one visible card."""
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'id="comfyuiCommonConfig"' in html
+        assert 'ComfyUI &mdash; Common Settings' in html
+        for name in ('comfyui_prompt', 'comfyui_negative_prompt', 'comfyui_width',
+                     'comfyui_height', 'comfyui_seed', 'comfyui_max_generations'):
+            assert html.count(f'name="{name}"') == 1, f"{name} must appear exactly once"
+        # the duplicate-id clones from the two source cards are gone
+        for old_id in ('comfyui_prompt_direct', 'comfyui_seed_direct', 'comfyui_width_direct'):
+            assert f'id="{old_id}"' not in html
+
+    def test_common_fields_survive_a_direct_source_save(self, client_with_mocks, app_module):
+        """The field-edit users make for the direct source has to reach the YAML."""
+        client_with_mocks.post('/', data={
+            'image_source': 'comfyui_direct',
+            'comfyui_direct_url': 'http://comfyui.common:8188',
+            'comfyui_prompt': 'a red fox at {time_of_day}',
+            'comfyui_negative_prompt': 'blurry, watermark',
+            'comfyui_width': '1024',
+            'comfyui_height': '768',
+            'comfyui_seed': '-1',
+            'comfyui_max_generations': '12',
+        }, follow_redirects=True)
+        comfyui = app_module.current_config['comfyui']
+        assert comfyui['direct_url'] == 'http://comfyui.common:8188'
+        assert comfyui['prompt'] == 'a red fox at {time_of_day}'
+        assert comfyui['negative_prompt'] == 'blurry, watermark'
+        assert comfyui['width'] == 1024
+        assert comfyui['height'] == 768
+        assert comfyui['seed'] == -1
+        assert comfyui['max_generations_per_day'] == 12
 
 
 # ============================================================

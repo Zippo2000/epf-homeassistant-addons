@@ -811,34 +811,7 @@ footer {
                             <div class="field-status">{% if runtime_status and runtime_status.ha_api_token_set %}&#10003; set &mdash; read from the add-on configuration at add-on start{% else %}&mdash; not set &mdash; set it in the add-on configuration (HA) and restart{% endif %}</div>
                         </div>
                         <div class="form-group">
-                            <label for="comfyui_prompt">Prompt:</label>
-                            <textarea id="comfyui_prompt" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape at {time_of_day}...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
-                            <small class="small-text">Variables: {time_of_day}, {weather}, {season}, {day_of_week}, {month}, {random_element}</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
-                            <textarea id="comfyui_negative_prompt" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text, watermark">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Dimensions:</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                <div>
-                                    <label for="comfyui_width" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
-                                    <input type="text" id="comfyui_width" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
-                                </div>
-                                <div>
-                                    <label for="comfyui_height" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
-                                    <input type="text" id="comfyui_height" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_seed">Seed (-1 = Random):</label>
-                            <input type="text" id="comfyui_seed" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_max_generations">Max Generations per Day:</label>
-                            <input type="text" id="comfyui_max_generations" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
+                            <small class="small-text">Prompt, negative prompt, dimensions, seed and the daily limit are <strong>shared</strong> by both ComfyUI sources &mdash; edit them once in the &quot;ComfyUI &mdash; Common Settings&quot; card below.</small>
                         </div>
                     </div>
 
@@ -850,33 +823,7 @@ footer {
                             <input type="text" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui:8188">
                         </div>
                         <div class="form-group">
-                            <label for="comfyui_prompt">Prompt:</label>
-                            <textarea id="comfyui_prompt_direct" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
-                            <textarea id="comfyui_negative_prompt_direct" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Dimensions:</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                <div>
-                                    <label for="comfyui_width_direct" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
-                                    <input type="text" id="comfyui_width_direct" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
-                                </div>
-                                <div>
-                                    <label for="comfyui_height_direct" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
-                                    <input type="text" id="comfyui_height_direct" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_seed_direct">Seed (-1 = Random):</label>
-                            <input type="text" id="comfyui_seed_direct" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_max_generations_direct">Max Generations per Day:</label>
-                            <input type="text" id="comfyui_max_generations_direct" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
+                            <small class="small-text">Prompt, negative prompt, dimensions, seed and the daily limit are <strong>shared</strong> by both ComfyUI sources &mdash; edit them once in the &quot;ComfyUI &mdash; Common Settings&quot; card below.</small>
                         </div>
                         <div class="form-group">
                             <label for="comfyui_workflow_json">Workflow JSON (Optional, legacy single field):</label>
@@ -972,6 +919,44 @@ footer {
                             <label for="comfyui_checkpoint">Checkpoint (Optional):</label>
                             <input type="text" id="comfyui_checkpoint" name="comfyui_checkpoint" value="{{ config.get('comfyui', {}).get('checkpoint', '') }}" placeholder="auto-detect - first checkpoint on the server">
                             <small class="small-text">Leave empty to auto-detect from the server. Only used by the built-in workflow; a custom workflow JSON carries its own model node.</small>
+                        </div>
+                    </div>
+
+                    <!-- ComfyUI Common Settings (shared by both ComfyUI sources; one field == one config key) -->
+                    <div class="card" id="comfyuiCommonConfig" style="display: none;">
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> ComfyUI &mdash; Common Settings<span class="channel-badge">runtime YAML</span></div>
+                        <small class="small-text" style="display:block;margin-bottom:0.75rem;">These values apply to <strong>both</strong> ComfyUI sources (via Home Assistant and direct). Each one exists exactly once.</small>
+                        <div class="form-group">
+                            <label for="comfyui_prompt">Prompt:</label>
+                            <textarea id="comfyui_prompt" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape at {time_of_day}...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
+                            <small class="small-text">Variables: {time_of_day}, {weather}, {season}, {day_of_week}, {month}, {random_element}. A named workflow can override it per slot.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
+                            <textarea id="comfyui_negative_prompt" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text, watermark">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Dimensions:</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div>
+                                    <label for="comfyui_width" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
+                                    <input type="text" id="comfyui_width" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
+                                </div>
+                                <div>
+                                    <label for="comfyui_height" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
+                                    <input type="text" id="comfyui_height" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
+                                </div>
+                            </div>
+                            <small class="small-text">Only applied to nodes the add-on can reach (plain number inputs); a graph that sizes itself through a link keeps its own value.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_seed">Seed (-1 = Random):</label>
+                            <input type="text" id="comfyui_seed" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
+                            <small class="small-text">A fixed seed plus an unchanged prompt makes every run byte-identical &mdash; ComfyUI then answers from cache and returns the previous file. Use -1 if you want a new picture per run.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_max_generations">Max Generations per Day:</label>
+                            <input type="text" id="comfyui_max_generations" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
                         </div>
                     </div>
 
@@ -1159,9 +1144,11 @@ footer {
             var immichConfig = safeGet('immichConfig');
             var comfyuiHAConfig = safeGet('comfyuiHAConfig');
             var comfyuiDirectConfig = safeGet('comfyuiDirectConfig');
+            var comfyuiCommonConfig = safeGet('comfyuiCommonConfig');
             if (immichConfig) immichConfig.style.display = source.value === 'immich' ? 'block' : 'none';
             if (comfyuiHAConfig) comfyuiHAConfig.style.display = source.value === 'comfyui_ha' ? 'block' : 'none';
             if (comfyuiDirectConfig) comfyuiDirectConfig.style.display = source.value === 'comfyui_direct' ? 'block' : 'none';
+            if (comfyuiCommonConfig) comfyuiCommonConfig.style.display = (source.value === 'comfyui_ha' || source.value === 'comfyui_direct') ? 'block' : 'none';
         }
 
         // Theme Toggle

@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~190 tests); no network |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~195 tests); no network |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -223,7 +223,8 @@ mirrors the requirement catalog in `docs/requirements_specification_aspice.md`:
   filesystem redirected to `tmp_path`) and `client_with_mocks` (Flask test-client with
   `responses`-mocked Immich: ping/albums/album-assets/asset-original).
 - `tests/test_functional.py` — **FR-001…FR-033** (album/asset/selection/download/convert/
-  scale+dither/overlay/preview/**delivery**/prepare/serve, the settings vocabulary (FR-021) and the
+  scale+dither/overlay/preview/**delivery**/prepare/serve, the settings vocabulary (FR-021, incl. the
+  2.4.1 "no rendered field name twice" guard and the shared-ComfyUI-block round trip) and the
   workflow-selection form (FR-033)).
 - `tests/test_nonfunctional.py` — **NFR** (health, logging, response-time, memory, theme,
   typing) + **IFR** (Immich header, ESP32 interface, ingress ProxyFix, port) + **SEC** + **PER**.
@@ -319,7 +320,7 @@ pass counts.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **192 offline + 8 live = 200**-case suite, **2.4.0**, re-counted 2026-11-15 — L0, L1 against a real
+  **195 offline + 8 live = 203**-case suite, **2.4.1**, re-counted 2026-11-15 — L0, L1 against a real
   Immich *and* a real ComfyUI, and the L3 production-image smoke all re-run green). If a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
   the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, and the
@@ -327,6 +328,12 @@ pass counts.**
 - **Fonts for the date overlay.** The prod `Dockerfile` installs `fonts-dejavu-core` (14.7)
   so the date overlay renders with the intended typeface; without it Pillow would silently fall
   back to the tiny bitmap default.
+- **The settings form has one field name per config key (2.4.1).** It is a single `<form>`, so a name
+  used twice means the browser submits both values and Flask keeps the first, and the second card's
+  edit vanishes without an error (that is how a seed change did nothing on a real install). The settings
+  the two ComfyUI sources share are rendered once, in the **ComfyUI - Common Settings** card; the guard
+  is the test that no rendered field name appears twice. A duplicated *id* is harmless when the two
+  elements live in mutually exclusive Jinja branches.
 - **ComfyUI workflow selection is YAML-owned (2.4.0).** The runtime YAML carries
   `comfyui.workflows` (a list of named entries) plus `comfyui.active_workflow`; the settings page
   shows a dropdown and four slots, and `parse_workflow_slots()` rebuilds the whole list from what the
