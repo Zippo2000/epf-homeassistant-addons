@@ -1278,9 +1278,9 @@ class TestFR026UISettingsImprovements:
         """Slider output elements have id attributes for robust lookup."""
         response = client_with_mocks.get('/')
         html = response.data.decode('utf-8')
-        assert 'id="enhancedValue"' in html
+        assert 'id="color_enhanceValue"' in html
         assert 'id="contrastValue"' in html
-        assert 'id="strengthValue"' in html
+        assert 'id="dithering_strengthValue"' in html
 
     def test_polling_constants_defined(self, client_with_mocks):
         """JavaScript defines polling intervals as constants."""
@@ -1298,3 +1298,71 @@ class TestFR026UISettingsImprovements:
 
 # ============================================================
 # TC-FR-025: Health Check Indicator in UI
+
+
+# ============================================================
+# TC-FR-021 (2.3.2): settings vocabulary, channel visibility, entity id
+# ============================================================
+
+class TestFR021SettingsVocabulary:
+    """The settings page speaks the add-on-option vocabulary (form name == option key)."""
+
+    def test_canonical_field_names_render(self, client_with_mocks):
+        """Form fields carry the add-on-option names; the old short names are gone."""
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        for name in ('immich_url', 'album_name', 'rotation_angle',
+                     'color_enhance', 'dithering_strength', 'comfyui_entity_id'):
+            assert f'name="{name}"' in html
+        assert 'name="url"' not in html
+        assert 'name="album"' not in html
+
+    def test_channel_badge_and_precedence_note_render(self, client_with_mocks):
+        """The page says which channel is which instead of leaving it to the docs."""
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'channel-badge' in html
+        assert 'runtime YAML' in html
+        assert 'needs an add-on restart' in html
+
+    def test_post_with_canonical_names_writes_yaml(self, client_with_mocks, app_module):
+        """Posting the canonical names lands in the same runtime-YAML keys as before."""
+        client_with_mocks.post('/', data={
+            'image_source': 'immich',
+            'immich_url': 'http://immich.canonical:2283',
+            'album_name': 'canonical-album',
+            'rotation_angle': '90',
+            'color_enhance': '1.5',
+            'dithering_strength': '0.7',
+            'comfyui_entity_id': 'camera.canonical',
+        }, follow_redirects=True)
+        cfg = app_module.current_config
+        assert cfg['immich']['url'] == 'http://immich.canonical:2283'
+        assert cfg['immich']['album'] == 'canonical-album'
+        assert cfg['immich']['rotation'] == 90
+        assert cfg['immich']['enhanced'] == 1.5
+        assert cfg['immich']['strength'] == 0.7
+        assert cfg['comfyui']['entity_id'] == 'camera.canonical'
+
+    def test_post_with_legacy_names_still_works(self, client_with_mocks, app_module):
+        """Stored configs and older callers may still post the pre-2.3.2 names."""
+        client_with_mocks.post('/', data={
+            'image_source': 'immich',
+            'url': 'http://immich.legacy:2283',
+            'album': 'legacy-album',
+            'rotation': '180',
+            'enhanced': '2.0',
+            'strength': '0.5',
+        }, follow_redirects=True)
+        cfg = app_module.current_config
+        assert cfg['immich']['url'] == 'http://immich.legacy:2283'
+        assert cfg['immich']['album'] == 'legacy-album'
+        assert cfg['immich']['rotation'] == 180
+
+    def test_secret_status_rows_reflect_env(self, client_with_mocks, app_module, monkeypatch):
+        """Secrets are echoed as read-only status, never as editable inputs."""
+        monkeypatch.setenv('IMMICH_API_KEY', 'test-api-key-12345')
+        monkeypatch.delenv('HA_API_TOKEN', raising=False)
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert html.count('&#10003; set') == 1
+        assert html.count('&mdash; not set') == 1
+        assert 'name="immich_api_key"' not in html
+        assert 'name="ha_api_token"' not in html

@@ -406,6 +406,8 @@ input[type="text"]:focus, select:focus, textarea:focus {
 }
 textarea { resize: vertical; line-height: 1.5; }
 .small-text { font-size: var(--fs-caption); color: var(--text-tertiary); margin-top: 0.3rem; display: block; line-height: 1.4; }
+.channel-badge { display: inline-block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-tertiary); }
+.field-status { font-size: var(--fs-body); color: var(--text-secondary); padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); }
 /* Slider */
 .slider-container { display: flex; align-items: center; gap: 0.75rem; }
 .slider-container input[type="range"] {
@@ -755,7 +757,8 @@ footer {
         <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
                     <!-- Image Source Selection -->
                     <div class="card" style="margin-bottom: 1rem;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Image Source</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Image Source<span class="channel-badge">runtime YAML</span></div>
+                        <p class="small-text" style="margin-top: 0; margin-bottom: var(--space-md);">Fields marked <span class="channel-badge">runtime YAML</span> are saved by this page and hot-reload. Fields marked <span class="channel-badge">HA option</span> are seeded from the add-on configuration on first start &mdash; afterwards this page wins, and a change in the add-on configuration needs an add-on restart. Secrets are never stored in this file. Log level: {{ runtime_status.log_level if runtime_status else 'info' }} (HA option).</p>
                         <div class="form-group">
                             <label for="image_source">Source:</label>
                             <select id="image_source" name="image_source" onchange="updateSourceVisibility()">
@@ -771,22 +774,35 @@ footer {
                     <div class="card" id="immichConfig">
                         <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Immich Server</div>
                         <div class="form-group">
-                            <label for="url">Immich Server URL:</label>
-                            <input type="text" id="url" name="url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
+                            <label for="immich_url">Immich Server URL:</label>
+                            <input type="text" id="immich_url" name="immich_url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
                         </div>
                         <div class="form-group">
-                            <label for="album">Album Name:</label>
-                            <input type="text" id="album" name="album" value="{{ config['immich']['album'] }}" placeholder="eink" required>
+                            <label for="album_name">Album Name:</label>
+                            <input type="text" id="album_name" name="album_name" value="{{ config['immich']['album'] }}" placeholder="my-album" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Immich API Key <span class="channel-badge">HA option</span></label>
+                            <div class="field-status">{% if runtime_status and runtime_status.immich_api_key_set %}&#10003; set &mdash; read from the add-on configuration at add-on start{% else %}&mdash; not set &mdash; set it in the add-on configuration (HA) and restart{% endif %}</div>
                         </div>
                     </div>
 
                     <!-- ComfyUI HA Config -->
                     <div class="card" id="comfyuiHAConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> ComfyUI via Home Assistant</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> ComfyUI via Home Assistant<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
                             <label for="ha_url">Home Assistant URL:</label>
                             <input type="text" id="ha_url" name="ha_url" value="{{ config.get('comfyui', {}).get('ha_url', '') }}" placeholder="http://homeassistant:8123">
                             <small class="small-text">URL to your Home Assistant instance</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="comfyui_entity_id">ComfyUI Entity ID:</label>
+                            <input type="text" id="comfyui_entity_id" name="comfyui_entity_id" value="{{ config.get('comfyui', {}).get('entity_id', '') }}" placeholder="camera.my_comfyui">
+                            <small class="small-text">Entity ID of the ComfyUI entity exposed by the Home Assistant <code>ai_task</code> integration</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Home Assistant Token <span class="channel-badge">HA option</span></label>
+                            <div class="field-status">{% if runtime_status and runtime_status.ha_api_token_set %}&#10003; set &mdash; read from the add-on configuration at add-on start{% else %}&mdash; not set &mdash; set it in the add-on configuration (HA) and restart{% endif %}</div>
                         </div>
                         <div class="form-group">
                             <label for="comfyui_prompt">Prompt:</label>
@@ -822,7 +838,7 @@ footer {
 
                     <!-- ComfyUI Direct Config -->
                     <div class="card" id="comfyuiDirectConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> ComfyUI Direct (Expert)</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> ComfyUI Direct (Expert)<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
                             <label for="comfyui_direct_url">ComfyUI Server URL:</label>
                             <input type="text" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui:8188">
@@ -869,10 +885,10 @@ footer {
 
                     <!-- Display Settings -->
                     <div class="card">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span> Display Settings</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span> Display Settings<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
-                            <label for="rotation">Rotation:</label>
-                            <select id="rotation" name="rotation">
+                            <label for="rotation_angle">Rotation:</label>
+                            <select id="rotation_angle" name="rotation_angle">
                                 {% for angle in [0, 90, 180, 270] %}
                                 <option value="{{ angle }}" {% if config['immich']['rotation']==angle %}selected{% endif %}>{{ angle }}&deg;</option>
                                 {% endfor %}
@@ -905,8 +921,8 @@ footer {
                         <div class="form-group">
                             <label>Color Enhancement:</label>
                             <div class="slider-container">
-                                <input type="range" id="enhanced" name="enhanced" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="updateSliderValue(this)">
-                                <span class="slider-value" id="enhancedValue">{{ config['immich']['enhanced'] }}</span>
+                                <input type="range" id="color_enhance" name="color_enhance" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="color_enhanceValue">{{ config['immich']['enhanced'] }}</span>
                             </div>
                         </div>
                         <div class="form-group">
@@ -919,15 +935,15 @@ footer {
                         <div class="form-group">
                             <label>Dithering Strength:</label>
                             <div class="slider-container">
-                                <input type="range" id="strength" name="strength" min="0" max="1" step="0.05" value="{{ config['immich']['strength'] }}" oninput="updateSliderValue(this)">
-                                <span class="slider-value" id="strengthValue">{{ config['immich']['strength'] }}</span>
+                                <input type="range" id="dithering_strength" name="dithering_strength" min="0" max="1" step="0.05" value="{{ config['immich']['strength'] }}" oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="dithering_strengthValue">{{ config['immich']['strength'] }}</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Power Management -->
                     <div class="card">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg></span> Power Management</div>
+                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg></span> Power Management<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
                             <label for="wakeup_interval">Wake-up Interval (minutes):</label>
                             <input type="text" id="wakeup_interval" name="wakeup_interval" value="{{ config['immich']['wakeup_interval'] }}">
@@ -963,7 +979,7 @@ footer {
                     </div>
 
                     <div class="card">
-                        <div class="card-title">Photo Gallery</div>
+                        <div class="card-title">Photo Gallery<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
                             <label for="gallery_max_count">Max entries (per pattern):</label>
                             <input type="text" id="gallery_max_count" name="gallery_max_count" value="{{ config.get('gallery', {}).get('max_count', 50) }}">
@@ -1344,8 +1360,8 @@ footer {
 
         function confirmReset() {
             var imageSource = safeGet('image_source');
-            var url = safeGet('url');
-            var album = safeGet('album');
+            var url = safeGet('immich_url');
+            var album = safeGet('album_name');
             var haUrl = safeGet('ha_url');
             var comfyuiPrompt = safeGet('comfyui_prompt');
             var comfyuiNegativePrompt = safeGet('comfyui_negative_prompt');
@@ -1355,14 +1371,14 @@ footer {
             var comfyuiMaxGens = safeGet('comfyui_max_generations');
             var comfyuiDirectUrl = safeGet('comfyui_direct_url');
             var comfyuiWorkflow = safeGet('comfyui_workflow_json');
-            var rotation = safeGet('rotation');
+            var rotation = safeGet('rotation_angle');
             var displayMode = safeGet('display_mode');
             var imageOrder = safeGet('image_order');
             var dithering = safeGet('dithering_method');
 
             if (imageSource) imageSource.value = 'immich';
             if (url) url.value = 'http://localhost';
-            if (album) album.value = 'eink';
+            if (album) album.value = '';
             if (haUrl) haUrl.value = '';
             if (comfyuiPrompt) comfyuiPrompt.value = '';
             if (comfyuiNegativePrompt) comfyuiNegativePrompt.value = '';

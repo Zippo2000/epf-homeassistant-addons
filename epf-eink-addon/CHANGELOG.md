@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.2] - 2026-11-15
+
+### Added
+- **`comfyui_entity_id` is editable on the settings page.** The `comfyui_ha` card had no field, so that
+  source could not be configured from the browser at all. The runtime YAML value wins; the add-on
+  option (env) stays the fallback for existing installs.
+- **The two configuration channels are labelled in the UI.** Card headers carry a `runtime YAML` /
+  `HA option` badge, `immich_api_key`, `ha_api_token` and `log_level` are echoed as read-only status
+  rows (they are never written to the YAML), and the page now states the precedence rule out loud:
+  add-on options seed the first start, afterwards this page wins and an option change needs a restart.
+
+### Changed
+- **The settings form speaks the add-on-option vocabulary**: the field names are now `immich_url`,
+  `album_name`, `rotation_angle`, `color_enhance` and `dithering_strength` (they were `url`, `album`,
+  `rotation`, `enhanced`, `strength`). The keys written to the runtime YAML are **unchanged** — the
+  POST handler tries the canonical name first and still accepts the old short name as a legacy alias,
+  so stored configs, bookmarks and existing automation keep working.
+- The Reset dialog no longer prefills the album with one developer's album name.
+
+### Tests
+- Five new cases in `tests/test_functional.py` (canonical names render, canonical POST, legacy-alias
+  POST, secret-status echo, badge/precedence note) and three in `tests/test_providers.py` (entity id
+  from config wins, env fallback, factory wiring). Offline suite: **174** cases green.
+
 ## [2.3.1] - 2026-11-15
 
 ### Added

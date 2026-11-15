@@ -195,6 +195,13 @@ This is the biggest footgun in the project:
   mounted YAML); it hot-reloads. No restart.
 - Changing a *secret* or *adding a new source* → change the **add-on option** (HA UI) and restart
   the add-on (options are read at container start, not hot-reloaded).
+- **One vocabulary (2.3.2):** settings-form field names equal the **add-on option** names, and
+  `settings()` reads them canonical-first with the pre-2.3.2 short name as a **legacy alias**
+  (`form_field()`). The **runtime-YAML keys are unchanged** (`url`, `album`, `rotation`, `enhanced`,
+  `strength`, nested `entity_id`) — do not "clean up" one side without the other, and keep the alias
+  (stored configs and old bookmarks post the short names). The page labels each card with its channel
+  (`runtime YAML` / `HA option`) and echoes the env-only secrets + `log_level` as read-only status —
+  keep that, it is the only place the user can see which channel a value came from.
 - The two files with `config.yaml` in the name are **different things**: the **add-on manifest**
   (`epf-eink-addon/config.yaml` — tracked, defines `options`/`schema`) vs the **runtime YAML**
   (`config/config.yaml` — git-ignored, created at runtime). Don't "refactor" one into the other.

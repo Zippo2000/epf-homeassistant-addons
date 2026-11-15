@@ -147,6 +147,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     'comfyui': {
         'ha_url': os.getenv('HA_URL', ''),
+        'entity_id': os.getenv('COMFYUI_ENTITY_ID', ''),
         'prompt': os.getenv('COMFYUI_PROMPT', ''),
         'negative_prompt': os.getenv('COMFYUI_NEGATIVE_PROMPT', ''),
         'width': int(os.getenv('COMFYUI_WIDTH', '800')),
@@ -667,6 +668,20 @@ logger.info("=" * 80)
 bp: Blueprint = Blueprint('main', __name__)
 
 # =============== ROUTES ===============
+def form_field(canonical: str, legacy: str, default: Any) -> Any:
+    """Read a settings form field by its canonical (add-on option) name.
+
+    `canonical` is the name used by the form and by the add-on options in config.yaml;
+    `legacy` is the short pre-2.3.2 form name that stored configs, older bookmarks and
+    existing tests may still post. The key written into the runtime YAML is unchanged
+    (see ARCHITECTURE.md, invariants).
+    """
+    value = request.form.get(canonical)
+    if value is None:
+        value = request.form.get(legacy)
+    return default if value is None else value
+
+
 @bp.route('/', methods=['GET', 'POST'])
 def settings() -> Any:
     global current_config, last_battery_voltage, last_battery_update
@@ -691,12 +706,12 @@ def settings() -> Any:
         new_config: Dict[str, Any] = {
             'image_source': request.form.get('image_source', current_config.get('image_source', 'immich')),
             'immich': {
-                'url': request.form.get('url', current_config['immich']['url']),
-                'album': request.form.get('album', current_config['immich']['album']),
-                'rotation': int(request.form.get('rotation', current_config['immich']['rotation'])),
-                'enhanced': float(request.form.get('enhanced', current_config['immich']['enhanced'])),
+                'url': form_field('immich_url', 'url', current_config['immich']['url']),
+                'album': form_field('album_name', 'album', current_config['immich']['album']),
+                'rotation': int(form_field('rotation_angle', 'rotation', current_config['immich']['rotation'])),
+                'enhanced': float(form_field('color_enhance', 'enhanced', current_config['immich']['enhanced'])),
                 'contrast': float(request.form.get('contrast', current_config['immich']['contrast'])),
-                'strength': float(request.form.get('strength', current_config['immich']['strength'])),
+                'strength': float(form_field('dithering_strength', 'strength', current_config['immich']['strength'])),
                 'display_mode': request.form.get('display_mode', current_config['immich']['display_mode']),
                 'image_order': request.form.get('image_order', current_config['immich']['image_order']),
                 'dithering_method': request.form.get('dithering_method', current_config['immich'].get('dithering_method', 'atkinson')),
@@ -708,6 +723,7 @@ def settings() -> Any:
             },
             'comfyui': {
                 'ha_url': request.form.get('ha_url', current_config.get('comfyui', {}).get('ha_url', '')),
+                'entity_id': request.form.get('comfyui_entity_id', current_config.get('comfyui', {}).get('entity_id', '')),
                 'prompt': request.form.get('comfyui_prompt', current_config.get('comfyui', {}).get('prompt', '')),
                 'negative_prompt': request.form.get('comfyui_negative_prompt', current_config.get('comfyui', {}).get('negative_prompt', '')),
                 'width': int(request.form.get('comfyui_width', current_config.get('comfyui', {}).get('width', 800))),
@@ -742,7 +758,13 @@ def settings() -> Any:
         battery_percentage=battery_percentage,
         battery_last_read=battery_last_read,
         addon_version=BUILD_VERSION,
-        build_timestamp=BUILD_TIMESTAMP
+        build_timestamp=BUILD_TIMESTAMP,
+        runtime_status={
+            # Read-only echo of the two channels that must never land in the YAML.
+            'immich_api_key_set': bool(os.getenv('IMMICH_API_KEY', '')),
+            'ha_api_token_set': bool(os.getenv('HA_API_TOKEN', '')),
+            'log_level': LOG_LEVEL,
+        }
     )
 
 @bp.route('/health', methods=['GET', 'HEAD'])

@@ -199,6 +199,12 @@ Size ≈ **576 KB** of text per refresh.
 1. **Config is two-channel** (env-seeded defaults + runtime YAML). Secrets ⇒ env only; photo/display
    settings ⇒ the mounted `config/config.yaml` (hot-reloaded). Changing a source or a secret ⇒
    **change the add-on option + restart**; the web UI does **not** write secrets.
+   Since 2.3.2 the settings form uses the **same names as the add-on options** (`immich_url`,
+   `album_name`, `rotation_angle`, `color_enhance`, `dithering_strength`, `comfyui_entity_id`, …); the
+   keys inside the runtime YAML are the historical short ones (`url`, `album`, `rotation`, `enhanced`,
+   `strength`) and are **not** renamed — `settings()` resolves canonical-name-first with the short name
+   as a legacy alias (`form_field()`). Keep that alias: stored configs and old bookmarks post it. The
+   page labels each card with its channel and echoes the env-only secrets as read-only status.
 2. **One active provider at a time**, chosen by `image_source` and rebuilt by `reset_provider()` on
    every config change. `/health` and `/api/generation-status` are source-agnostic in that they
    interrogate whichever provider is active.

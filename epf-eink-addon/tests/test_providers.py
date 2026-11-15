@@ -344,6 +344,60 @@ class TestComfyUIHAProvider:
 # ComfyUIDirectProvider Tests
 # ============================================================
 
+    @responses.activate
+    def test_entity_id_from_config_wins_over_env(self, tmp_path, monkeypatch):
+        """2.3.2: the entity id is a normal setting; the env seed is only a fallback."""
+        monkeypatch.setenv('COMFYUI_ENTITY_ID', 'camera.from_env')
+        ha_url = 'http://mock-ha.local:8123'
+        responses.add(
+            responses.POST,
+            f'{ha_url}/api/services/ai_task/generate_image',
+            json=self._make_ha_response(create_test_jpeg_bytes()),
+            status=200,
+        )
+        provider = ComfyUIHAProvider(
+            ha_url=ha_url,
+            ha_token='test-token',
+            prompt='test',
+            photo_dir=str(tmp_path),
+            entity_id='camera.from_config'
+        )
+        provider.fetch_image()
+        sent = json.loads(responses.calls[-1].request.body)
+        assert sent['entity_id'] == 'camera.from_config'
+
+    @responses.activate
+    def test_entity_id_falls_back_to_env(self, tmp_path, monkeypatch):
+        """Without a value from the runtime YAML, the add-on-option env value is used."""
+        monkeypatch.setenv('COMFYUI_ENTITY_ID', 'camera.from_env')
+        ha_url = 'http://mock-ha.local:8123'
+        responses.add(
+            responses.POST,
+            f'{ha_url}/api/services/ai_task/generate_image',
+            json=self._make_ha_response(create_test_jpeg_bytes()),
+            status=200,
+        )
+        provider = ComfyUIHAProvider(
+            ha_url=ha_url,
+            ha_token='test-token',
+            prompt='test',
+            photo_dir=str(tmp_path)
+        )
+        provider.fetch_image()
+        sent = json.loads(responses.calls[-1].request.body)
+        assert sent['entity_id'] == 'camera.from_env'
+
+    def test_factory_passes_entity_id_from_config(self, tmp_path, monkeypatch):
+        monkeypatch.setenv('COMFYUI_ENTITY_ID', 'camera.from_env')
+        config = {
+            'image_source': 'comfyui_ha',
+            'immich': {},
+            'comfyui': {'ha_url': 'http://ha.local', 'entity_id': 'camera.from_config'}
+        }
+        provider = create_provider(config, str(tmp_path))
+        assert provider.entity_id == 'camera.from_config'
+
+
 class TestComfyUIDirectProvider:
     """Tests for the direct ComfyUI API provider."""
 

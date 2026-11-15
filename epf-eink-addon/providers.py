@@ -354,7 +354,8 @@ class ComfyUIHAProvider(ImageProvider):
     def __init__(self, ha_url: str, ha_token: str, prompt: str,
                  negative_prompt: str = "", width: int = 800, height: int = 480,
                  seed: int = -1, max_generations_per_day: int = 50,
-                 photo_dir: str = 'photos', service_name: str = 'ai_task.generate_image'):
+                 photo_dir: str = 'photos', service_name: str = 'ai_task.generate_image',
+                 entity_id: Optional[str] = None):
         self.ha_url: str = ha_url.rstrip('/')
         self.ha_token: str = ha_token
         self.prompt: str = prompt
@@ -364,6 +365,7 @@ class ComfyUIHAProvider(ImageProvider):
         self.seed: int = seed
         self.max_generations_per_day: int = max_generations_per_day
         self.service_name: str = service_name
+        self.entity_id: str = entity_id or ''
         self.photo_dir: str = photo_dir
         
         generations_file: str = os.path.join(photo_dir, 'generations.json')
@@ -391,7 +393,7 @@ class ComfyUIHAProvider(ImageProvider):
             "instructions": resolved_prompt,
         }
         
-        entity_id: Optional[str] = os.getenv('COMFYUI_ENTITY_ID', '')
+        entity_id: Optional[str] = self.entity_id or os.getenv('COMFYUI_ENTITY_ID', '')
         if entity_id:
             payload["entity_id"] = entity_id
         
@@ -772,7 +774,8 @@ def create_provider(config: Dict[str, Any], photo_dir: str) -> ImageProvider:
             seed=comfyui_config.get('seed', -1),
             max_generations_per_day=comfyui_config.get('max_generations_per_day', 50),
             photo_dir=photo_dir,
-            service_name=comfyui_config.get('service_name', 'ai_task.generate_image')
+            service_name=comfyui_config.get('service_name', 'ai_task.generate_image'),
+            entity_id=comfyui_config.get('entity_id', '')
         )
     
     elif source == 'comfyui_direct':

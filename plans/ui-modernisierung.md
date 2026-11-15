@@ -363,5 +363,40 @@ Mobile-Tüftelei).
 
 ---
 
+## 8 · Konfigurations-Kanäle & Formular-Vokabular (umgesetzt in 2.3.2)
+
+**Frage aus dem Chat:** Sind die HA-Add-on-Optionen und die Settings-Seite deckungsgleich, und gibt es
+eine bessere Umsetzungsidee?
+
+**Ist-Stand vor 2.3.2:** nicht deckungsgleich — `comfyui_entity_id` und `log_level` hatten kein Feld im
+Formular; die Formularnamen (`url`, `album`, `rotation`, `enhanced`, `strength`) waren nicht die
+Optionsnamen; und die Präzedenz (Optionen = Saat nur beim ersten Start, danach gewinnt die
+runtime-YAML, eine Options-Änderung braucht einen Restart) stand nur in AGENTS/README — nicht im UI.
+
+**Entscheidung (Variante b):** Die Settings-Seite bleibt der einzige Editing-Ort für die runtime-YAML,
+die HA-Optionen bleiben Seed und Geheimnis-Kanal. Umgesetzt:
+
+- Die Formularfelder heißen jetzt wie die Add-on-Optionen (`immich_url`, `album_name`,
+  `rotation_angle`, `color_enhance`, `dithering_strength`); `settings()` liest kanonisch zuerst, der
+  Kurzname bleibt Alias (bestehende YAMLs, Bookmarks und die Tests posten ihn). Die YAML-Schlüssel
+  selbst wurden bewusst **nicht** umbenannt.
+- `comfyui_entity_id` ist im UI editierbar (Karte „ComfyUI via Home Assistant“) — YAML-Wert gewinnt,
+  der Env-Wert bleibt Fallback für Bestandsinstallationen.
+- Secrets (`immich_api_key`, `ha_api_token`) und `log_level` werden als Read-only-Status gezeigt —
+  sie gehören nicht in die YAML (die YAML darf keine Secrets enthalten).
+- Jede Karte trägt ein Kanal-Badge (`runtime YAML` / `HA option`), und die Seite nennt die
+  Präzedenzregel jetzt selbst.
+
+**Nicht umgesetzt (bewusst offen — Punkt 5 des Vorschlags):** „Save & restart“-Button über
+`hassio.addon_restart` mit `ha_api_token`; dafür braucht es eine echte HA-Instanz zum Testen.
+
+**Nebeneffekt:** Das Reset-Formular predopplete das Album mit dem Albumnamen eines Entwicklers — jetzt
+leer.
+
+**Stand:** L0 174 offline + 5 live grün, L3-Produktions-Smoke inkl. POST-Pfad (kanonisch und Alias)
+am 2026-11-15 wiederholt.
+
+---
+
 *Plan erstellt: 2025-*
 *Nächster Schritt: Phase 1 (Token-Definition) – kann sofort losgehen.*

@@ -21,6 +21,13 @@ This add-on provides a Flask server that:
 
 ## Configuration
 
+> **Two channels.** Everything on the settings page is stored in the add-on's runtime configuration
+> file and takes effect immediately (hot-reload). The options below **seed** that file on the first
+> start — afterwards the file wins, and changing an option here needs an add-on **restart**. The
+> secrets (`immich_api_key`, `ha_api_token`) are read from the options only and are never written to
+> that file; the settings page shows them as read-only status. Each card on the page is labelled with
+> the channel it belongs to (`runtime YAML` or `HA option`).
+
 ### Image Source Selection
 
 **image_source** (required)
@@ -85,6 +92,7 @@ This add-on provides a Flask server that:
 - Target Home Assistant `ai_task` entity to generate into
 - Leave empty to let the service pick its default entity
 - Forwarded to the `ai_task.generate_image` service as its `entity_id` input
+- Also editable on the settings page; the value from that file wins, this option is the seed/fallback
 
 ### ComfyUI Direct - Expert Mode (image_source: comfyui_direct)
 
