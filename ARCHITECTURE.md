@@ -92,9 +92,22 @@ Both ComfyUI paths obey a shared **rate limit** (`comfyui.max_generations_per_da
   run through the normal pipeline.
 
 **B2 — direct** (`ComfyUIDirectProvider`)
-* Build a workflow: either parse the user's `comfyui_workflow_json` (injecting prompt/seed/width/
-  height into any `CLIPTextEncode`/`KSampler` inputs) or fall back to a **default SD-1.5
-  `KSampler`** graph. `POST {url}/prompt` `{prompt, client_id}` → `prompt_id`.
+* **Named workflows (2.4.0):** the runtime YAML holds a list `workflows` (`name` plus optional
+  `api_json`, prompt/negative, node mapping, sampling) and `active_workflow`, which names the entry
+  to run; the settings page edits both and the choice takes effect on the next generation without a
+  restart. An entry's own values win over the globals; an unknown selection falls back and warns.
+* Build a workflow: the selected entry's `api_json` → the single `comfyui_workflow_json` field → the
+  **built-in** `KSampler` graph (checkpoint: option, else auto-detected via
+  `/object_info/CheckpointLoaderSimple`, 2.3.1). `POST {url}/prompt` `{prompt, client_id}` →
+  `prompt_id`.
+* Prompt/seed/dimensions are injected into the graph: explicit **node mapping** from the entry first
+  (`prompt_node`/`prompt_input`, `negative_node`/`negative_input`, `seed_node`), then the generic scan
+  of `CLIPTextEncode` `text`/`text_g` and `KSampler` inputs. Entry-level
+  `steps`/`cfg`/`sampler`/`scheduler` override the graph's own values; a pasted graph keeps them
+  otherwise.
+* **API format only** — what ComfyUI's "Save (Export)" produces (`{node id: {class_type, inputs}}`).
+  The format ComfyUI stores by default is a UI graph (`nodes`/`links`) and cannot be posted; the
+  settings page refuses it at save time instead of failing during generation.
 * Poll `GET {url}/history/{prompt_id}` every 2 s (≤ 300 s) until an output `images[].filename`
   appears, then `GET {url}/view?filename=&type=output`.
 * **B1** requires a reachable HA with the `ai_task` integration; **B2** only a raw ComfyUI.
@@ -205,6 +218,9 @@ Size ≈ **576 KB** of text per refresh.
    `strength`) and are **not** renamed — `settings()` resolves canonical-name-first with the short name
    as a legacy alias (`form_field()`). Keep that alias: stored configs and old bookmarks post it. The
    page labels each card with its channel and echoes the env-only secrets as read-only status.
+   Since 2.4.0 the same applies to the **named ComfyUI workflow list**: it lives in the runtime YAML,
+   the add-on options (`comfyui_workflows`, `comfyui_active_workflow`) only seed the first start, and
+   a POST that carries no workflow fields must never wipe a stored list.
 2. **One active provider at a time**, chosen by `image_source` and rebuilt by `reset_provider()` on
    every config change. `/health` and `/api/generation-status` are source-agnostic in that they
    interrogate whichever provider is active.

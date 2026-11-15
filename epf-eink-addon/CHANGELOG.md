@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-11-15
+
+### Added
+- **Named ComfyUI workflows with a selection dropdown.** The runtime YAML gained
+  `comfyui.workflows` (a list of named entries) and `comfyui.active_workflow`, and the settings page
+  now has a dropdown — *(built-in)* plus one entry per named slot — with four collapsible slots
+  below it. Choosing a workflow and saving applies immediately: the watchdog rebuilds the provider,
+  no restart.
+- **Per-workflow settings.** An entry can carry its own API-format graph plus prompt, negative
+  prompt, node mapping (`prompt_node`/`prompt_input`, `negative_node`/`negative_input`, `seed_node`)
+  and sampling values (`steps`, `cfg`, `sampler`, `scheduler`). An entry value wins over the global
+  one; anything left empty keeps the pre-2.4.0 behaviour.
+- **Two add-on options seed the list** (`comfyui_workflows`, `comfyui_active_workflow`, both optional
+  strings — the option carries a JSON array). As with every other runtime-YAML setting, the settings
+  page owns the list from the first save onwards.
+- Save-time validation: unique and reasonably short names, at most four form slots, a size cap per
+  graph, and **API format only** — ComfyUI's normal save is a UI graph, so pasting one is refused
+  with a message naming the export button that produces the right format.
+
+### Changed
+- The single `comfyui_workflow_json` field is now documented as the fallback behind the *(built-in)*
+  selection; a named workflow wins over it. A graph that carries its own model node still never
+  triggers the checkpoint lookup.
+
+### Fixed
+- Prompt injection reaches nodes the generic scan could not see. A graph whose text node is not a
+  plain `CLIPTextEncode.text` — Qwen-Image's `TextEncodeQwenImage21.prompt`, for instance — ran with
+  whatever text was embedded in the graph, because the add-on prompt had nowhere to go. Explicit node
+  mapping now delivers it.
+
+### Tests
+- Eleven new provider cases and seven new settings-page cases; the live tier gained TC-L09/L10 (the
+  built-in graph, a selection round trip, and a real "Save (Export)" graph against a live ComfyUI).
+  Offline suite: **192** cases, live tier: **8** cases — both green, 2026-11-15.
+
 ## [2.3.2] - 2026-11-15
 
 ### Added

@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.3.2
+**Version:** 2.4.0
 **Date:** 2026-11-15
-**Baseline:** branch `main` — code base **v2.3.2** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Baseline:** branch `main` — code base **v2.4.0** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
@@ -38,6 +38,12 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 > read-alias), `comfyui_entity_id` became editable, and the env-only secrets plus the log level are
 > echoed as read-only status. Seven new functional cases and three provider cases → offline suite
 > **174** cases. L0, L1 and the production-image smoke were re-run green on 2026-11-15 (§6.2).
+>
+> The **2.4.0** revision records **FR-033 / TC-FR-033** — named ComfyUI workflows with a selectable
+> active entry, per-entry prompt/node-mapping/sampling overrides, and API-format validation at save
+> time. Eleven new provider cases and seven new functional cases → offline suite **192** cases; the
+> live tier grew to **8** cases (three of them ComfyUI, one running a real exported graph). L0, L1 and
+> the production-image smoke were re-run green on 2026-11-15 (§6.1, §6.4).
 
 ---
 
@@ -45,14 +51,14 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **179** (174 offline + 5 opt-in live) |
-| **Passed** | **179** — 174 offline (L0) **+ 5 live against a real Immich (L1)** |
+| **Total Test Cases** | **200** (192 offline + 8 opt-in live) |
+| **Passed** | **200** — 192 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
 | **Failed** | 0 |
-| **Skipped** | 0 in the combined view (the L0 run skips the 5 live cases by design; they are executed in the L1 run) |
+| **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 18.3 s (2026-11-15) · L1 1.2 s (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
+| **Execution Time** | L0 20.1 s (2026-11-15) · L1 26.0 s incl. three real GPU generations (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3) and the second source (ComfyUI direct) works against a live server (§6.3) |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3) and the named-workflow selection works end to end, including a real exported graph (§6.4) |
 | **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
 
 ---
@@ -93,7 +99,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2) | **83** | **83** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) | **90** | **90** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -105,7 +111,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `ImmichProvider`, `ComfyUI-HA` (incl. entity-id resolution, 2.3.2), `ComfyUI-Direct` (incl. checkpoint resolution, 2.3.1), `ProviderFactory`, `MultiSourceIntegration` | **43** | **43** | **0** | **100%** |
+| `ImmichProvider`, `ComfyUI-HA` (incl. entity-id resolution, 2.3.2), `ComfyUI-Direct` (incl. checkpoint resolution, 2.3.1; incl. named-workflow selection, node mapping and per-entry overrides, 2.4.0), `ProviderFactory`, `MultiSourceIntegration` | **54** | **54** | **0** | **100%** |
 
 ### 3.4 Gallery history — `tests/test_gallery_history.py`  *(new in v2.2.0; option cases added in v2.3.0)*
 
@@ -113,8 +119,14 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 |-------|-------|--------|--------|-----------|
 | Shot-id sanitisation, archiving a pair, grouped reader, per-pattern pruning, live-slot safety, end-to-end prepare, option round-trip (M2) | **21** | **21** | **0** | **100%** |
 
-**Total: 179 collected — 174 passed offline + 5 skipped; the 5 live cases pass in the L1 run (§6.1)
-→ 179/179, 0 failed (100 %).**
+### 3.5 Live tier (opt-in) — `tests/test_live.py`  *(ComfyUI cases added in v2.4.0)*
+
+| Scope | Tests | Passed | Failed | Pass Rate |
+|-------|-------|--------|--------|-----------|
+| 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
+
+**Total: 200 collected — 192 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
+→ 200/200, 0 failed (100 %).**
 
 ---
 
@@ -134,6 +146,10 @@ the v1.x report, this release **adds coverage** for the multi-source feature set
   legacy short-name alias, the read-only secret & log-level echo, the channel labels and the new
   `comfyui_entity_id` field are covered by **7** automated cases (`TestFR021WebSettings` +
   `TestFR021SettingsVocabulary`); the spec row was moved to Executed — Passed.
+- **FR-033 / TC-FR-033 — named ComfyUI workflow selection** (2.4.0): the dropdown, the slot list, the
+  per-entry prompt/node-mapping/sampling overrides, the save-time validation and the "POST without
+  fields keeps the list" rule are covered by **18** automated offline cases (11 provider + 7 settings)
+  plus the **3** live cases of §6.1; the catalogue rows were added in this revision.
 
 The remaining FR/NFR/IFR/SEC/PER catalogue is unchanged and passing.
 
@@ -175,34 +191,39 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 179 items
+collected 200 items
 
-tests/test_functional.py      :: 83 passed
+tests/test_functional.py      :: 90 passed
 tests/test_nonfunctional.py  :: 27 passed
-tests/test_providers.py      :: 43 passed
+tests/test_providers.py      :: 54 passed
 tests/test_gallery_history.py :: 21 passed
-tests/test_live.py           :: 5 skipped (opt-in, no .env in the offline run)
-======================= 174 passed, 5 skipped in 18.33s ========================
+tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
+======================= 192 passed, 8 skipped in 20.08s ========================
 ```
 
-### 6.1 L1 — live tier against a real Immich (run 2026-11-15)
+### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
 
 ```
-platform linux -- Python 3.11.2, pytest-7.4.3  (EPF_LIVE_TESTS=1, server from the git-ignored .env)
-collected 5 items
+platform linux -- Python 3.11.2, pytest-7.4.3  (EPF_LIVE_TESTS=1, servers from the git-ignored .env)
+collected 8 items
 
 tests/test_live.py::test_l01_album_resolution PASSED
 tests/test_live.py::test_l02_search_metadata_paginated PASSED
 tests/test_live.py::test_l03_original_download PASSED
 tests/test_live.py::test_l04_provider_fetch_image PASSED
 tests/test_live.py::test_l05_download_end_to_end PASSED
-============================== 5 passed in 1.23s ==============================
+tests/test_live.py::test_l09_builtin_graph_still_works PASSED
+tests/test_live.py::test_l10_named_workflow_selection_round_trip PASSED
+tests/test_live.py::test_l10b_real_exported_workflow PASSED
+============================== 8 passed in 26.02s ==============================
 ```
 
 This is the tier that can falsify a real-API assumption: album resolution, the paged
 `POST /api/search/metadata` listing, the original download and the add-on's own `/download` route
-all hold against the current server. Server/album used are the reference environment of §7.1 — the
-values live in the git-ignored `.env`, never in the code.
+all hold against the current server — and since 2.4.0 the ComfyUI leg runs real generations through
+the built-in graph, a named selection and a **real exported graph** taken from the reference server.
+Server/album/server-graph used are the reference environment of §7.1 — the values live in the
+git-ignored `.env`, never in the code.
 
 ### 6.2 L3 — production-image smoke (shipped `Dockerfile`, run 2026-11-15)
 
@@ -265,6 +286,29 @@ This is the live proof of the multi-source claim (FR-027/FR-030) and of the 2.3.
 
 ---
 
+### 6.4 L3/L1 re-run for 2.4.0 — named workflows in the shipped image (run 2026-11-15)
+
+Same production `Dockerfile`, `image_source=comfyui_direct`, seeded through the two new add-on
+options (`comfyui_workflows` as a JSON array, `comfyui_active_workflow` naming one of them) — the
+reference server of §7.1 doing the actual diffusion:
+
+| Check | Result |
+|-------|--------|
+| Footer version (derived) | **v2.4.0** ✓ |
+| `GET /health` against the live ComfyUI | `{"source":"ComfyUI (Direct)","source_status":"connected","status":"healthy"}` ✓ |
+| Seed options → dropdown | the seeded entry appears in the dropdown **selected**; four slots render, first two open ✓ |
+| Settings form POST (slot name + API JSON + steps + active selection) | `302` → runtime YAML holds the entry and `active_workflow: flux`, watchdog fired, provider rebuilt ✓ |
+| POST **without** workflow fields | stored list untouched ✓ (the rule that protects old callers) |
+| `POST /prepare-photo` with the named workflow active | real generation, log `workflow=flux seed=…`, gallery archive hook fires ✓ |
+| Save-time validation | UI-format graph → `400` naming **"Save (Export)"** ✓; duplicate name → `400` ✓ |
+| `/download` contract (regression) | `frame.txt`, `text/plain`, 16 tokens/row, **no `};` tail** ✓ |
+| Generation status / gallery API | answer as specified ✓ |
+
+**One product fix came out of building this:** the settings-page labels pointed at field ids the slot
+inputs did not have (`for` ≠ `id`); the slot inputs now carry ids, so the labels are real labels.
+
+---
+
 ## 7. Reproduction
 
 The add-on test entrypoint is `Dockerfile.test`; all Immich/HA values are supplied by the mocks, so
@@ -289,9 +333,10 @@ sh epf-eink-addon/run-live-tests.sh
 
 ### 7.1 Reference test environment (of record)
 
-Values observed on the reference machine during the live runs of §6.1 and §6.3 — recorded here so the
+Values observed on the reference machine during the live runs of §6.1, §6.3 and §6.4 — recorded here so the
 report can be reproduced, **not** product assumptions. Nothing in code, templates or the manifest may
-hardcode them (connection details come from add-on options / the git-ignored `.env`):
+hardcode them (connection details come from add-on options / the git-ignored `.env`; since 2.4.0 the
+exported workflow graph the live tier posts is a `.env` value too):
 
 | Item | Reference value |
 |------|-----------------|
@@ -317,10 +362,10 @@ hardcode them (connection details come from add-on options / the git-ignored `.e
 
 ---
 
-*Regenerated for code base **v2.3.2** on branch `main`, 2026-11-15: **174** offline cases pass,
-the **5** live cases pass against a real Immich, and the production image passes the L3 smoke (incl.
-the 2.3.2 form-vocabulary POST path, §6.2) plus the live ComfyUI-direct leg (§6.3, checkpoint
-auto-detection and explicit option both proven) — the release gate of `AGENTS.md` is satisfied.
+*Regenerated for code base **v2.4.0** on branch `main`, 2026-11-15: **192** offline cases pass,
+the **8** live cases pass against a real Immich *and* a real ComfyUI (including a real exported
+workflow graph), and the production image passes the L3 smoke (form vocabulary §6.2, named workflows
+§6.4) plus the live ComfyUI-direct leg (§6.3) — the release gate of `AGENTS.md` is satisfied.
 Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
 see `plans/findings.md`.*

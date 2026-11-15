@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.3.2  
+**Version:** 2.4.0  
 **Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.3.2)  
+**Baseline:** Repository commit (main branch, v2.4.0)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
@@ -15,6 +15,11 @@
 > vocabulary (form name == add-on option name, legacy short names accepted as alias), the channel
 > labels, the read-only secret/log-level echo and the new `comfyui_entity_id` field — **7 automated
 > cases**, status set to Executed — Passed. Results in EPF-RPT-001 (re-baselined for 2.3.2).  
+>
+> **Revision 2.4.0 (2026-11-15):** adds **TC-FR-033** for **FR-033 (Named ComfyUI Workflow
+> Selection)**: 18 automated cases (11 provider + 7 settings-page) in the offline tier, plus three live
+> cases (TC-L09/L10/L10b) that run a real generation through the selection on the reference server.
+> Status "Executed — Passed". Results in EPF-RPT-001 (re-baselined for 2.4.0).
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
 ---
@@ -26,7 +31,7 @@ This document specifies the software test cases for verifying the EPF (E-Paper P
 
 ### 1.2 Scope
 The scope encompasses all functional, non-functional, interface, security, and performance requirements for the `epf-eink-addon`. This includes:
-- 32 Functional Requirements (FR-001 to FR-032)
+- 33 Functional Requirements (FR-001 to FR-033)
 - 8 Non-Functional Requirements (NFR-001 to NFR-008)
 - 5 Interface Requirements (IFR-001 to IFR-005)
 - 4 Security Requirements (SEC-001 to SEC-004)
@@ -680,6 +685,24 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 ---
 
+#### TC-FR-033: Named ComfyUI Workflow Selection
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-033 |
+| **Requirement** | FR-033 |
+| **Title** | Verify the named-workflow list, the selection dropdown and the per-entry overrides |
+| **Priority** | Medium |
+| **Preconditions** | Provider cases with ComfyUI mocked through `responses`; settings-page cases on the Flask test client; live cases opt-in (real ComfyUI server via the git-ignored `.env`) |
+| **Test Input** | 11 cases in `tests/test_providers.py` (`TestComfyUIWorkflowSelection`) + 7 cases in `tests/test_functional.py` (`TestFR033WorkflowSelection`) — offline tier L0; 3 cases in `tests/test_live.py` |
+| **Test Steps** | 1. Verify that with no list and no selection the graph, prompt and negative prompt are exactly the pre-2.4.0 built-in ones<br>2. Verify the active entry is picked from the list by name, and that an unknown name falls back with a warning<br>3. Verify explicit node mapping writes the run's prompt into a non-`CLIPTextEncode` input and the seed into the mapped node<br>4. Verify the generic scan still fills plain `text` nodes and that an entry prompt override wins over the global prompt<br>5. Verify entry sampling values are applied to the graph, and that a pasted graph keeps its own values when the entry sets none<br>6. Verify an unparsable entry JSON falls back to the built-in graph<br>7. Verify a graph that carries its own model node never triggers the checkpoint lookup<br>8. Verify the factory passes list and selection through to the provider<br>9. Verify the form renders the dropdown and the slots, and that a save round-trips name, API JSON and node mapping into the runtime YAML<br>10. Verify save-time validation rejects duplicate names, UI-format graphs, oversized JSON and a selection without a slot (HTTP 400, message names the export button)<br>11. Verify a POST without workflow fields keeps the stored list<br>12. *(live tier)* built-in graph, selection round trip and a real exported graph each produce a real generation on the reference server |
+| **Expected Result** | The selection drives generation without a restart; entry values win over globals; invalid configurations are refused at save time with an actionable message; with no list the behaviour is byte-for-byte the pre-2.4.0 behaviour |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | 18/18 offline passed (2026-11-15); 3/3 live passed against the reference ComfyUI (2026-11-15) — see EPF-RPT-001 §6.1/§6.4 |
+| **Status** | Executed — Passed |
+
+---
+
 ### 3.2 Non-Functional Requirements Test Cases
 
 #### TC-NFR-001: Multi-Architecture Support
@@ -1078,6 +1101,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-FR-025 | FR-025 | Test | Not Executed |
 | TC-FR-026 | FR-026 | Test | Not Executed |
 | TC-FR-032 | FR-032 | Test | Executed — Passed (21 cases, 2026-11-15) |
+| TC-FR-033 | FR-033 | Test | Executed — Passed (18 offline + 3 live cases, 2026-11-15) |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
 | TC-IFR-002 | IFR-002 | Test | Not Executed |
 | TC-IFR-003 | IFR-003 | Test | Not Executed |
@@ -1099,18 +1123,18 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 | Category | Requirements | Test Cases | Coverage |
 |----------|-------------|------------|----------|
-| Functional | 24 | 29 | 100% |
+| Functional | 25 | 30 | 100% |
 | Non-Functional | 8 | 8 | 100% |
 | Interface | 5 | 5 | 100% |
 | Security | 4 | 4 | 100% |
 | Performance | 3 | 3 | 100% |
-| **Total** | **44** | **49** | **100%** |
+| **Total** | **45** | **50** | **100%** |
 
 ### 5.2 Verification Method Distribution
 
 | Method | Count |
 |--------|-------|
-| Test | 40 |
+| Test | 41 |
 | Inspection | 7 |
 | Analysis | 1 |
 | Test + Inspection | 1 |

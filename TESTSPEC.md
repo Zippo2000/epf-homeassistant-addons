@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.0.0
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.0 (2026-11-15)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -59,7 +59,9 @@ python -m pytest tests/ -v
 
 ## 3. Test-Module & Abdeckung (Requirement → Test-Klasse)
 
-Vier Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen.
+Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `test_functional.py`,
+`test_nonfunctional.py`, `test_providers.py`, `test_gallery_history.py`, `test_live.py` (opt-in) und
+`conftest.py`.)
 
 ### `tests/conftest.py` (Fixtures/Helpers — selbst nicht „getestet”)
 * **`app_module`** — DER Setup-Fixuture: setzt alle Env-Defaults, patcht `NTPClient` + `Observer`,
@@ -88,6 +90,8 @@ Vier Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen.
 | `TestFR013ImageDelivery` | FR-013 | prepared delivered; **on-the-fly** delivery; `batteryCap`-Recording |
 | `TestFR014PreparePhoto` | FR-014 | `POST /prepare-photo` → success + Status `new` |
 | `TestFR015PreviewServing` | FR-015 | `/preview-photo`/`/preview-original`/… 200 |
+| `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges |
+| `TestFR033WorkflowSelection` (2.4.0) | FR-033 | Workflow-Dropdown + Slots, Save-Roundtrip ins Runtime-YAML, Validierung (Duplikat/UI-Format/Größe/Auswahl), „POST ohne Felder behält die Liste" |
 
 ### `tests/test_nonfunctional.py` → **NFR + IFR + SEC + PER**
 | Klasse | ID | Prüft |
@@ -108,7 +112,13 @@ Vier Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen.
 | `TestPER002ConcurrentRequests` | PER-002 | Flask verarbeitung sequentieller Requests |
 | `TestPER003ConfigReloadLatency` | PER-003 | Config-Reload < 2 s |
 
-### `tests/test_providers.py` → **Provider-Abstraktion** (FR-027…FR-031)
+### `tests/test_gallery_history.py` → **FR-032** (2.2.0; Optionen 2.3.0)
+
+21 Fälle: Shot-id-Bereinigung, Archiv-Hook (Paar-Kopie), gruppierte Reader-Ausgabe, relative
+Ingress-URLs, Beschneiden pro Muster (Anzahl + Alter), Live-Slot Finger Weg, Prepare-End-to-End, und
+der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
+
+### `tests/test_providers.py` → **Provider-Abstraktion** (FR-027…FR-033)
 | Klasse | Prüft |
 |--------|-------|
 | `TestPromptVariables` | `resolve_prompt_variables`: `{time_of_day}`, `{weather}`, `{season}`, mehrere, keine, `{random_element}` variiert |
@@ -116,11 +126,13 @@ Vier Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen.
 | `TestImmichProvider` | Health (ok/fail), Name, `config_summary`, `fetch_image` |
 | `TestComfyUIHAProvider` | Health (ok/fail), Name, `fetch_image` success, **Rate-Limiting**, HA-Service-Error, summary |
 | `TestComfyUIDirectProvider` | Health (ok/fail), Name, **Default-Workflow**, random-seed |
+| `TestComfyUIWorkflowSelection` (2.4.0) | **benannte Workflows**: Auswahl nach Name, Fallback bei unbekanntem Namen, Node-Mapping (Nicht-`CLIPTextEncode`-Eingänge), Entry-Overrides (Prompt/Sampling), „Eigenmodell-Node → keine Checkpoint-Suche", Factory-Durchreichung — 11 Fälle |
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob:** ~**104** Testmethoden (funktionell + non-funktional + Provider) über die
-> 53 Requirements; die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
+> **Coverage-Grob (Stand 2.4.0):** **192** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **200**,
+> 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
 > ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
 
@@ -128,10 +140,10 @@ Vier Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen.
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Versionsscherbe im Report (wichtig):** `docs/test_report_aspice.md` = **v1.1.0 / 93 Tests / 100 % /
-   14,75 s** und basiert auf der **v1.0.4-Baseline**. Code & Specs sind **v2.0.0** (31 FR, voller
-   Provider-Modul). Die Report-Zahlen beschreiben therefore **nicht** den aktuellen Stand — vor einem
-   Release `run.test.sh` neu fahren und den Report aktualisieren (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.0 / 200 Tests / 100 %** (L0 20,1 s,
+   L1 26,0 s, nachgezählt am 2026-11-15). Code, Specs und Report sind wieder auf demselben Stand
+   (33 FR, volles Provider-Modul, sechs Test-Dateien). Vor jedem Release neu fahren und neu zählen —
+   sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf
    (z. B. gegen eine Live-Immich mit *v3-API*) ist ein separates Manuell-/Integrationstier. Genau *dort*
    würde die **legacy-Immich-Endpoint-Frage** (ANALYSE §14.3) sichtbar — die Offline-Suite kann sie
@@ -152,6 +164,26 @@ Ein Release gilt als **testabgeschlossen**, wenn:
    `ANALYSE` §10 / `docs` N-Guard);
 4. **Report** (`EPF-RPT-001`) ist auf den **aktuellen Code-Stand** (v2.x) neu generiert;
 5. Doku-Fehler (7→6-Farben, §14.1) sind behoben oder zumindest gekennzeichnet.
+
+---
+
+## 5b. Opt-in-Live-Tier (L1) — echtes Immich **und** echtes ComfyUI
+
+Nur dieses Tier kann eine echte API-Annahme widerlegen, deshalb ist es der tragfähige Release-
+Gate-Teil (siehe `AGENTS.md`). Es ist **opt-in**: ohne `EPF_LIVE_TESTS=1` und eine `.env` wird
+übersprungen, die Offline-Suite bleibt grün.
+
+```bash
+cd epf-eink-addon && cp .env.example .env   # reale Werte eintragen (die .env bleibt git-ignored)
+sh epf-eink-addon/run-live-tests.sh          # baut das Test-Image und lässt pytest tests/test_live.py laufen
+```
+
+Die `.env` liefert die Verbindungsdaten beider Backends (Immich-URL/-Key/-Album, `COMFYUI_URL` und
+seit 2.4.0 `COMFYUI_WORKFLOW_JSON` — ein echter "Save (Export)"-Graph des Referenzservers). **Stand
+2026-11-15: 8/8 grün** — 5 Immich-Fälle (Album-Auflösung, paginiertes `search/metadata`, Original-
+Download, Provider-Fetch, `/download` end-to-end) und 3 ComfyUI-Fälle: TC-L09 eingebauter Graph,
+TC-L10 Auswahl-Roundtrip, TC-L10b echter exportierter Graph mit echter Generierung. Einzelheiten im
+Report (§6.1, §6.4).
 
 ---
 

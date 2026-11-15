@@ -112,6 +112,29 @@ This add-on provides a Flask server that:
   custom workflow JSON)
 - Also editable on the settings page; ignored when `comfyui_workflow_json` is set
 
+**comfyui_workflows** / **comfyui_active_workflow** (optional)
+- Seed values for the named-workflow list: the option carries a JSON array, and the settings page
+  is what you edit afterwards
+- Like every other runtime-YAML setting, they only seed the **first start** — after the first save
+  on the settings page, the runtime file wins
+
+### Named Workflows (settings page)
+
+The settings page can hold several ComfyUI workflows and pick one in the **Active Workflow**
+dropdown: the built-in workflow, or any named slot. Slots 1-4 take:
+
+| Field | Meaning |
+|-------|---------|
+| Name | How the dropdown labels it; unique, and a slot without a name is not part of the list |
+| API JSON | The graph in ComfyUI **API format** — in ComfyUI use **"Save (Export)"**; the format ComfyUI stores by default (a UI graph) is rejected when you save, with a hint |
+| Prompt / Negative prompt override | Text for this workflow; empty uses the global prompt fields above. Variables like `{time_of_day}` still work |
+| Node mapping | For graphs whose text node is not a plain `CLIPTextEncode` node — Qwen-Image, for example, keeps the prompt in a custom node's `prompt` input: node id + input name to write to |
+| Steps / CFG / Sampler / Scheduler | Sampling for this workflow; empty keeps the values inside the graph |
+
+Dimensions and seed are injected as before. Selecting a workflow and saving applies **immediately**
+(no add-on restart). If the selected name has no slot any more, generation falls back to the
+built-in workflow and says so in the log.
+
 ### Display Settings
 
 **rotation_angle**

@@ -2,14 +2,18 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.3.0  
+**Version:** 2.4.0  
 **Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.3.0)  
+**Baseline:** Repository commit (main branch, v2.4.0)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
 > 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
 > the only implemented feature without a requirement ID; the catalogue now has 32 FRs.
+>
+> **Revision 2.4.0 (2026-11-15):** adds **FR-033 (Named ComfyUI Workflow Selection)** — the list of
+> named workflows with a selectable active entry on the settings page. The catalogue now has 33 FRs;
+> the matching test case is **TC-FR-033** in EPF-TST-001.
 
 ---
 
@@ -462,6 +466,19 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Verification** | Test |
 | **Traceability** | `app.py:_shot_id, _gallery_dir, _archive_previews, gallery_previews, cleanup_gallery`, `templates/settings.html (Gallery tab)`, `tests/test_gallery_history.py` |
 
+#### FR-033: Named ComfyUI Workflow Selection
+
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-033 |
+| **Title** | Named ComfyUI workflows with a selectable active entry |
+| **Priority** | Medium |
+| **Description** | The system SHALL keep a list of named ComfyUI workflows in the runtime YAML (an entry is `name` plus optional `api_json`, prompt, negative prompt, node mapping and sampling values) together with the selection of the active entry. The settings page SHALL render a dropdown — the built-in graph plus one entry per named slot — and SHALL rebuild the list from the form on save, applying the choice without a restart (hot-reload). An entry's own values SHALL win over the global prompt/dimension/seed settings, and everything left unset SHALL keep the pre-2.4.0 behaviour (the single `comfyui_workflow_json` field, then the built-in graph). Only **API-format** graphs may be stored: a graph in ComfyUI's default UI format SHALL be refused at save time with an actionable message, names SHALL be unique and reasonably short, and the list size SHALL be bounded. A selection whose entry has disappeared SHALL fall back to the built-in graph and log a warning instead of failing the generation. Prompt injection SHALL honour explicit node mapping (`prompt_node`/`prompt_input`, `negative_node`/`negative_input`, `seed_node`) before the generic `CLIPTextEncode` scan. |
+| **Input** | Settings form (`active_workflow` + slots `wf_1..4_*`), runtime YAML `comfyui.workflows` / `comfyui.active_workflow`, seed-only add-on options `comfyui_workflows` (JSON array) / `comfyui_active_workflow` |
+| **Output** | The selected graph submitted to `POST /prompt`; the workflow named in the log; per-entry prompt and sampling applied |
+| **Verification** | Test |
+| **Traceability** | `providers.py:ComfyUIDirectProvider (active_entry/_effective/_inject/_build_workflow)`, `app.py:parse_workflow_slots`, `templates/settings.html` (workflow card), `tests/test_providers.py::TestComfyUIWorkflowSelection`, `tests/test_functional.py::TestFR033WorkflowSelection`, `tests/test_live.py` (TC-L09/L10) |
+
 ---
 
 ### 3.2 Non-Functional Requirements (NFR)
@@ -746,6 +763,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-030 | providers.py:resolve_prompt_variables | Test | Implemented |
 | FR-031 | app.py:generation_status, providers.py:GenerationTracker | Test | Implemented |
 | FR-032 | app.py, templates/settings.html, tests/test_gallery_history.py | Test | Implemented |
+| FR-033 | providers.py, app.py, templates/settings.html, tests/test_providers.py, tests/test_functional.py | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |
