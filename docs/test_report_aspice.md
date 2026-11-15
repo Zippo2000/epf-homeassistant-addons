@@ -205,6 +205,37 @@ gunicorn 2×2 command line, real Immich credentials from the git-ignored `.env`:
 > sanitised environment. The smoke therefore invokes the shipped image through `with-contenv gunicorn
 > …` — everything below the entrypoint is the real shipped code.
 
+### 6.3 L3b — second image source, live (ComfyUI direct, run 2026-11-15)
+
+Same production image, `image_source=comfyui_direct`, pointed at the **real** ComfyUI (v0.38.2).
+This is the live proof of the multi-source claim (FR-027/FR-030) and of the 2.3.0 options path.
+
+| Check | Result |
+|-------|--------|
+| `GET /health` | `200` — `{"source":"ComfyUI (Direct)","source_status":"connected","status":"healthy"}` — source-agnostic health, proven against a live backend |
+| Settings page | `comfyui_direct` pre-selected server-side; the new **Photo Gallery** card renders both fields |
+| Add-on option → env → YAML → UI | `GALLERY_MAX_COUNT=5` / `GALLERY_RETENTION_DAYS=2` seeded into the runtime YAML at first start and shown in the fields (5 / 2) ✓ |
+| Settings form → YAML → hot reload | form posted with 3 / 2 → YAML rewritten, watchdog fired, provider rebuilt, page shows 3 / 2 ✓ |
+| `POST /prepare-photo` (real generation, workflow override) | `success: true` in 4.5 s; the **archive hook fires on this source too** (`Archived previews for shot 'gen_…'`) |
+| Configured cap honoured live | with cap **3**: after the second archive the gallery holds exactly 3 files per pattern (4 pruned) ✓ |
+| `GET /api/gallery-previews` | groups by shot id, reports the shot count ✓ |
+| `POST /cleanup-previews` | removes nothing from the gallery — by design the gallery is pruned **at archive time**; the route cleans the legacy live-slot previews only ✓ |
+
+**Two things this run exposed** (both pre-existing, neither introduced by 2.3.0):
+
+1. **The built-in default ComfyUI workflow does not fit a real server.** It hardcodes
+   `ckpt_name: "v1-5-pruned-emaonly.safetensors"` (`providers.py`, node 4); the test server has
+   `SD1.5/v1-5-pruned-emaonly.ckpt`, so `/prompt` answers `prompt_outputs_failed_validation` /
+   `value_not_in_list`. The offline mocks cannot see this — only a live run can. Working today:
+   paste a workflow JSON on the settings page (proven above). **Decision needed:** resolve the
+   checkpoint from `/object_info` when the default workflow is used, and/or add a `comfyui_checkpoint`
+   option.
+2. **The per-pattern cap can split a pair.** Pruning counts files *per pattern*, so a shot can be left
+   with only its original or only its processed file (seen live: `sim2` kept its original, lost its
+   processed file) — the plan worded the limit as "max. **pairs**". Either document the semantics or
+   prune per shot. Related, already accepted as the 14.12 trade-off: the generation counter lives per
+   process and is rebuilt on hot reload — the live run reported `count_today: 1` after two generations.
+
 ---
 
 ## 7. Reproduction
