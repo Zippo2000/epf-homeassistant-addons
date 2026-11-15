@@ -2,11 +2,11 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.3.1
+**Version:** 2.3.2
 **Date:** 2026-11-15
-**Baseline:** branch `main` — code base **v2.3.1** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Baseline:** branch `main` — code base **v2.3.2** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
-2.3.1)
+2.3.1 + settings vocabulary & channel visibility 2.3.2)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Status:** Completed — all tiers green (L0 offline, L1 live Immich, L3 production-image smoke)
 
@@ -32,6 +32,12 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 > server's checkpoint name): the checkpoint is now an option, and empty means *ask the server*.
 > Four new provider cases → offline suite **166** cases; L0, L1 and the ComfyUI-direct live leg were
 > re-run green on 2026-11-15. Environment values observed on the reference machine moved to §7.1.
+>
+> The **2.3.2** revision makes the two configuration channels explicit in the product itself: the
+> settings form now uses the **add-on-option names** (with the pre-2.3.2 short names kept as a
+> read-alias), `comfyui_entity_id` became editable, and the env-only secrets plus the log level are
+> echoed as read-only status. Seven new functional cases and three provider cases → offline suite
+> **174** cases. L0, L1 and the production-image smoke were re-run green on 2026-11-15 (§6.2).
 
 ---
 
@@ -39,12 +45,12 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **171** (166 offline + 5 opt-in live) |
-| **Passed** | **171** — 166 offline (L0) **+ 5 live against a real Immich (L1)** |
+| **Total Test Cases** | **179** (174 offline + 5 opt-in live) |
+| **Passed** | **179** — 174 offline (L0) **+ 5 live against a real Immich (L1)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 5 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 17.7 s (2026-11-15) · L1 1.9 s (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
+| **Execution Time** | L0 18.3 s (2026-11-15) · L1 1.2 s (2026-11-15) · L3b live generation 4.6 s (2026-11-15) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
 | **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3) and the second source (ComfyUI direct) works against a live server (§6.3) |
 | **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
@@ -87,7 +93,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) | **78** | **78** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2) | **83** | **83** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -99,7 +105,7 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `ImmichProvider`, `ComfyUI-HA`, `ComfyUI-Direct` (incl. checkpoint resolution, 2.3.1), `ProviderFactory`, `MultiSourceIntegration` | **40** | **40** | **0** | **100%** |
+| `ImmichProvider`, `ComfyUI-HA` (incl. entity-id resolution, 2.3.2), `ComfyUI-Direct` (incl. checkpoint resolution, 2.3.1), `ProviderFactory`, `MultiSourceIntegration` | **43** | **43** | **0** | **100%** |
 
 ### 3.4 Gallery history — `tests/test_gallery_history.py`  *(new in v2.2.0; option cases added in v2.3.0)*
 
@@ -107,8 +113,8 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 |-------|-------|--------|--------|-----------|
 | Shot-id sanitisation, archiving a pair, grouped reader, per-pattern pruning, live-slot safety, end-to-end prepare, option round-trip (M2) | **21** | **21** | **0** | **100%** |
 
-**Total: 171 collected — 166 passed offline + 5 skipped; the 5 live cases pass in the L1 run (§6.1)
-→ 171/171, 0 failed (100 %).**
+**Total: 179 collected — 174 passed offline + 5 skipped; the 5 live cases pass in the L1 run (§6.1)
+→ 179/179, 0 failed (100 %).**
 
 ---
 
@@ -124,6 +130,10 @@ the v1.x report, this release **adds coverage** for the multi-source feature set
 - **FR-032 / TC-FR-032 — gallery history** (features 2.2.0–2.3.0): covered by **21** automated
   cases in `tests/test_gallery_history.py`; the requirement and test-case IDs were added to
   EPF-REQ-001 / EPF-TST-001 in this revision.
+- **FR-021 / TC-FR-021 — web settings UI** (2.3.2): the form-name/option-key vocabulary, the
+  legacy short-name alias, the read-only secret & log-level echo, the channel labels and the new
+  `comfyui_entity_id` field are covered by **7** automated cases (`TestFR021WebSettings` +
+  `TestFR021SettingsVocabulary`); the spec row was moved to Executed — Passed.
 
 The remaining FR/NFR/IFR/SEC/PER catalogue is unchanged and passing.
 
@@ -152,6 +162,11 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
   settings page inert (fixed in 2.1.1).
 - **Test-side** — `test_unicode_symbols_used` had gone red when the 2.1.0 SVG redesign dropped the
   page's numeric HTML entities; the Gallery label uses numeric entities again.
+- **Test-side (2.3.2)** — `test_slider_output_ids_present` asserts the slider output ids, which follow
+  the field names; it was updated to `color_enhanceValue` / `contrastValue` / `dithering_strengthValue`
+  when the form adopted the add-on-option vocabulary. The **runtime-YAML keys were deliberately not
+  renamed** (`url`, `album`, `rotation`, `enhanced`, `strength`): `settings()` resolves the canonical
+  name first and keeps the short name as a legacy alias, so stored configs keep working.
 
 ---
 
@@ -160,14 +175,14 @@ Defects found and fixed on the **2.1.x–2.2.1** track (planning docs:
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 171 items
+collected 179 items
 
-tests/test_functional.py      :: 78 passed
+tests/test_functional.py      :: 83 passed
 tests/test_nonfunctional.py  :: 27 passed
-tests/test_providers.py      :: 40 passed
+tests/test_providers.py      :: 43 passed
 tests/test_gallery_history.py :: 21 passed
 tests/test_live.py           :: 5 skipped (opt-in, no .env in the offline run)
-======================= 166 passed, 5 skipped in 17.72s ========================
+======================= 174 passed, 5 skipped in 18.33s ========================
 ```
 
 ### 6.1 L1 — live tier against a real Immich (run 2026-11-15)
@@ -181,7 +196,7 @@ tests/test_live.py::test_l02_search_metadata_paginated PASSED
 tests/test_live.py::test_l03_original_download PASSED
 tests/test_live.py::test_l04_provider_fetch_image PASSED
 tests/test_live.py::test_l05_download_end_to_end PASSED
-============================== 5 passed in 1.86s ==============================
+============================== 5 passed in 1.23s ==============================
 ```
 
 This is the tier that can falsify a real-API assumption: album resolution, the paged
@@ -197,7 +212,7 @@ gunicorn 2×2 command line, real Immich credentials from the git-ignored `.env`:
 | Check | Result |
 |-------|--------|
 | Container healthcheck (`/health`, s6 + `wget`) | **healthy** |
-| Footer version / build time (derived, findings §1) | `v2.2.1 \| Built: 2026-11-15 … UTC` — matches the manifest, nothing hand-edited |
+| Footer version / build time (derived, findings §1) | `2.3.2` (re-run 2026-11-15) — derived from the manifest, nothing hand-edited |
 | `GET /health` | `200` — `{"source":"Immich","source_status":"connected","status":"healthy"}` |
 | `POST /prepare-photo` | real Immich asset → `success: true`, returns the `source_id` |
 | `GET /api/gallery-previews` | lists the archived **pair** (`original_<id>.jpg` + `processed_<id>.jpg`), grouped by id, URLs **relative** (`./preview-file/…`, the 2.2.1 fix) |
@@ -205,7 +220,8 @@ gunicorn 2×2 command line, real Immich credentials from the git-ignored `.env`:
 | `GET /sleep` | answers with next wakeup + duration |
 | `GET /api/battery-status` / `/api/generation-status` | answer as specified |
 | `POST /cleanup-previews` | answers; live slot untouched |
-| Settings page `/` | renders; 3 tabs present; health-pill tooltip/init text present |
+| Settings page `/` | renders; 3 tabs present; health-pill tooltip/init text present; **2.3.2**: canonical field names, per-card channel labels and the read-only secret/log-level status rows are served |
+| **Form vocabulary POST (2.3.2)** | `POST /` with the canonical names → the same runtime-YAML keys; `POST /` with the legacy short names → the same keys (alias proven in the shipped image), watchdog fired, provider rebuilt |
 
 > The add-on entrypoint `run.sh` cannot run outside Home Assistant: its `with-contenv bashio` shebang
 > needs the HA runtime (`bashio` is not in the plain base image), and s6 starts services with a
@@ -286,7 +302,8 @@ hardcode them (connection details come from add-on options / the git-ignored `.e
 | Host runtime | Docker Desktop, Debian Bookworm base, Python 3.11 |
 
 > The `comfyui_ha` source is the one live leg still missing: it needs a Long-Lived Token and an
-> `ai_task` entity id from the user, and the `ai_task` integration on the HA side.
+> `ai_task` entity id from the user (the entity id is now also editable on the settings page, 2.3.2),
+> and the `ai_task` integration on the HA side.
 
 ---
 
@@ -300,9 +317,10 @@ hardcode them (connection details come from add-on options / the git-ignored `.e
 
 ---
 
-*Regenerated for code base **v2.3.1** on branch `main`, 2026-11-15: **166** offline cases pass,
-the **5** live cases pass against a real Immich, and the production image passes the L3 smoke plus the
-live ComfyUI-direct leg (§6.3, checkpoint auto-detection and explicit option both proven) — the
-release gate of `AGENTS.md` is satisfied. Still open (not automatable here):
+*Regenerated for code base **v2.3.2** on branch `main`, 2026-11-15: **174** offline cases pass,
+the **5** live cases pass against a real Immich, and the production image passes the L3 smoke (incl.
+the 2.3.2 form-vocabulary POST path, §6.2) plus the live ComfyUI-direct leg (§6.3, checkpoint
+auto-detection and explicit option both proven) — the release gate of `AGENTS.md` is satisfied.
+Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
 see `plans/findings.md`.*

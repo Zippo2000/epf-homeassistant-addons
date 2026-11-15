@@ -2,14 +2,19 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.3.0  
+**Version:** 2.3.2  
 **Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.3.0)  
+**Baseline:** Repository commit (main branch, v2.3.2)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
 > against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
-> baseline; actual results are recorded in EPF-RPT-001 (re-baselined for 2.3.0).  
+> baseline; actual results are recorded in EPF-RPT-001 (re-baselined for 2.3.0).
+>
+> **Revision 2.3.2 (2026-11-15):** **TC-FR-021** (web settings UI) gains steps for the settings-form
+> vocabulary (form name == add-on option name, legacy short names accepted as alias), the channel
+> labels, the read-only secret/log-level echo and the new `comfyui_entity_id` field — **7 automated
+> cases**, status set to Executed — Passed. Results in EPF-RPT-001 (re-baselined for 2.3.2).  
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
 ---
@@ -521,11 +526,11 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Priority** | High |
 | **Preconditions** | SUT running; browser or HTTP client available |
 | **Test Input** | GET/POST request to `/` |
-| **Test Steps** | 1. Send GET to `/`<br>2. Verify HTML settings page is returned<br>3. Verify 3-column photo preview grid exists (delivered, original, processed)<br>4. Verify server connection fields (URL, album)<br>5. Verify display settings (rotation, display mode, image order, dithering method)<br>6. Verify enhancement sliders (color, contrast, dithering strength)<br>7. Verify power management controls (sleep time range, wakeup interval)<br>8. Verify battery status display<br>9. Verify dark/light theme toggle<br>10. Verify prepare new photo button<br>11. Submit form with modified values<br>12. Verify configuration is saved to YAML<br>13. Verify hot-reload is triggered |
-| **Expected Result** | All UI elements are present and functional; form submission saves config and triggers hot-reload; page is responsive |
+| **Test Steps** | 1. Send GET to `/`<br>2. Verify HTML settings page is returned<br>3. Verify 3-column photo preview grid exists (delivered, original, processed)<br>4. Verify server connection fields (URL, album)<br>5. Verify display settings (rotation, display mode, image order, dithering method)<br>6. Verify enhancement sliders (color, contrast, dithering strength)<br>7. Verify power management controls (sleep time range, wakeup interval)<br>8. Verify battery status display<br>9. Verify dark/light theme toggle<br>10. Verify prepare new photo button<br>11. Submit form with modified values<br>12. Verify configuration is saved to YAML<br>13. Verify hot-reload is triggered<br>14. Verify the form field names match the add-on option names (`immich_url`, `album_name`, `rotation_angle`, `color_enhance`, `dithering_strength`, `comfyui_entity_id`) (2.3.2)<br>15. Verify a POST with the canonical names and a POST with the legacy short names both land in the same runtime-YAML keys (2.3.2)<br>16. Verify the env-only secrets and the log level are echoed as read-only status and never as inputs (2.3.2)<br>17. Verify each card is labelled with its configuration channel (2.3.2) |
+| **Expected Result** | All UI elements are present and functional; form submission saves config and triggers hot-reload; page is responsive; the channel a value comes from is visible on the page (2.3.2) |
 | **Verification Method** | Test (Manual/Automated) |
-| **Actual Result** | _To be filled during execution_ |
-| **Status** | Not Executed |
+| **Actual Result** | 7 automated cases in `tests/test_functional.py` (`TestFR021WebSettings`, `TestFR021SettingsVocabulary`) — all green, 2026-11-15 |
+| **Status** | Executed — Passed |
 
 #### TC-FR-022: Image Tracking
 
@@ -1056,7 +1061,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-FR-019 | FR-019 | Test | Not Executed |
 | TC-FR-020-START | FR-020 | Test | Not Executed |
 | TC-FR-020-HOT | FR-020 | Test | Not Executed |
-| TC-FR-021 | FR-021 | Test | Not Executed |
+| TC-FR-021 | FR-021 | Test | Executed — Passed (7 cases, 2026-11-15) |
 | TC-FR-022 | FR-022 | Test | Not Executed |
 | TC-FR-023 | FR-023 | Test | Not Executed |
 | TC-FR-024 | FR-024 | Test | Not Executed |
