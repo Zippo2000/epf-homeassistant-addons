@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.4.1  
-**Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.4.1)  
+**Version:** 2.4.2  
+**Date:** 2026-11-17  
+**Baseline:** Repository commit (main branch, v2.4.2)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
@@ -28,6 +28,14 @@
 > exactly once, and a direct-source save must round-trip prompt / dimensions / seed / daily maximum
 > into the runtime YAML — **10 automated cases**, status "Executed — Passed". This is a test-object
 > extension, the requirement itself is unchanged. Results in EPF-RPT-001 (re-baselined for 2.4.1).
+>
+> **Revision 2.4.2 (2026-11-17):** **TC-FR-010-EXIF** gains four automated cases for the new global
+> **date-stamp switch** (`date_overlay`): the on/off differential on the same input, the settings-page
+> round trip through the runtime YAML and the hot-reload path, a partial POST that must not flip the
+> switch, and the page showing the stored state — **6 automated cases**, status "Executed — Passed".
+> FR-010 itself was re-worded in EPF-REQ-001 for the switch. Results in EPF-RPT-001 (re-baselined for
+> 2.4.2).
+
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
 ---
@@ -321,11 +329,11 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Priority** | Medium |
 | **Preconditions** | Image with EXIF DateTimeOriginal available |
 | **Test Input** | Image with EXIF DateTimeOriginal = "2024:06:15 14:30:00" |
-| **Test Steps** | 1. Load image with EXIF DateTimeOriginal<br>2. Process image through full pipeline<br>3. Verify date "2024-06-15" is rendered in bottom-right corner<br>4. Verify date is white text on black rectangle<br>5. Load image without EXIF date<br>6. Process image<br>7. Verify no date overlay is present |
-| **Expected Result** | Date is rendered as "YYYY-MM-DD" in bottom-right corner; white text on black rectangle; no overlay when EXIF date is absent |
+| **Test Steps** | 1. Load image with EXIF DateTimeOriginal<br>2. Process image through full pipeline<br>3. Verify date "2024-06-15" is rendered in bottom-right corner<br>4. Verify date is white text on black rectangle<br>5. Load image without EXIF date<br>6. Process image<br>7. Verify no date overlay is present<br>8. Process the same EXIF input with the switch off and compare against the run with it on — the difference is the stamp<br>9. POST the settings form with the switch disabled/enabled — the value lands in the runtime YAML and hot-reloads the pipeline<br>10. POST a partial form without the field — the stored value must survive<br>11. Render the settings page with the stored state disabled — the page must show disabled |
+| **Expected Result** | Date is rendered as "YYYY-MM-DD" in bottom-right corner; white text on black rectangle; no overlay when EXIF date is absent; the global switch controls the overlay for every source and defaults to enabled |
 | **Verification Method** | Test (Automated) |
-| **Actual Result** | _To be filled during execution_ |
-| **Status** | Not Executed |
+| **Actual Result** | 6 automated cases in `tests/test_functional.py::TestFR010DateOverlay`, 2026-11-17 — all pass (offline tier 199 passed / 8 skipped). The production image confirmed it on a real Immich photo: with the switch on the pipeline logs the overlay and draws the rectangle, with it off nothing is drawn. |
+| **Status** | Executed — Passed (6 automated cases, 2026-11-17) |
 
 #### TC-FR-011: Preview Generation
 
@@ -1078,7 +1086,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-FR-007 | FR-007 | Test | Not Executed |
 | TC-FR-008 | FR-008 | Test | Not Executed |
 | TC-FR-009 | FR-009 | Test | Not Executed |
-| TC-FR-010-EXIF | FR-010 | Test | Not Executed |
+| TC-FR-010-EXIF | FR-010 | Test | Executed — Passed (6 cases, 2026-11-17) |
 | TC-FR-011 | FR-011 | Test | Not Executed |
 | TC-FR-012 | FR-012 | Test | Not Executed |
 | TC-FR-013-PRE | FR-013 | Test | Not Executed |

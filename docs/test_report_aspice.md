@@ -2,12 +2,12 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.4.1
-**Date:** 2026-11-15
-**Baseline:** branch `main` — code base **v2.4.1** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Version:** 2.4.2
+**Date:** 2026-11-17
+**Baseline:** branch `main` — code base **v2.4.2** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
-settings-form duplicate-field fix 2.4.1)
+settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Status:** Completed — all tiers green (L0 offline, L1 live Immich, L3 production-image smoke)
 
@@ -53,6 +53,14 @@ settings-form duplicate-field fix 2.4.1)
 > cases → offline suite **195**; the **8** live cases are unchanged. L0, L1 and the production-image
 > smoke were re-run green on 2026-11-15 (§6.5). The catalogue side of this is a **TC-FR-021** test-object
 > extension (EPF-TST-001 rev 2.4.1); the requirement itself did not change.
+>
+> The **2.4.2** revision implements the global **date-stamp switch** on the settings page
+> (`date_overlay`, default enabled) — the first setting that lives at the **top level** of the runtime
+> YAML because it belongs to no source. **FR-010** was re-worded for it in EPF-REQ-001, and
+> **TC-FR-010-EXIF** gained four cases (on/off differential, settings round trip through YAML and
+> hot reload, partial POST keeps the stored value, page shows stored state) → offline suite **199**;
+> the live tier is unchanged at **8**. L0, L1 and the production-image smoke were re-run green on
+> 2026-11-17, including the switch demonstrated on a real Immich photo (§6.6).
 
 ---
 
@@ -60,14 +68,14 @@ settings-form duplicate-field fix 2.4.1)
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **203** (195 offline + 8 opt-in live) |
-| **Passed** | **203** — 195 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
+| **Total Test Cases** | **207** (199 offline + 8 opt-in live) |
+| **Passed** | **207** — 199 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 19.5 s (2026-11-15) · L1 26.3 s incl. three real GPU generations (2026-11-15) · L3 production smoke incl. one real ComfyUI generation, 12.4 s end to end (2026-11-15) |
+| **Execution Time** | L0 22.1 s (2026-11-17) · L1 26.9 s incl. three real GPU generations (2026-11-17) · L3 production smoke incl. two real Immich generations through the switch (2026-11-17, §6.6) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), and the settings form now delivers every field it renders (§6.5) |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5), and the global date-stamp switch governs the pipeline on the shipped image (§6.6) |
 | **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
 
 ---
@@ -108,7 +116,7 @@ settings-form duplicate-field fix 2.4.1)
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) | **93** | **93** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) | **97** | **97** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -134,8 +142,8 @@ settings-form duplicate-field fix 2.4.1)
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 203 collected — 195 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
-→ 203/203, 0 failed (100 %).**
+**Total: 207 collected — 199 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
+→ 207/207, 0 failed (100 %).**
 
 ---
 
@@ -213,14 +221,14 @@ Defect found and fixed on the **2.4.1** track (reported from a real installation
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 203 items
+collected 207 items
 
-tests/test_functional.py      :: 93 passed
+tests/test_functional.py      :: 97 passed
 tests/test_nonfunctional.py  :: 27 passed
 tests/test_providers.py      :: 54 passed
 tests/test_gallery_history.py :: 21 passed
 tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
-======================= 195 passed, 8 skipped in 19.47s ========================
+======================= 199 passed, 8 skipped in 22.06s ========================
 ```
 
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
@@ -354,6 +362,37 @@ server of §7.1):
 accident, not the pipeline — and a named workflow with a random seed produces a genuinely new image on
 the real server, which is what the field report said it did not.
 
+### 6.6 L0/L1/L3 re-run for 2.4.2 — the global date-stamp switch on the shipped image (run 2026-11-17)
+
+The switch is a pipeline control, so it is proven on the **shipped production image** against the real
+Immich of §7.1, driven through the browser's own path (form `POST` → runtime YAML → watchdog → provider
+→ generation):
+
+| Check | Result |
+|-------|--------|
+| Production image via the real s6 init path, env from the git-ignored `.env` | boots healthy; footer **v2.4.2** ✓ |
+| Settings page renders the new control | `name="date_overlay"` present; after a save the page shows the **stored** state ✓ |
+| Form `POST` Enabled | `200` → runtime YAML `date_overlay: true` → watchdog → provider rebuild ✓ |
+| `POST /prepare-photo`, real Immich photo with real EXIF date | `200`; log **`Date overlay: <the photo's date>`**; three previews stored; the bottom-right stamp rectangle is present in the served processed preview ✓ |
+| Form `POST` Disabled → same pipeline, next photo | YAML `date_overlay: false`, hot reload fires; log shows **no** overlay line and the stamp is gone ✓ |
+| `POST` without the field | stored value survives ✓ (silence is not a click) |
+| `/download` contract (regression) | `200`, `frame.txt`, `text/plain`, 16 tokens/row, **no `};` tail** ✓ |
+| `/health`, `/sleep` | Immich **connected** (env secret channel intact) ✓, sleep window answers ✓ |
+| L0 offline suite | **199 passed, 8 skipped** (the four new cases included) ✓ |
+| L1 live tier | **8 passed** in 26.9 s ✓ |
+
+**What this proves:** the switch is wired end to end on the image that ships — page → runtime YAML →
+hot reload → pipeline — and the differential (stamp drawn vs. stamp absent on the same kind of real
+photo) is the evidence the L0 differential test predicts the field behaviour.
+
+**Harness notes from this run** (they bit once each, both are documented in `AGENTS.md` §Gotchas):
+building the production image from the add-on directory **bakes a developer's local `config/` and
+`photos/` into the image** when they exist in the build context (in HA the bind mount shadows them);
+and a standalone smoke must keep `/init` as PID 1 and start gunicorn through the **real** `with-contenv`
+path, because Docker's container environment reaches the main program only through it — a bare
+`--entrypoint` override loses it, and Git-Bash mangles leading-slash arguments unless
+`MSYS_NO_PATHCONV=1` is set.
+
 ---
 
 ## 7. Reproduction
@@ -403,16 +442,17 @@ exported workflow graph the live tier posts is a `.env` value too):
 
 | Role | Name | Date | Signature |
 |------|------|------|-----------|
-| Test Manager | EPF Project | 2026-11-15 | - |
+| Test Manager | EPF Project | 2026-11-17 | - |
 | Quality Assurance | - | - | *(menschliches Zeichen steht aus)* |
-| Project Lead | EPF Project | 2026-11-15 | - |
+| Project Lead | EPF Project | 2026-11-17 | - |
 
 ---
 
-*Regenerated for code base **v2.4.1** on branch `main`, 2026-11-15: **195** offline cases pass,
+*Regenerated for code base **v2.4.2** on branch `main`, 2026-11-17: **199** offline cases pass,
 the **8** live cases pass against a real Immich *and* a real ComfyUI (including a real exported
 workflow graph), and the production image passes the L3 smoke (form vocabulary §6.2, named workflows
-§6.4, form-delivers-every-field §6.5) plus the live ComfyUI-direct leg (§6.3) — the release gate of
+§6.4, form-delivers-every-field §6.5, global date-stamp switch §6.6) plus the live ComfyUI-direct leg
+(§6.3) — the release gate of
 `AGENTS.md` is satisfied.
 Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —

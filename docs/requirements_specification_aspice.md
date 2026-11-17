@@ -2,9 +2,9 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.4.0  
-**Date:** 2026-11-15  
-**Baseline:** Repository commit (main branch, v2.4.0)  
+**Version:** 2.4.2  
+**Date:** 2026-11-17  
+**Baseline:** Repository commit (main branch, v2.4.2)  
 **Status:** Released
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
@@ -14,6 +14,11 @@
 > **Revision 2.4.0 (2026-11-15):** adds **FR-033 (Named ComfyUI Workflow Selection)** — the list of
 > named workflows with a selectable active entry on the settings page. The catalogue now has 33 FRs;
 > the matching test case is **TC-FR-033** in EPF-TST-001.
+>
+> **Revision 2.4.2 (2026-11-17):** **FR-010** gains a global on/off switch (`date_overlay`, default
+> enabled) that the settings page owns; the requirement text is re-worded accordingly and
+> **TC-FR-010-EXIF** is extended with the switch cases (status set to Executed — Passed). No new
+> requirement ID: the switch is a control on an existing requirement.
 
 ---
 
@@ -194,7 +199,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **ID** | FR-010 |
 | **Title** | Overlay EXIF date on processed image |
 | **Priority** | Medium |
-| **Description** | If EXIF DateTimeOriginal or DateTime metadata is present, the system SHALL render the date in `YYYY-MM-DD` format as white text on a black rectangle in the bottom-right corner of the processed image. |
+| **Description** | If EXIF DateTimeOriginal or DateTime metadata is present and the global `date_overlay` setting is enabled (default: enabled), the system SHALL render the date in `YYYY-MM-DD` format as white text on a black rectangle in the bottom-right corner of the processed image. The setting is global — it is not part of any source section, applies to Immich, ComfyUI-via-HA and ComfyUI-direct alike, and is edited on the settings page (hot-reload, no restart). When no EXIF date exists in the file, no overlay SHALL be drawn whatever the setting says. |
 | **Input** | Dithered image, EXIF datetime |
 | **Output** | Image with date overlay |
 | **Verification** | Test |
