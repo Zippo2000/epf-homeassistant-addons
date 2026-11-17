@@ -36,6 +36,9 @@ export SLEEP_END_HOUR=$(bashio::config 'sleep_end_hour' '6')
 export SLEEP_END_MINUTE=$(bashio::config 'sleep_end_minute' '0')
 export LOG_LEVEL=$(bashio::config 'log_level' 'info')
 
+# Global pipeline settings (default: date stamp on)
+export DATE_OVERLAY=$(bashio::config 'date_overlay' 'true')
+
 # Gallery history limits (defaults: 50 shots, 7 days)
 export GALLERY_MAX_COUNT=$(bashio::config 'gallery_max_count' '50')
 export GALLERY_RETENTION_DAYS=$(bashio::config 'gallery_retention_days' '7')

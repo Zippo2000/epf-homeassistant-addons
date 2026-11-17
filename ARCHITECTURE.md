@@ -226,6 +226,12 @@ Size ≈ **576 KB** of text per refresh.
    Since 2.4.0 the same applies to the **named ComfyUI workflow list**: it lives in the runtime YAML,
    the add-on options (`comfyui_workflows`, `comfyui_active_workflow`) only seed the first start, and
    a POST that carries no workflow fields must never wipe a stored list.
+   Since 2.4.2 the runtime YAML also carries **global, source-independent settings at the top level** —
+   `date_overlay` (draw the photo's EXIF date, default on) is the first of them. The settings page owns
+   those; the matching add-on option (`date_overlay` → `DATE_OVERLAY`) only seeds the first start, and a
+   POST that omits the field keeps the stored value (silence is not a click). Do not move such a key
+   into a source section — the panel shows it under Display Settings precisely because it applies to
+   every source.
 2. **One active provider at a time**, chosen by `image_source` and rebuilt by `reset_provider()` on
    every config change. `/health` and `/api/generation-status` are source-agnostic in that they
    interrogate whichever provider is active.

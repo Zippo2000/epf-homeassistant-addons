@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~195 tests); no network |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~199 tests); no network |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -202,6 +202,10 @@ This is the biggest footgun in the project:
   (stored configs and old bookmarks post the short names). The page labels each card with its channel
   (`runtime YAML` / `HA option`) and echoes the env-only secrets + `log_level` as read-only status —
   keep that, it is the only place the user can see which channel a value came from.
+- A **global (source-independent) setting** - the date-stamp switch `date_overlay` is the example - lives
+  at the **top level** of the runtime YAML, is edited on the settings page, and is seeded on first start
+  from the matching add-on option through env. A POST that omits such a field must keep the stored value.
+
 - The two files with `config.yaml` in the name are **different things**: the **add-on manifest**
   (`epf-eink-addon/config.yaml` — tracked, defines `options`/`schema`) vs the **runtime YAML**
   (`config/config.yaml` — git-ignored, created at runtime). Don't "refactor" one into the other.
@@ -280,6 +284,17 @@ pass counts.**
 
 ## Gotchas (the non-obvious stuff)
 
+- **A standalone production-image smoke build is not the HA runtime.** `Dockerfile` copies the whole
+  add-on directory, so a developer's local `config/config.yaml` and `photos/` get **baked into the
+  image** when they exist in the build context (in HA the bind mount shadows them). Start the container
+  through its normal s6 init and launch gunicorn via the **real** `with-contenv` path
+  (`/package/admin/s6-overlay-*/command/with-contenv`; the `/usr/bin/with-contenv` symlink in this base
+  image is dangling) - Docker's container environment reaches the main program only through it, so
+  overriding `--entrypoint` (bash) loses the env and the app silently starts with empty secrets/URLs.
+  Git-Bash also mangles leading-slash arguments; prefix `MSYS_NO_PATHCONV=1` or keep the path inside a
+  quoted `-c` string. And `--env-file` wants strict `KEY=VALUE` lines: a CRLF `.env` puts the CR into
+  the value, while the shell `source` the L1 harness uses strips it.
+
 - **Line endings can break the test entrypoint on Windows.** Contributors here build with
   `core.autocrlf=true` and there is no repo-wide `eol` pin, so a Windows checkout materialises
   `.sh` files as **CRLF**; a CRLF shebang then makes a Docker `COPY run.test.sh /run.sh` plus
@@ -320,7 +335,7 @@ pass counts.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **195 offline + 8 live = 203**-case suite, **2.4.1**, re-counted 2026-11-15 — L0, L1 against a real
+  **199 offline + 8 live = 207**-case suite, **2.4.2**, re-counted 2026-11-17 — L0, L1 against a real
   Immich *and* a real ComfyUI, and the L3 production-image smoke all re-run green). If a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
   the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, and the

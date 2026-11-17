@@ -182,6 +182,14 @@ built-in workflow and says so in the log.
 - Options: `atkinson`, `floyd-steinberg`
 - Default: `atkinson`
 
+**date_overlay**
+- Draw the photo's EXIF date (`YYYY-MM-DD`) on the processed image, bottom-right corner
+- Options: `true`, `false` — also editable on the settings page, where it applies without a restart
+- Default: `true`
+- A **global** setting: it belongs to no source and applies to Immich, ComfyUI-via-HA and
+  ComfyUI-direct alike. It only decides whether the pipeline may draw a date — a photo without an
+  EXIF date (ComfyUI generations, RAW files converted by `rawpy`) shows none either way.
+
 ### Gallery
 
 **gallery_max_count**

@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.1 (2026-11-15)
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.2 (2026-11-17)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -84,7 +84,7 @@ Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `t
 | `TestFR006ScalingRotation` | FR-006 | `load_scaled` → 800×480; Rotation 90/180/270; `fill`=Crop, `fit`=Letterbox |
 | `TestFR007ColorEnhancement` | FR-007 | neutral=unchanged; `enhance=0`→Grayscale |
 | `TestFR008FloydSteinberg` | FR-008/009 | Shape (480,800,3), **6-Farben-Palette**, **Atkinson** analog |
-| `TestFR010DateOverlay` | FR-010 | Overlay **mit** EXIF-Datum; **keine** ohne |
+| `TestFR010DateOverlay` | FR-010 | Overlay **mit** EXIF-Datum; **keine** ohne; **Schalter an/aus als Differenzial auf demselben Bild, Settings-Roundtrip durchs Runtime-YAML + Hot-Reload, „POST ohne Feld behält den Wert", Seite zeigt den gespeicherten Zustand (2.4.2)** |
 | `TestFR011PreviewGeneration` | FR-011 | 3 Previews; original resized; BMP valide |
 | `TestFR012HexFormat` | FR-012 | `convert_to_hex_format` → `BytesIO`; korrekter Inhalt |
 | `TestFR013ImageDelivery` | FR-013 | prepared delivered; **on-the-fly** delivery; `batteryCap`-Recording |
@@ -130,8 +130,8 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.4.1):** **195** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **203**,
+> **Coverage-Grob (Stand 2.4.2):** **199** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **207**,
 > 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
 > ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
@@ -140,8 +140,8 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.1 / 203 Tests / 100 %** (L0 19,5 s,
-   L1 26,3 s, nachgezählt am 2026-11-15). Code, Specs und Report sind wieder auf demselben Stand
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.2 / 207 Tests / 100 %** (L0 22,1 s,
+   L1 26,9 s, nachgezählt am 2026-11-17). Code, Specs und Report sind wieder auf demselben Stand
    (33 FR, volles Provider-Modul, sechs Test-Dateien). Vor jedem Release neu fahren und neu zählen —
    sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf

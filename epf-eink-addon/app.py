@@ -84,6 +84,23 @@ def _resolve_build_timestamp(default: str = "unknown") -> str:
 BUILD_VERSION: str = _resolve_build_version()
 BUILD_TIMESTAMP: str = _resolve_build_timestamp()
 
+
+def _env_bool(name: str, default: bool) -> bool:
+    """Seed a boolean setting from the environment (`run.sh` forwards the add-on option).
+
+    HA hands booleans over as `true`/`false`; an unset variable means "use the default".
+    A value we cannot read must not change what the frame shows, so it falls back loudly.
+    """
+    raw: str = os.getenv(name, '').strip().lower()
+    if not raw:
+        return default
+    if raw in ('true', '1', 'yes', 'on'):
+        return True
+    if raw in ('false', '0', 'no', 'off'):
+        return False
+    logger.warning(f"{name}={raw!r} is not a boolean; keeping the default ({default})")
+    return default
+
 # =============== LOGGING CONFIGURATION ===============
 LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
@@ -149,6 +166,9 @@ def _seed_workflows(raw: str) -> List[Dict[str, Any]]:
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     'image_source': os.getenv('IMAGE_SOURCE', 'immich'),
+    # Global pipeline settings - they belong to no source (2.4.2). The settings page owns
+    # them; the add-on option below only seeds the value on first start.
+    'date_overlay': _env_bool('DATE_OVERLAY', True),
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -213,6 +233,8 @@ strength: float = current_config['immich']['strength']
 display_mode: str = current_config['immich']['display_mode']
 image_order: str = current_config['immich']['image_order']
 dithering_method: str = current_config['immich'].get('dithering_method', 'atkinson')
+# Global pipeline switch (2.4.2): renders the EXIF date on the processed image when on.
+date_overlay: bool = current_config.get('date_overlay', True)
 sleep_start_hour: int = current_config['immich']['sleep_start_hour']
 sleep_start_minute: int = current_config['immich']['sleep_start_minute']
 sleep_end_hour: int = current_config['immich']['sleep_end_hour']
@@ -437,7 +459,7 @@ def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height:
     
     logger.info(f"Image after dithering: size={output_img.size}, mode={output_img.mode}")
     
-    if datetime_str:
+    if date_overlay and datetime_str:
         draw = ImageDraw.Draw(output_img)
         try:
             font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 20)
@@ -652,6 +674,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     global current_config, image_source, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     global GALLERY_MAX_COUNT, GALLERY_RETENTION_DAYS, GALLERY_MAX_AGE_SECONDS
+    global date_overlay
     
     if new_config is None or 'immich' not in new_config:
         logger.warning("Invalid config received, ignoring update")
@@ -668,6 +691,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     display_mode = new_config['immich']['display_mode']
     image_order = new_config['immich']['image_order']
     dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
+    date_overlay = bool(new_config.get('date_overlay', True))
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -680,7 +704,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     
     reset_provider()
     
-    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Dithering={dithering_method}")
+    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Dithering={dithering_method}, DateOverlay={date_overlay}")
 
 def start_config_watcher(cfg_path: str) -> Observer:
     config_handler = ConfigFileHandler(cfg_path, update_app_config)
@@ -716,6 +740,22 @@ def form_field(canonical: str, legacy: str, default: Any) -> Any:
     if value is None:
         value = request.form.get(legacy)
     return default if value is None else value
+
+
+#: Spellings the settings form uses for a boolean; anything else means "off".
+TRUE_WORDS: Tuple[str, ...] = ('true', '1', 'yes', 'on', 'enabled')
+
+
+def form_bool(name: str, current: bool) -> bool:
+    """Read a boolean from the settings form; a POST that omits the field keeps the stored value.
+
+    The form always sends its controls, so the switch changes through the page. Callers that
+    post a partial form (older tests, scripts) must not be able to flip a setting by silence.
+    """
+    value: Optional[str] = request.form.get(name)
+    if value is None:
+        return current
+    return value.strip().lower() in TRUE_WORDS
 
 
 #: Fields a workflow slot carries (form name = `wf_<slot>_<field>`, YAML key = `<field>`).
@@ -821,6 +861,8 @@ def settings() -> Any:
     if request.method == 'POST':
         new_config: Dict[str, Any] = {
             'image_source': request.form.get('image_source', current_config.get('image_source', 'immich')),
+            # global switch, source-independent (2.4.2)
+            'date_overlay': form_bool('date_overlay', current_config.get('date_overlay', True)),
             'immich': {
                 'url': form_field('immich_url', 'url', current_config['immich']['url']),
                 'album': form_field('album_name', 'album', current_config['immich']['album']),

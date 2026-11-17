@@ -465,6 +465,74 @@ class TestFR010DateOverlay:
                                     'latest_preview.jpg')
         assert os.path.exists(preview_path)
 
+    # --- 2.4.2: the overlay has a global on/off switch -------------------------------
+
+    #: Roughly where the stamp lands on a 800x480 frame: x0, y0, x1, y1.
+    STAMP_REGION = (540, 390, 780, 470)
+
+    def _black_pixels_in_region(self, image):
+        x0, y0, x1, y1 = self.STAMP_REGION
+        return sum(1 for y in range(y0, y1) for x in range(x0, x1)
+                   if image.getpixel((x, y)) == (0, 0, 0))
+
+    def _exif_image(self, app_module, test_dir):
+        app_module.rotation_angle = 0
+        app_module.display_mode = 'fit'
+        app_module.photo_dir = test_dir['photos']
+        return create_test_image(EPD_W, EPD_H, include_exif=True,
+                                 exif_date='2024-06-15 14:30:00')
+
+    def test_switch_off_suppresses_the_stamp(self, app_module, test_dir):
+        """Switch off = the EXIF date is not drawn any more; switch on = it is.
+
+        Compares the two runs on the same kind of input instead of counting white pixels:
+        the test image is a gradient that dithers to several palette colours, so only the
+        differential proves the stamp.
+        """
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+
+        app_module.date_overlay = True
+        stamped = app_module.scale_img_in_memory(self._exif_image(app_module, test_dir))
+        app_module.date_overlay = False
+        plain = app_module.scale_img_in_memory(self._exif_image(app_module, test_dir))
+
+        assert list(stamped.getdata()) != list(plain.getdata()), "switch changed nothing"
+        # the stamp is a black rectangle with white text - the black has to be visible
+        assert self._black_pixels_in_region(stamped) - self._black_pixels_in_region(plain) >= 500, \
+            "stamp rectangle missing while the switch is on"
+
+    def test_switch_round_trips_through_the_settings_page(self, client_with_mocks, app_module, test_config_path):
+        """The form's switch lands in the runtime YAML and hot-reloads the pipeline."""
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'date_overlay': 'disabled'}, follow_redirects=True)
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['date_overlay'] is False
+        assert app_module.current_config['date_overlay'] is False
+        assert app_module.date_overlay is False       # hot-reload reached the pipeline
+
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'date_overlay': 'enabled'}, follow_redirects=True)
+        assert app_module.current_config['date_overlay'] is True
+        assert app_module.date_overlay is True
+
+    def test_a_post_without_the_field_keeps_the_stored_switch(self, client_with_mocks, app_module):
+        """Silence is not a click: a partial POST must not flip the switch off."""
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'date_overlay': 'disabled'}, follow_redirects=True)
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'album_name': 'some-album'}, follow_redirects=True)
+        assert app_module.current_config['date_overlay'] is False
+        assert app_module.date_overlay is False
+
+    def test_the_page_shows_the_stored_state(self, client_with_mocks, app_module):
+        """After a save the switch must show what is stored, not the default."""
+        app_module.current_config['date_overlay'] = False
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert '<option value="disabled" selected>' in html
+        assert 'name="date_overlay"' in html
+
 
 # ============================================================
 # TC-FR-011: Preview Generation
@@ -1314,7 +1382,8 @@ class TestFR021SettingsVocabulary:
         """Form fields carry the add-on-option names; the old short names are gone."""
         html = client_with_mocks.get('/').data.decode('utf-8')
         for name in ('immich_url', 'album_name', 'rotation_angle',
-                     'color_enhance', 'dithering_strength', 'comfyui_entity_id'):
+                     'color_enhance', 'dithering_strength', 'comfyui_entity_id',
+                     'date_overlay'):
             assert f'name="{name}"' in html
         assert 'name="url"' not in html
         assert 'name="album"' not in html

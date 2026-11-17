@@ -996,6 +996,14 @@ footer {
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="date_overlay">Date Stamp:</label>
+                            <select id="date_overlay" name="date_overlay">
+                                <option value="enabled" {% if config.get('date_overlay', True) %}selected{% endif %}>Enabled</option>
+                                <option value="disabled" {% if not config.get('date_overlay', True) %}selected{% endif %}>Disabled</option>
+                            </select>
+                            <small class="small-text">Draws the photo's EXIF date on the processed image, bottom-right corner. Applies to <strong>every</strong> image source - it is a global setting, not an Immich/HA/ComfyUI one. It needs an EXIF date in the file: photos without one (ComfyUI generations, RAW-converted files) stay as they are.</small>
+                        </div>
+                        <div class="form-group">
                             <label>Color Enhancement:</label>
                             <div class="slider-container">
                                 <input type="range" id="color_enhance" name="color_enhance" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="updateSliderValue(this)">

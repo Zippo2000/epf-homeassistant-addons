@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.2] - 2026-11-17
+
+### Added
+- **A switch for the date stamp.** The Display Settings card on the settings page gained a **Date
+  Stamp** select (Enabled / Disabled), and the add-on option `date_overlay` seeds it on first start.
+  It is a **global** setting — it belongs to no source, so it lives at the **top level** of the
+  runtime YAML next to `image_source` and it governs Immich, ComfyUI-via-HA and ComfyUI-direct the
+  same way. Saving applies immediately through the watchdog, no restart. Default is **enabled**, the
+  behaviour every previous version had.
+- The switch decides whether the pipeline may draw a date, not what it draws: a file without an EXIF
+  date — ComfyUI generations, and RAW/DNG files converted by `rawpy` — shows no stamp either way, and
+  the field says so on the page.
+- `run.sh` forwards the option as `DATE_OVERLAY` (the usual seed channel: options → env → defaults).
+
+### Tests
+- Four new cases: the same input processed with the switch on and off must differ (a differential —
+  the fixture image is a gradient that dithers to several palette colours, so counting white pixels
+  alone proves nothing); the settings page round-trips the switch through the runtime YAML and the
+  hot-reload path; a POST that omits the field must not flip it; and the page must show the stored
+  state rather than the default. Offline suite: **199** cases.
+
 ## [2.4.1] - 2026-11-15
 
 ### Fixed

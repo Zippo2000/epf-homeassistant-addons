@@ -431,3 +431,30 @@ identisch, bei `-1` wäre sie neu gewesen).
    eingefügt und nichts bekam) — Rückmeldung beim Speichern wäre fair: Name Pflicht, sobald JSON drin ist.
 2. **Leere Felder beim Speichern** überschreiben bestehende Werte mit leer (bestehend seit 2.3.2, durch
    die neuen Slots sichtbarer geworden) — Guard-Test + UI-Hinweis sinnvoll.
+
+---
+
+## 10. Datumsstempel-Schalter (2.4.2)
+
+**Auftrag (Nutzer):** auf der Settings-Seite einen Schalter, mit dem man das Datum ein- und ausschaltet —
+in den **globalen** Bereich, unabhängig von Immich, HA und ComfyUI.
+
+**Umgesetzt:** Select **Enabled / Disabled** in der Display-Settings-Karte (das ist die quellunabhängige
+Karte), Key `date_overlay` **auf Top-Level** im Runtime-YAML (genau weil er zu keiner Quelle gehört),
+Default **enabled** (= bisheriges Verhalten), Anwendung ohne Neustart über den Watchdog. Die
+Add-on-Option `date_overlay` (+ `run.sh`-Export `DATE_OVERLAY`) sägt nur den ersten Start.
+
+**Entscheidung Feldtyp — Select, kein optischer Toggle:** das Formular ist ein einziges `<form>`, und seit
+2.4.1 gilt "ein Feldname pro Config-Key". Eine Checkbox schickt im Nicht-JS-POST nichts, wenn sie aus ist,
+und die Regel "Feld fehlt = gespeicherter Wert bleibt" (nötig für Legacy-POSTs und die bestehenden Tests)
+würde ein Ausschalten ohne JS unmöglich machen. Der Select schickt immer einen Wert. Ein Toggle im
+Toggle-Outfit (Optik, Wert per JS/Hidden-Field) ist machbar — Entscheidung beim Nutzer.
+
+**Grenze, die der Schalter nicht verschiebt:** gezeichnet wird nur, wenn das Bild ein EXIF-Datum hat.
+ComfyUI-Generationen und rawpy-konvertierte RAW/DNG haben keins → ohne Stempel, beide Schalterstellungen.
+Steht jetzt als Hilfetext unter dem Feld.
+
+**Tests:** vier neue Fälle (`TestFR010DateOverlay`: An/Aus-Differenzial auf demselben Input,
+Settings-Roundtrip durch YAML + Hot-Reload, POST ohne Feld behält den Wert, Seite zeigt den gespeicherten
+Zustand) → L0 **199**, L1 **8**. Produktions-Image mit echtem Immich-Foto: ON zeichnet und loggt
+`Date overlay: …`, OFF zeichnet nicht (Report §6.6).
