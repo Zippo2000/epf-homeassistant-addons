@@ -1,0 +1,76 @@
+# ============================================================================
+# L0 — the offline suite, in CI.
+# ----------------------------------------------------------------------------
+# This is the one tier of our assurance model (TESTSPEC.md §3, AGENTS.md "Top-level
+# goal") that runs without network, secrets, Immich, Home Assistant or ComfyUI, so
+# it is the one tier that can be mechanised. It is the same command the developer
+# runs locally:
+#
+#     docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:local epf-eink-addon
+#     docker run --rm epf-eink-tests:local          # -> pytest tests/ (+ junitxml)
+#
+# The opt-in live tier (L1) is NOT run here: it talks to a real Immich and a real
+# ComfyUI and performs real GPU generations, so it stays a manual, consented step
+# (`sh epf-eink-addon/run-live-tests.sh`). Without a .env it skips, and skipped
+# live cases do not fail this job.
+#
+# L3 (production-image smoke) also stays manual: the shipped image self-starts
+# only through the HA/s6 path — see AGENTS.md §Gotchas.
+#
+# If this job goes red on a count, the docs must follow: AGENTS.md, TESTSPEC.md and
+# docs/test_report_aspice.md quote the case count (see AGENTS.md §Gotchas — the
+# "100 %" claim silently rots otherwise).
+# ============================================================================
+name: L0 offline suite
+
+on:
+  push:
+    paths:
+      - "epf-eink-addon/**"
+      - ".github/workflows/l0.yml"
+  pull_request:
+    paths:
+      - "epf-eink-addon/**"
+      - ".github/workflows/l0.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: l0-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  l0:
+    name: pytest (mocked, offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the test image (this is also where cpy.so gets compiled)
+        run: |
+          docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:ci epf-eink-addon
+
+      - name: Run the offline suite
+        # The image CMD is `bash /run.sh` -> run.test.sh -> pytest with --junitxml;
+        # a non-zero exit fails the job. Do not pass /run.sh as an argument here.
+        run: |
+          docker run --rm epf-eink-tests:ci
+
+      - name: Collect the junit report
+        if: always()
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/out" \
+            --entrypoint bash \
+            epf-eink-tests:ci \
+            -c 'cp -f /app/test-results.xml /out/ 2>/dev/null || echo "no junit file (suite died before writing it)"'
+
+      - name: Upload junit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-l0
+          path: test-results.xml
+          if-no-files-found: ignore
