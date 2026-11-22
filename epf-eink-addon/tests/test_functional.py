@@ -1439,6 +1439,27 @@ class TestFR021SettingsVocabulary:
         assert 'name="immich_api_key"' not in html
         assert 'name="ha_api_token"' not in html
 
+    def test_empty_field_overwrites_and_the_ui_warns(self, client_with_mocks, app_module):
+        """2.4.3 (plan §9.2): an emptied field is a real answer — empty overwrites what is stored.
+
+        Only a field the POST *omits* keeps its stored value; the form always sends its controls,
+        so this is the behaviour the user sees. It is intentional, and the page now warns before
+        sending it instead of letting the value vanish quietly.
+        """
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'comfyui_prompt': 'a red fox at dawn'},
+                               follow_redirects=True)
+        assert app_module.current_config['comfyui']['prompt'] == 'a red fox at dawn'
+
+        client_with_mocks.post('/', data={'image_source': 'immich', 'comfyui_prompt': ''},
+                               follow_redirects=True)
+        assert app_module.current_config['comfyui']['prompt'] == ''
+
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'id="clearConfirmModal"' in html
+        assert 'snapshotStoredValues' in html
+        assert 'Save anyway' in html
+
     def test_form_field_names_are_unique(self, client_with_mocks):
         """2.4.1 regression guard: the single rendered form must not name any field twice.
 
@@ -1542,6 +1563,26 @@ class TestFR033WorkflowSelection:
         resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'active_workflow': 'ghost'},
                                        follow_redirects=False)
         assert resp.status_code == 400
+
+    def test_slot_content_without_a_name_is_refused(self, client_with_mocks):
+        """2.4.3 (plan §9.1): a slot holding a pasted workflow but no name is not stored silently.
+
+        The user pasted JSON into slot 1, clicked Save, got "Settings saved" and got nothing —
+        an unnamed slot was dropped without a word. Saying so is cheaper than a support thread.
+        """
+        resp = client_with_mocks.post('/', data={'wf_1_api_json': self.API_JSON},
+                                      follow_redirects=False)
+        assert resp.status_code == 400
+        body = resp.data.decode('utf-8')
+        assert 'slot 1' in body
+        assert 'no name' in body
+
+    def test_untouched_unnamed_slots_are_still_dropped(self, client_with_mocks, app_module):
+        """The guard fires on content, not on an empty slot left on the page (2.4.3)."""
+        resp = client_with_mocks.post('/', data={'image_source': 'immich', 'wf_1_name': ''},
+                                      follow_redirects=True)
+        assert resp.status_code == 200
+        assert app_module.current_config['comfyui']['workflows'] == []
 
     def test_post_without_slots_keeps_the_stored_list(self, client_with_mocks, app_module):
         """A caller that posts no workflow fields must not wipe an existing list."""

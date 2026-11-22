@@ -27,6 +27,11 @@ This add-on provides a Flask server that:
 > secrets (`immich_api_key`, `ha_api_token`) are read from the options only and are never written to
 > that file; the settings page shows them as read-only status. Each card on the page is labelled with
 > the channel it belongs to (`runtime YAML` or `HA option`).
+>
+> **Saving:** a field the page does **not** send keeps its stored value (that is why the date stamp is
+> a select, not a checkbox — it must always send something). A field you **empty** does send, and so
+> genuinely clears the stored value — the page names those fields and asks first. A workflow slot with
+> JSON in it is refused if you give it **no name**, because the list is keyed by name.
 
 ### Image Source Selection
 
@@ -133,7 +138,7 @@ dropdown: the built-in workflow, or any named slot. Slots 1-4 take:
 
 | Field | Meaning |
 |-------|---------|
-| Name | How the dropdown labels it; unique, and a slot without a name is not part of the list |
+| Name | How the dropdown labels it; unique. A slot with JSON in it needs one — saving refuses it otherwise (an empty slot is simply left empty) |
 | API JSON | The graph in ComfyUI **API format** — in ComfyUI use **"Save (Export)"**; the format ComfyUI stores by default (a UI graph) is rejected when you save, with a hint |
 | Prompt / Negative prompt override | Text for this workflow; empty uses the global prompt fields above. Variables like `{time_of_day}` still work |
 | Node mapping | For graphs whose text node is not a plain `CLIPTextEncode` node — Qwen-Image, for example, keeps the prompt in a custom node's `prompt` input: node id + input name to write to |

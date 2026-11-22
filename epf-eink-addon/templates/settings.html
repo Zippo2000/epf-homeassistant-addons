@@ -1112,6 +1112,17 @@ footer {
         </div>
     </div>
 
+    <div class="confirm-modal" id="clearConfirmModal">
+        <div class="confirm-content">
+            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;margin-right:0.4rem;display:inline-block"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Clear stored values?</h2>
+            <p>These fields had a stored value and would be saved empty: <strong id="clearConfirmList"></strong>. Saving empty overwrites — it is not "keep what is stored".</p>
+            <div class="confirm-buttons">
+                <button onclick="confirmClearAndSave()" style="background:var(--accent);color:white;border:none;padding:0.6rem 1.2rem;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--fs-body);font-weight:500">Save anyway</button>
+                <button class="reset-btn" onclick="cancelClearSave()" style="padding:0.6rem 1.2rem;font-size:var(--fs-body)">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const POLL_INTERVALS = { HEALTH: 60000, PHOTO_STATUS: 10000, BATTERY: 30000 };
         const NOTIFICATION_DURATION = 4000;
@@ -1419,6 +1430,69 @@ footer {
             var form = safeGet('settingsForm');
             if (!form) return;
 
+            // 2.4.3 (plan §9.2): an empty field is a real answer — the server keeps what a POST
+            // omits, but the form always sends its controls, so an emptied field overwrites the
+            // stored value. Warn before sending that, instead of letting it vanish quietly.
+            var cleared = fieldsBeingCleared();
+            if (cleared.length) {
+                var modal = safeGet('clearConfirmModal');
+                var listEl = safeGet('clearConfirmList');
+                if (modal && listEl) {
+                    listEl.textContent = cleared.join(', ');
+                    modal.style.display = 'flex';
+                    return;
+                }
+            }
+            submitForm(form);
+        }
+
+        // What the page was served with, snapshotted at load: that is the stored value.
+        const STORED_VALUES = {};
+
+        function snapshotStoredValues() {
+            var form = safeGet('settingsForm');
+            if (!form) return;
+            form.querySelectorAll('input, textarea, select').forEach(function (el) {
+                if (!el.name) return;
+                STORED_VALUES[el.name] = (el.value || '').trim();
+            });
+        }
+
+        function fieldLabel(el) {
+            if (el.id) {
+                var label = document.querySelector('label[for="' + el.id + '"]');
+                if (label) return label.textContent.trim();
+            }
+            return el.getAttribute('data-label') || el.name;
+        }
+
+        function fieldsBeingCleared() {
+            var form = safeGet('settingsForm');
+            if (!form) return [];
+            var cleared = [];
+            form.querySelectorAll('input, textarea, select').forEach(function (el) {
+                if (!el.name || el.disabled) return;
+                if (el.name.indexOf('wf_') === 0) return;   // workflow slots have their own rule (2.4.0)
+                var was = STORED_VALUES[el.name] || '';
+                var now = (el.value || '').trim();
+                if (was && !now) cleared.push(fieldLabel(el));
+            });
+            return cleared;
+        }
+
+        function confirmClearAndSave() {
+            var modal = safeGet('clearConfirmModal');
+            if (modal) modal.style.display = 'none';
+            var form = safeGet('settingsForm');
+            if (form) submitForm(form);
+        }
+
+        function cancelClearSave() {
+            var modal = safeGet('clearConfirmModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function submitForm(form) {
             var formData = new FormData(form);
             fetch('./', { method: 'POST', body: formData })
                 .then(function(response) {
@@ -1544,6 +1618,7 @@ footer {
             updatePhotoStatus();
             updateBatteryInfo();
             updateSourceVisibility();
+            snapshotStoredValues();
 
             setInterval(checkHealth, POLL_INTERVALS.HEALTH);
             setInterval(updatePhotoStatus, POLL_INTERVALS.PHOTO_STATUS);

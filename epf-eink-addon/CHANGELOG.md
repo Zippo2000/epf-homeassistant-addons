@@ -24,11 +24,25 @@ All notable changes to this project will be documented in this file.
   directory holds the single live "current photo" slot, not groups, and it is never a gallery entry.
   Files whose name carries no shot id are left alone by gallery pruning.
 
+### Fixed
+- **A workflow slot with content but no name is no longer silently dropped.** The slot list is keyed by
+  name, so pasting an API graph into an unnamed slot and pressing Save stored nothing — the page just
+  said "Settings saved". Saving now refuses it and names the slot. An empty slot stays an empty slot,
+  and a POST without workflow fields still keeps the stored list.
+- **An emptied field asks before it overwrites.** The form always sends its controls, so clearing a
+  field and saving genuinely clears the stored value (a *missing* field keeps it — that rule is
+  unchanged, and it is why the date stamp is a select and not a checkbox). That is intended, but it was
+  silent; the page now shows a confirmation naming the fields that would go from stored to empty.
+
 ### Tests
-- Three new cases: the crossed-mtime layout that split a shot in the field (this one **fails under the
-  old semantics** — forcing the pruner back to per-pattern turns it red), pruner/reader agreement on
-  the cap, and a name without a shot id neither deleted nor counted. Gallery file: **24** cases;
-  offline suite **202** (24.4 s, 8 live cases skipped by design).
+- Three new gallery cases: the crossed-mtime layout that split a shot in the field (this one **fails
+  under the old semantics** — forcing the pruner back to per-pattern turns it red), pruner/reader
+  agreement on the cap, and a name without a shot id neither deleted nor counted. Gallery file:
+  **24** cases.
+- Three new functional cases (97 → **100**): the unnamed-slot-with-content refusal (proven both ways —
+  disable the guard and it goes red), unnamed-and-empty stays harmless, and the empty-field overwrite
+  pinned together with the warning markup.
+- Offline suite **202 → 205** (24.9 s, 8 live cases skipped by design), combined **210 → 213**.
 
 ## [2.4.2] - 2026-11-17
 

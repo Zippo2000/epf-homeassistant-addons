@@ -845,10 +845,21 @@ WF_SLOT_FIELDS: Tuple[str, ...] = (
 )
 
 
+def _slot_has_content(form: Any, slot: int) -> bool:
+    """True when a settings-form slot carries anything at all (2.4.3, plan §9.1).
+
+    Used to refuse a slot that has content but no name: such a slot used to vanish at save
+    time without a word, which is what made a pasted workflow disappear.
+    """
+    return any((form.get(f'wf_{slot}_{field}') or '').strip() for field in WF_SLOT_FIELDS)
+
+
 def parse_workflow_slots(form: Any, current_config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
     """Rebuild the named-workflow list from the settings form slots (2.4.0).
 
-    Slots without a name are dropped; names must be unique and short. A pasted workflow
+    Slots without a name are dropped — but a slot that carries **content** without a name is
+    refused with a message, because that is a user who pasted a workflow and would otherwise
+    get nothing back (2.4.3). Names must be unique and short. A pasted workflow
     has to be ComfyUI **API** JSON — what "Save (Export)" produces — because that is what
     `POST /prompt` takes; the format ComfyUI stores by default is a UI graph (`nodes` /
     `links`) and cannot be submitted. We say so at save time instead of letting the next
@@ -867,6 +878,9 @@ def parse_workflow_slots(form: Any, current_config: Dict[str, Any]) -> Tuple[Lis
     for slot in range(1, MAX_WORKFLOWS + 1):
         name: str = (form.get(f'wf_{slot}_name') or '').strip()
         if not name:
+            if _slot_has_content(form, slot):
+                return [], '', (f'slot {slot} has content but no name — a slot is only stored '
+                                'when it is named (give it a name, or clear it)')
             continue
         if len(name) > WORKFLOW_NAME_MAX_CHARS:
             return [], '', f'workflow name too long: {name[:20]}... (max {WORKFLOW_NAME_MAX_CHARS} characters)'
