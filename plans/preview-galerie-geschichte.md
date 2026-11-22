@@ -2,7 +2,8 @@
 
 > **Status:** ✅ **CLOSED (M1 + M2-Optionen)** — geliefert in **2.2.0** (`d825e7b`) + Ingress-Fix **2.2.1** (`ef1a0d1`, relative `./preview-file/`-URLs) + **M2-Optionen in 2.3.0** (`gallery_max_count` / `gallery_retention_days` als Add-on-Optionen + Settings-Felder). **M2-Rest:** `_archive_delivered()` offen. **M3 teilweise** (Lazy-Load + Cleanup-Button sind da, Paginierung nicht). DoD: L0 ✅ (162+5) + L3 ✅ am 2026-11-15 (Produktions-Image + echtes Immich: Prepare → archiviertes Paar, gruppierte Reader-Ausgabe, relative URLs — Report §6.2); **L4-Feld offen**. Siehe §12/§13.
 > **2.4.3 nachtrag:** Die Cap-Einheit ist beschlossen und umgesetzt — **pro Schuss** (§14); die
-> Aufräumung des Live-Slots (`POST /cleanup-previews`) bleibt pro Muster. L0 grün (202 + 8, 2026-11-20).
+> Aufräumung des Live-Slots (`POST /cleanup-previews`) bleibt pro Muster. L0 grün (205 + 8, Stand 2.4.3b,
+> 2026-11-20 — der Stand dieses Passes war 202 + 8; seither sind die Settings-Guard-Fälle dazugekommen).
 > **Betreff:** `epf-eink-addon/app.py` (Prepare/Deliver-Pipeline, `cleanup_old_previews()`,
 > `/api/gallery-previews`) + `epf-eink-addon/templates/settings.html` (Gallery-Tab)
 > **Ziel:** Die Preview-Galerie soll eine echte **Geschichte** ansammeln (z. B. die letzten 50
@@ -412,10 +413,11 @@ Seit diesem Pass reden Pruner und Reader dieselbe Sprache: `gallery_max_count` =
 `docs/test_specification_aspice.md` (**TC-FR-032** auf 24 Fälle erweitert),
 `docs/test_report_aspice.md` (§6.3 Finding 2 geschlossen, neuer §6.7, Counts 202 + 8 = 210).
 
-**Stand dieses Passes:** **L0 grün** — 202 passed, 8 skipped, 24,4 s (2026-11-20). **L1 und L3 noch
-nicht auf diesem Code-Stand gefahren** (letzter grüner Lauf 2026-11-15/17 auf v2.4.2) — vor dem
-v2.4.3-Tag nachziehen; der L3-Smoke soll dann **mehr Schüsse als der Cap** archivieren, damit die
-Pruning-Pfade auf dem ausgelieferten Image laufen. Das QA-Zeichen im Report (§8) steht weiter aus.
+**Stand dieses Passes:** **L0 grün** — 202 passed, 8 skipped, 24,4 s (2026-11-20). **L1 und L3 am
+2026-11-22 auf diesem Code-Stand nachgezogen und grün** (Report §6.9): L1 8/8 in 40,2 s gegen echten
+Immich *und* echtes ComfyUI, L3 auf dem ausgelieferten Image mit Cap 2 und drei echten
+Immich-Generierungen → **zwei Shots, je mit beiden Dateien**, der älteste geht komplett — genau das
+Verhalten dieses Passes. Das QA-Zeichen im Report (§8) steht weiter aus.
 
 ---
 

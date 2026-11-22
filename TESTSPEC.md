@@ -44,6 +44,13 @@ docker run --rm epf-eink-tests:local /run.sh          # → run.test.sh → pyte
 `tests/`; seine `CMD` ist `run.test.sh` (`python3 -m pytest tests/ -v --junitxml=/app/test-results.xml`).
 Der Exit-Code von `pytest` wird weitergegeben (Grün/Rot im CI).
 
+> **Seit 2.4.3b läuft genau das im CI:** `.github/workflows/l0.yml` (GitHub Actions, `ubuntu-latest`)
+> baut `Dockerfile.test` und fährt das Bild — bei jedem Push/PR, der das Add-on anfasst, plus
+> manueller Auslösung. Keine Secrets, kein Netz: das opt-in-Live-Tier (§ 5b) skippt dort wie überall
+> ohne `.env`, und übersprungene Live-Fälle machen den Job **nicht** rot. L1 und L3 bleiben manuell
+> (echte Generationen, echte HA-/s6-Startpfad) — die CI-Phase ersetzt also keine Release-Gates, sie
+> nimmt nur die billige, mechanisierbare Schicht ab.
+
 **Alternativ: lokal** (Python 3.11, Dependencies aus `requirements.txt`, v. a. `responses`, `rawpy`,
 `Cython`/`numpy`/`Pillow`):
 ```bash
@@ -90,8 +97,8 @@ Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `t
 | `TestFR013ImageDelivery` | FR-013 | prepared delivered; **on-the-fly** delivery; `batteryCap`-Recording |
 | `TestFR014PreparePhoto` | FR-014 | `POST /prepare-photo` → success + Status `new` |
 | `TestFR015PreviewServing` | FR-015 | `/preview-photo`/`/preview-original`/… 200 |
-| `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges, **keine Doppel-Namen im Formular + Geteiltes-ComfyUI-Block-Roundtrip (2.4.1)** |
-| `TestFR033WorkflowSelection` (2.4.0) | FR-033 | Workflow-Dropdown + Slots, Save-Roundtrip ins Runtime-YAML, Validierung (Duplikat/UI-Format/Größe/Auswahl), „POST ohne Felder behält die Liste" |
+| `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges, **keine Doppel-Namen im Formular + Geteiltes-ComfyUI-Block-Roundtrip (2.4.1)**, **leeres Feld überschreibt gespeicherten Wert + die Seite fragt vorher (2.4.3b)** |
+| `TestFR033WorkflowSelection` (2.4.0) | FR-033 | Workflow-Dropdown + Slots, Save-Roundtrip ins Runtime-YAML, Validierung (Duplikat/UI-Format/Größe/Auswahl), „POST ohne Felder behält die Liste", **Slot mit Inhalt aber ohne Name wird beim Speichern verweigert (2.4.3b — Guard ausgemacht, Test wird rot)** |
 
 ### `tests/test_nonfunctional.py` → **NFR + IFR + SEC + PER**
 | Klasse | ID | Prüft |
@@ -133,9 +140,12 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.4.3):** **202** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **210**,
-> 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
+> **Coverage-Grob (Stand 2.4.3b):** **205** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **213**,
+> 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall — und seit 2.4.3b gilt das
+> wörtlich für **alle 55**: die Provider-Requirements FR-027 … FR-031 haben jetzt eigene Testfälle
+> **TC-FR-027 … TC-FR-031** (die Fälle liefen längst in `test_providers.py`, es fehlte nur die
+> Dokumentation). Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
 > ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
 
@@ -143,10 +153,13 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.3 / 210 Tests / 100 %** (L0 24,4 s am
-   2026-11-20 nachgezählt; **L1 und L3 zuletzt am 2026-11-17 auf v2.4.2 grün** — vor dem
-   v2.4.3-Tag neu fahren, Report §6.7). Code, Specs und Report sind auf demselben Stand
-   (33 FR, volles Provider-Modul, sechs Test-Dateien). Vor jedem Release neu fahren und neu zählen —
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.3 (inkl. 2.4.3b) / 213 Tests / 100 %** —
+   L0 (**23,3 s**), **L1** (echter Immich **+** echtes ComfyUI, drei echte GPU-Generationen, 40,2 s) und
+   der **L3-Produktions-Smoke** (Cap 2, drei echte Immich-Generierungen → der Per-Shot-Pruner lief auf
+   dem ausgelieferten Image; beide 2.4.3b-Regeln zusätzlich über HTTP auf dem ausgelieferten Image
+   bestätigt) sind **am 2026-11-22 auf diesem Code-Stand grün gefahren** (Report §6.9). Code, Specs und
+   Report sind auf demselben Stand (33 FR, volles Provider-Modul, sechs Test-Dateien, Traceability
+   55/55; CI läuft für L0). Vor jedem Release neu fahren und neu zählen —
    sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf
    (z. B. gegen eine Live-Immich mit *v3-API*) ist ein separates Manuell-/Integrationstier. Genau *dort*

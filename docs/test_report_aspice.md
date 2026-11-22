@@ -3,16 +3,18 @@
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
 **Version:** 2.4.3
-**Date:** 2026-11-20
+**Date:** 2026-11-22
 **Baseline:** branch `main` — code base **v2.4.3** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
 settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
-pruning 2.4.3**)
+pruning 2.4.3** + settings-page guards & full traceability 2.4.3b)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
-**Status:** L0 re-run green for the v2.4.3 code base (202 cases, 2026-11-20). The **L1 live tier** and
-the **L3 production-image smoke** were last run green on 2026-11-15/17 for v2.4.2 (§6.1–§6.6) and
-still have to be re-run before the **v2.4.3** tag is cut — see §6.7
+**Status:** all three automatable tiers are green on the **v2.4.3 / 2.4.3b** code base — **L0** 205/205,
+**L1** 8/8 against a real Immich *and* a real ComfyUI, **L3** production-image smoke on the shipped
+image; all three re-run **2026-11-22** (§6.9). What remains is not automatable from here: the browser
+acceptance (§6.5, incl. the new save-time dialog), finding 14.9, the `comfyui_ha` live leg, the
+multi-day field run, and the human QA signature (§8)
 
 > **Why a new report:** the previous revision (1.1.0) described the *v1* single-source build
 > (93 nominal / 78 executed cases) and was already internally inconsistent. This revision re-baselines
@@ -74,6 +76,15 @@ still have to be re-run before the **v2.4.3** tag is cut — see §6.7
 > per-pattern behaviour — **FR-024** is unchanged. **L0 re-ran green on 2026-11-20; the L1 tier and
 > the production-image smoke have not been re-run for this code base yet, so the 100 % below is the
 > L0 tier plus the v2.4.2 live/L3 runs.**
+>
+> The **2.4.3b** revision implements the two settings-page guards the plan
+> (`plans/ui-modernisierung.md` §9) had left open: a workflow slot that carries **content but no
+> name** is refused at save time instead of vanishing, and an **emptied field** still overwrites the
+> stored value — the form always sends its controls — but the page asks first. Three new cases in
+> `tests/test_functional.py` (97 → **100**: two lock the slot rule, one pins the empty-field
+> behaviour together with the warning), offline suite **202 → 205**, combined **213**. EPF-TST-001
+> gained **TC-FR-027 … TC-FR-031**, so its traceability names all **55** requirements for the first
+> time (§6.8).
 
 ---
 
@@ -81,15 +92,15 @@ still have to be re-run before the **v2.4.3** tag is cut — see §6.7
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **210** (202 offline + 8 opt-in live) |
-| **Passed** | **210** — 202 offline (L0, re-run 2026-11-20) **+ 8 live against a real Immich and a real ComfyUI (L1, last run 2026-11-17)** |
+| **Total Test Cases** | **213** (205 offline + 8 opt-in live) |
+| **Passed** | **213** — 205 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)**; both tiers re-run green on this code base, 2026-11-22 (§6.9) |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 **24.4 s (2026-11-20)** · L1 26.9 s incl. three real GPU generations (2026-11-17) · L3 production smoke incl. two real Immich generations through the switch (2026-11-17, §6.6) |
+| **Execution Time** | L0 **23.3 s (2026-11-22)** · L1 **40.2 s** incl. three real GPU generations (2026-11-22) · L3 production smoke incl. three real Immich generations **over** the gallery cap (2026-11-22, §6.9) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5), the global date-stamp switch governs the pipeline on the shipped image (§6.6), and gallery pruning keeps a shot whole (§6.7). **Caveat for the v2.4.3 baseline:** only L0 has been re-run on this code base (§6.7); the L1 and L3 evidence above is from 2026-11-15/17 on v2.4.2 |
-| **L3 production smoke** | **PASS at v2.4.2 (2026-11-17)** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2; **re-run for 2.4.3 pending (§6.7)** |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5) and now refuses an unnamed workflow slot and warns before an emptied field overwrites (§6.8), the global date-stamp switch governs the pipeline on the shipped image (§6.6), and gallery pruning keeps a shot whole (§6.7). **Baseline:** all three automatable tiers — L0, L1, L3 — have been re-run green on this code base (2026-11-22, §6.9); what is left is the browser acceptance and the human QA signature |
+| **L3 production smoke** | **PASS on this code base (2026-11-22, §6.9)** — shipped `Dockerfile` image (gunicorn 2×2, real `with-contenv`, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery **pruned per shot over the cap**, watchdog reload, footer; the two 2.4.3b settings behaviours were confirmed over HTTP on the shipped image |
 
 ---
 
@@ -129,7 +140,7 @@ still have to be re-run before the **v2.4.3** tag is cut — see §6.7
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation, 2.4.0) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) | **97** | **97** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1; empty-field-overwrites pin + the save-time warning, 2.4.3b) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation incl. **content without a name**, 2.4.0/2.4.3b) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) | **100** | **100** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -155,8 +166,8 @@ still have to be re-run before the **v2.4.3** tag is cut — see §6.7
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 210 collected — 202 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
-→ 210/210, 0 failed (100 %).**
+**Total: 213 collected — 205 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
+re-run green 2026-11-22, §6.9) → 213/213, 0 failed (100 %).**
 
 ---
 
@@ -235,14 +246,14 @@ Defect found and fixed on the **2.4.1** track (reported from a real installation
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 210 items
+collected 213 items
 
-tests/test_functional.py      :: 97 passed
+tests/test_functional.py      :: 100 passed
 tests/test_nonfunctional.py  :: 27 passed
 tests/test_providers.py      :: 54 passed
 tests/test_gallery_history.py :: 24 passed
 tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
-======================= 202 passed, 8 skipped in 24.42s ========================
+======================= 205 passed, 8 skipped in 23.34s ========================
 ```
 
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
@@ -268,6 +279,8 @@ all hold against the current server — and since 2.4.0 the ComfyUI leg runs rea
 the built-in graph, a named selection and a **real exported graph** taken from the reference server.
 Server/album/server-graph used are the reference environment of §7.1 — the values live in the
 git-ignored `.env`, never in the code.
+
+*Re-run on this code base 2026-11-22: **8/8 green in 40.2 s** — §6.9.*
 
 ### 6.2 L3 — production-image smoke (shipped `Dockerfile`, run 2026-11-15)
 
@@ -433,14 +446,64 @@ Closes live finding **2** of §6.3. The pruning unit moved from *files per patte
 | Age eviction | a shot older than the retention window is deleted **whole** ✓ (pre-existing case, still green) |
 | Live-slot regression | `latest_original.jpg` untouched by gallery pruning ✓ (pre-existing case, still green) |
 | Live-preview cleanup (`FR-024`) | per-pattern behaviour unchanged ✓ (pre-existing cases, still green) |
-| **L1 live tier** | **not re-run for this code base** — last green 2026-11-17 on v2.4.2 (§6.1); it touches the Immich/ComfyUI wire paths, which this change does not, but it is a release gate (§6.1) |
-| **L3 production-image smoke** | **not re-run for this code base** — last green 2026-11-17 on v2.4.2 (§6.2, §6.4–§6.6); the re-run should archive **more shots than the cap** so the pruning path runs on the shipped image against a real Immich |
+| **L1 live tier** | re-run green on this code base 2026-11-22 — §6.9 (the release gate is closed) |
+| **L3 production-image smoke** | re-run green on this code base 2026-11-22, **with more shots than the cap** (cap 2, three real preparations) so the shipped pruner really ran — §6.9 |
 
 **What this proves:** the behaviour that the live run falsified is now pinned by a test — and pinned by
 a case that **fails under the old semantics** (the crossed-mtime layout), not just by a case that would
 also pass under them, which is what the old "each kind to max count" case was: its assertions held
 under both readings, so it proved nothing about the unit. The pruner and the reader now share one
 measure, so the setting has one meaning.
+
+### 6.8 L0 re-run for 2.4.3b — the settings page stops guessing (run 2026-11-20)
+
+Closes the two items `plans/ui-modernisierung.md` §9 had left open for the next release. Both are
+about the same shape of failure: **the page said "Settings saved" and quietly did nothing.**
+
+| Check | Result |
+|-------|--------|
+| **L0 offline suite** (the tier that owns both behaviours) | **205 passed, 8 skipped in 24.9 s** (2026-11-20) ✓ — functional file **100** (97 + 3 new) |
+| **A slot with content but no name** is refused | pasting an API graph into slot 1 and saving now answers **400** naming the slot, instead of storing nothing. Locked by `TestFR033WorkflowSelection::test_slot_content_without_a_name_is_refused`; **proven both ways** — disabling the guard makes exactly this case fail (302, the old "saved" redirect) while its sibling case stays green ✓ |
+| An **empty slot** is still just an empty slot | naming nothing and posting nothing keeps the stored list ✓ (pre-existing case) |
+| **An emptied field** still overwrites | prompt set, then saved empty → the YAML holds empty. That is intentional (the form always sends its controls; only a *missing* field keeps its value), now pinned by `TestFR021SettingsVocabulary::test_empty_field_overwrites_and_the_ui_warns` ✓ |
+| The page **warns before** that overwrite | a confirmation naming the fields that would go from stored to empty, reusing the existing modal machinery ✓ — markup pinned by the same case, **looks** still to confirm in a browser (§6.5) |
+| Traceability | EPF-TST-001 gained **TC-FR-027 … TC-FR-031** for FR-027 … FR-031 (they had no documented case since v1.2.0, though the tests ran all along); the matrix now names all **55** requirements |
+| **L1 live tier / L3 production smoke** | re-run green on this code base 2026-11-22 — §6.9; the guard and the overwrite were additionally confirmed **over HTTP on the shipped image** |
+
+**What this does not prove:** the warning is a browser-side interaction. The offline tier pins the
+markup and the server behaviour; whether the dialog reads well on a phone, in dark mode, and through
+HA ingress is still the §6.5 checklist.
+
+### 6.9 L1 + L3 re-run on this code base (run 2026-11-22) — the last two automatable gates
+
+**L1 — live integration** (`run-live-tests.sh`, reference environment §7.1, `.env` unchanged):
+**8 passed in 40.2 s** — L01–L05 (album resolve, v3 paged `search/metadata`, original download,
+selection, the add-on `/download` route end to end) **and** L09/L10/L10b (built-in graph, named-workflow
+selection, a real exported graph) — with **three real GPU generations**, which is why this tier only
+runs with consent. The `comfyui_ha` leg still has no token/entity id and remains the one untested leg.
+
+**L3 — production-image smoke** (shipped `Dockerfile` built from this tree, amd64, started through its
+normal s6 init, gunicorn 2×2 via the real `with-contenv`, secrets via `--env-file` with LF, empty named
+volumes so nothing was baked in):
+
+| Check | Result |
+|-------|--------|
+| `/health` — also the Docker `HEALTHCHECK` path (`wget --spider`) | **healthy**, source **Immich**, status **connected** to the real server ✓ |
+| `/sleep` | answers; next wakeup from the configured window ✓ |
+| `/download` — the ESP32 contract | `frame.txt`, `text/plain`, 2-hex tokens, newline every 16, **no closing `};`** ✓ |
+| **Per-shot pruning on the shipped image** — run **over** the cap: cap 2, three shots prepared against a real Immich | after every prepare the archive holds **two shots, each with both files**; the oldest shot is gone **whole** — pairs stay pairs ✓ |
+| Pruner/reader agreement on disk | `GET /api/gallery-previews` → `count: 2` = two shots, four files ✓ |
+| Live preview slot | `latest_*` untouched by gallery pruning ✓ |
+| Watchdog hot reload on the shipped image | `POST /` → “Config modified, reloading…” → every worker updated ✓ |
+| **Settings guard over HTTP on the shipped image** (2.4.3b) | content + no name → **HTTP 400** naming slot 1; the same content **with** a name → accepted and stored ✓ |
+| **Emptied field overwrites** (2.4.3b, shipped) | `prompt: hello-l3-probe` → POST empty → `prompt: ''` ✓ — the browser dialog is the new part in front of it |
+| Footer (derived, never hand-edited) | version **v2.4.3** ✓ from the manifest; the build date showed the cached `.build_stamp` layer (this build reused it) — cosmetic, the chain is unchanged |
+| Ingress / ProxyFix | not exercisable outside Home Assistant ✓ documented |
+
+**Consequence:** the three automatable tiers (**L0, L1, L3**) are green on this code base, so the
+release gate of the top-level goal is met. Open and **not automatable from here**: the browser
+acceptance incl. the new save-time dialog (§6.5), finding **14.9**, the `comfyui_ha` live leg, the
+multi-day field run (EPD wear), and the **human QA signature** (§8).
 
 ---
 
@@ -491,21 +554,22 @@ exported workflow graph the live tier posts is a `.env` value too):
 
 | Role | Name | Date | Signature |
 |------|------|------|-----------|
-| Test Manager | EPF Project | 2026-11-20 | - |
+| Test Manager | EPF Project | 2026-11-22 | - |
 | Quality Assurance | - | - | *(human signature still outstanding)* |
-| Project Lead | EPF Project | 2026-11-20 | - |
+| Project Lead | EPF Project | 2026-11-22 | - |
 
 ---
 
-*Regenerated for code base **v2.4.3** on branch `main`, 2026-11-20: **202** offline cases pass
-(**L0**, re-run today, 24.4 s), the **3** new cases of §6.7 included; **210/210** counting the **8**
-live cases, which last ran green against a real Immich *and* a real ComfyUI on 2026-11-17 and have
-**not** been re-run on this code base. Same for the production-image smoke (last green 2026-11-17 on
-v2.4.2: form vocabulary §6.2, named workflows §6.4, form-delivers-every-field §6.5, global date-stamp
-switch §6.6, live ComfyUI-direct leg §6.3) — **both have to be re-run before the v2.4.3 tag is cut**
-(§6.7). The catalogue side is aligned: **FR-032** re-worded in EPF-REQ-001, **TC-FR-032** extended in
-EPF-TST-001. Live finding 2 of §6.3 is closed by this revision; the QA row of §8 still awaits a human
-signature.
-Still open (not automatable here):
-the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
-see `plans/findings.md`.*
+*Regenerated for code base **v2.4.3** (incl. revision **2.4.3b**) on branch `main`, 2026-11-22:
+**205** offline cases pass (**L0**, 23.3 s) — the **3** cases of §6.7 and the **3** of §6.8 included —
+and the two automatable gates that were open last pass are now closed on **this** code base (§6.9):
+**L1** 8/8 against a real Immich *and* a real ComfyUI (40.2 s, three real GPU generations) and the
+**L3** production-image smoke, run with **more shots than the cap** so the shipped per-shot pruner
+really executed, plus the two 2.4.3b settings behaviours over HTTP on the shipped image.
+**213/213, 0 failed (100 %)** across L0+L1. The catalogue side is aligned: **FR-032** re-worded in
+EPF-REQ-001, **TC-FR-032** extended and **TC-FR-027 … TC-FR-031** added in EPF-TST-001, so its
+traceability names all 55 requirements; CI runs L0 on every push/PR (`.github/workflows/l0.yml`).
+Live finding 2 of §6.3 and the two plan §9 items stay closed. Still open (not automatable here): the
+browser-side visual acceptance incl. the new save-time warning dialog (§6.5, §6.8), finding **14.9**,
+the `comfyui_ha` live leg, the L4 field run on a real frame — see `plans/findings.md` — and the **human
+QA signature** of §8, which is what the v2.4.3 tag still waits for.*

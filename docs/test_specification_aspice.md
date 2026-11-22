@@ -44,6 +44,14 @@
 > being left alone. **TC-FR-024** (the live preview directory, single slot rather than a group) keeps
 > its per-pattern wording and is deliberately different. **24 automated cases**, status
 > "Executed — Passed". Results in EPF-RPT-001 (re-baselined for 2.4.3).
+>
+> **Revision 2.4.3b (2026-11-20):** **traceability completed** — five test cases
+> **TC-FR-027 … TC-FR-031** for the provider-layer requirements FR-027 … FR-031, which had had no
+> case of their own since v1.2.0. The tests themselves already existed and already ran in the offline
+> tier; what was missing was the documented case — exactly the kind of drift the v1.2.0 note warned
+> about. Each new case names the existing pytest nodes (factory, HA provider, direct provider, prompt
+> variables, tracker + status endpoint), so the matrix now names all **55** requirements and §5.1
+> reads **55 / 60 / 55 — 100 %**. No test changed; §5.2 moves with the new rows.
 
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
@@ -692,6 +700,91 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 ---
 
+#### TC-FR-027: Image Source Selection
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-027 |
+| **Requirement** | FR-027 |
+| **Title** | Verify the configurable image source selects the provider everywhere |
+| **Priority** | High |
+| **Preconditions** | `image_source` selectable (`immich` / `comfyui_ha` / `comfyui_direct`); `providers.py` factory reachable |
+| **Test Input** | `create_provider()` per source; `/health` and the settings page with each source |
+| **Test Steps** | 1. Factory returns the Immich / HA / Direct provider for the matching option<br>2. Unknown source raises<br>3. `/health` reports the active source<br>4. The settings page renders the source selector |
+| **Expected Result** | The option decides the provider — no route carries source-specific HTTP logic |
+| **Verification Method** | Test (Automated) |
+| **Automated Test IDs** | `test_providers.py::TestProviderFactory` (4), `::TestMultiSourceIntegration::test_settings_shows_image_source` |
+| **Actual Result** | Passed — 5 cases, offline tier |
+| **Status** | Executed — Passed (5 cases, 2026-11-20) |
+
+#### TC-FR-028: ComfyUI via Home Assistant Integration
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-028 |
+| **Requirement** | FR-028 |
+| **Title** | Verify generation through the HA `ai_task` service contract |
+| **Priority** | High |
+| **Preconditions** | Mocked HA in the offline tier; real HA + `ai_task` entity for the live leg |
+| **Test Input** | Service call with `task_name` / `instructions` / `entity_id`; mocked `service_response.url` download |
+| **Test Steps** | 1. Health check against HA<br>2. Service call built with the required parameters<br>3. Prompt variables resolved into `instructions`<br>4. Image downloaded through the standard pipeline<br>5. Daily limit enforced (rate limiting)<br>6. HA service error surfaced<br>7. `entity_id` from config wins over env<br>8. Live leg against a real HA (L1) |
+| **Expected Result** | The real service contract holds; failures are reported, not swallowed |
+| **Verification Method** | Test (Automated) |
+| **Automated Test IDs** | `test_providers.py::TestComfyUIHAProvider` (10), `test_live.py::TestLiveComfyUIHA` (L1) |
+| **Actual Result** | Passed — 10 offline cases; live leg last run green against a real server (2026-11-17) |
+| **Status** | Executed — Passed (10 cases + 1 live, 2026-11-20 / 2026-11-17) |
+
+#### TC-FR-029: ComfyUI Direct (Expert Mode)
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-029 |
+| **Requirement** | FR-029 |
+| **Title** | Verify the direct ComfyUI API path (submit → poll → view) |
+| **Priority** | Medium |
+| **Preconditions** | Mocked ComfyUI server in the offline tier; real server for the live leg (TC-L10) |
+| **Test Input** | Built-in graph, pasted API-format graph, checkpoint auto-detection, custom workflow |
+| **Test Steps** | 1. Health check<br>2. Default graph built when nothing is configured<br>3. Random seed applied<br>4. Explicit checkpoint honoured; otherwise detected from `/object_info`<br>5. Fallback to the built-in checkpoint<br>6. Custom workflow skips the checkpoint lookup<br>7. Named-workflow selection (shared with **TC-FR-033**) |
+| **Expected Result** | Queue + poll + view all work; a pasted graph is submitted unchanged |
+| **Verification Method** | Test (Automated) |
+| **Automated Test IDs** | `test_providers.py::TestComfyUIDirectProvider` (9), `::TestComfyUIWorkflowSelection` (10, shared), `test_live.py::TestLiveComfyUIDirect` (L1) |
+| **Actual Result** | Passed — 9 offline cases (+10 shared with TC-FR-033); live leg green 2026-11-17 |
+| **Status** | Executed — Passed (9 cases + shared + 1 live, 2026-11-20 / 2026-11-17) |
+
+#### TC-FR-030: Prompt Template Variables
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-030 |
+| **Requirement** | FR-030 |
+| **Title** | Verify prompt variable resolution at generation time |
+| **Priority** | Medium |
+| **Preconditions** | `resolve_prompt_variables` importable; deterministic where asserted |
+| **Test Input** | `{time_of_day}`, `{weather}`, `{season}`, `{day_of_week}`, `{month}`, `{random_element}`, unknown placeholder |
+| **Test Steps** | 1. Each supported variable resolves<br>2. Multiple variables in one prompt<br>3. No variables → unchanged<br>4. Unknown placeholders pass through untouched |
+| **Expected Result** | Context values substituted; unknown placeholders survive verbatim |
+| **Verification Method** | Test (Automated) |
+| **Automated Test IDs** | `test_providers.py::TestPromptVariables` (6) |
+| **Actual Result** | Passed — 6 cases, offline tier |
+| **Status** | Executed — Passed (6 cases, 2026-11-20) |
+
+#### TC-FR-031: Generation Status API
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-031 |
+| **Requirement** | FR-031 |
+| **Title** | Verify `/api/generation-status` and the persistence tracker |
+| **Priority** | Medium |
+| **Preconditions** | Tracker file on a temporary path; NTP/watchdog threads mocked |
+| **Test Input** | `GET /api/generation-status` for ComfyUI and for Immich; tracker file reload |
+| **Test Steps** | 1. Count starts at zero<br>2. Logged generation appears<br>3. Multiple generations accumulate<br>4. `last_generation` timestamp recorded<br>5. History survives a reload (persistence)<br>6. Daily counter resets on the next day<br>7. Non-ComfyUI source returns zeros |
+| **Expected Result** | `source` / `count_today` / `max_per_day` / `last_generation` accurate; persisted in JSON |
+| **Verification Method** | Test (Automated) |
+| **Automated Test IDs** | `test_providers.py::TestGenerationTracker` (6), `::TestMultiSourceIntegration::test_generation_status_immich`; live `test_live.py::TestLiveGenerationStatus` (L1) |
+| **Actual Result** | Passed — 7 offline cases; live leg green 2026-11-17 |
+| **Status** | Executed — Passed (7 cases + 1 live, 2026-11-20 / 2026-11-17) |
+
 #### TC-FR-032: Preview Gallery History
 
 | Attribute | Value |
@@ -1125,6 +1218,11 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-010 | NFR-010 | Inspection | Not Executed |
 | TC-FR-025 | FR-025 | Test | Not Executed |
 | TC-FR-026 | FR-026 | Test | Not Executed |
+| TC-FR-027 | FR-027 | Test | Executed — Passed (5 cases, 2026-11-20) |
+| TC-FR-028 | FR-028 | Test | Executed — Passed (10 cases + 1 live, 2026-11-20 / 2026-11-17) |
+| TC-FR-029 | FR-029 | Test | Executed — Passed (9 cases + shared + 1 live, 2026-11-20 / 2026-11-17) |
+| TC-FR-030 | FR-030 | Test | Executed — Passed (6 cases, 2026-11-20) |
+| TC-FR-031 | FR-031 | Test | Executed — Passed (7 cases + 1 live, 2026-11-20 / 2026-11-17) |
 | TC-FR-032 | FR-032 | Test | Executed — Passed (24 cases, 2026-11-20) |
 | TC-FR-033 | FR-033 | Test | Executed — Passed (18 offline + 3 live cases, 2026-11-15) |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
@@ -1148,32 +1246,33 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 | Category | Requirements | Test Cases | Requirements Covered |
 |----------|-------------|------------|----------------------|
-| Functional | 33 | 33 | 28 — see note |
+| Functional | 33 | 38 | 33 — 100% |
 | Non-Functional | 10 | 10 | 10 — 100% |
 | Interface | 5 | 5 | 5 — 100% |
 | Security | 4 | 4 | 4 — 100% |
 | Performance | 3 | 3 | 3 — 100% |
-| **Total** | **55** | **55** | **50** |
+| **Total** | **55** | **60** | **55 — 100%** |
 
-> Counted from the §4 matrix on 2026-11-20 (v2.4.3 baseline); it replaces the v2.0.0 numbers
-> (45 / 53) that had drifted since. The **33** test-case rows are one per requirement plus the split
-> **TC-FR-005** family (RAW / HEIC / STD). Five requirements — **FR-027 … FR-031**, the provider
-> layer — still carry **no row of their own**; they are exercised through the shared cases
-> **TC-FR-025** / **TC-FR-026** and `tests/test_providers.py`, which is why 55 rows cover 50
-> requirements. Adding those five rows is a documentation task of its own (the matrix statuses are
-> the v2.0.0 baseline; results live in EPF-RPT-001).
+> Counted from the §4 matrix on 2026-11-20 (v2.4.3b); it replaces the v2.0.0 numbers (45 / 53) that
+> had drifted since. **Every requirement now has a documented test case** — FR-027 … FR-031 got
+> **TC-FR-027 … TC-FR-031** in this revision. The FR row count (38) sits above the FR requirement
+> count (33) because of the split **TC-FR-005** family (RAW / HEIC / STD) and the duplicated
+> **TC-FR-025 / TC-FR-026** sections carried from the baseline, both kept as-is in the body. Matrix
+> statuses are the v2.0.0 baseline except the rows explicitly re-baselined; actual results live in
+> EPF-RPT-001.
 
 ### 5.2 Verification Method Distribution
 
 | Method | Count |
 |--------|-------|
-| Test | 45 |
+| Test | 50 |
 | Inspection | 8 |
 | Inspection + Test | 1 |
 | Analysis | 1 |
-| **Total** | **55** |
+| **Total** | **60** |
 
-> Counted from the §4 matrix on 2026-11-20 (v2.4.3 baseline).
+> Counted from the §4 matrix on 2026-11-20 (v2.4.3b): the five new provider cases are automated, so
+> Test goes 45 → 50.
 
 ---
 

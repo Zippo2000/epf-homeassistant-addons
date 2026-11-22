@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~202 tests); no network |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~205 tests); no network — and in CI (`.github/workflows/l0.yml`, 2.4.3b) |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -69,6 +69,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 ```
 repository.yaml               # marks this as a HA ADD-ON STORE (name/url/maintainer) — required for the add-on store
 LICENSE                       # MIT
+.github/workflows/l0.yml      # the L0 tier in CI: build Dockerfile.test, run pytest (L1 auto-skips; no secrets)
 .gitignore                    # note: whitelists (!) epf-eink-addon/cpy.so and the add-on manifest; ignores the runtime config/ + photos/
 docs/                         # formal ASPICE deliverables (German/English): 
                                 #   requirements_specification_aspice.md  (EPF-REQ-001: 33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER)
@@ -91,7 +92,7 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
   templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode
   tests/
     conftest.py               # fixtures: app_module (fresh import w/ env+NTP+watchdog mocked), client_with_mocks (Flask client + `responses` Immich mocks)
-    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve)
+    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b)
     test_nonfunctional.py     # NFR (health, logging, timing, memory, theme, typing) + IFR (immich hdr, esp32, ingress, port) + SEC + PER
     test_providers.py         # Prompt variables, GenerationTracker, each Provider, factory, multi-source integration
     test_gallery_history.py   # FR-032 gallery history: shot ids, pairing, grouped reader, **per-shot** pruning (2.4.3), option round trip
@@ -150,6 +151,11 @@ The UI is exposed **through HA ingress** (`panel_icon: mdi:image-frame`) and als
 docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:local epf-eink-addon
 docker run --rm epf-eink-tests:local /run.sh          # runs run.test.sh -> pytest + junitxml
 ```
+
+> **…or let CI do it:** `.github/workflows/l0.yml` runs exactly those two commands on every push/PR
+> that touches the add-on (plus `workflow_dispatch`). It needs no secrets and no network, so the opt-in
+> live tier auto-skips there too — L1 and the L3 production-image smoke stay manual, so the CI job is
+> the cheap always-on floor, **not** a replacement for the release gates above.
 Or, in your own Python 3.11 env with the pinned deps (`responses`, `rawpy`, `Cython`, …):
 ```bash
 cd epf-eink-addon && python -m pytest tests/ -v
@@ -239,8 +245,8 @@ mirrors the requirement catalog in `docs/requirements_specification_aspice.md`:
 
 The `Dockerfile.test` image bundles `fonts-dejavu-core` (for the date-overlay path) and
 `tests/`, and its `CMD` is `run.test.sh` (pytest with `--junitxml`). **The report
-(`docs/test_report_aspice.md`) currently lags the code — see §Gotchas before trusting its
-pass counts.**
+(`docs/test_report_aspice.md`) is re-counted with each release — see §Gotchas for the current numbers
+before quoting them.**
 
 ---
 
@@ -337,9 +343,10 @@ pass counts.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **202 offline + 8 live = 210**-case suite, **2.4.3**, re-counted 2026-11-20 — L0 re-ran green on the
-  new code; **L1 and the L3 production-image smoke last ran green on 2026-11-17 against a real Immich
-  *and* a real ComfyUI and must be re-run before the v2.4.3 tag is cut**). If a PR adds or removes tests, update the
+  **205 offline + 8 live = 213**-case suite, **2.4.3 / 2.4.3b**, re-counted 2026-11-22 — **L0, L1 and the
+  L3 production-image smoke all re-ran green on this code base on 2026-11-22** (report §6.9; the L3 run
+  deliberately used a cap of 2 and three real preparations so the shipped per-shot pruner executed). If
+  a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
   the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, the
   named-workflow feature **FR-033 / TC-FR-033** in the 2.4.0 one, and the 2.4.3 pass re-worded
@@ -364,6 +371,12 @@ pass counts.**
   the two ComfyUI sources share are rendered once, in the **ComfyUI - Common Settings** card; the guard
   is the test that no rendered field name appears twice. A duplicated *id* is harmless when the two
   elements live in mutually exclusive Jinja branches.
+- **The form always sends its controls (2.4.3b).** "A POST that omits the field keeps the stored value"
+  is the rule for *missing* fields — it does **not** cover an emptied one: an empty field overwrites,
+  which is intended (a prompt must be clearable), so the page now **confirms before saving** a field
+  that goes from stored to empty. A **workflow slot with content but no name** is likewise no longer
+  dropped in silence — `parse_workflow_slots()` refuses it at save time, because that was the other
+  half of the same complaint. Keep both; the functional suite names them.
 - **ComfyUI workflow selection is YAML-owned (2.4.0).** The runtime YAML carries
   `comfyui.workflows` (a list of named entries) plus `comfyui.active_workflow`; the settings page
   shows a dropdown and four slots, and `parse_workflow_slots()` rebuilds the whole list from what the

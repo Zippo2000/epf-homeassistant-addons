@@ -425,12 +425,30 @@ identisch, bei `-1` wäre sie neu gewesen).
 - Tests (`TestFR021SettingsVocabulary`): kein gerendeter Feldname doppelt · die geteilten ComfyUI-Felder
   genau einmal · Speichern über die Direkt-Quelle schreibt Prompt / Größe / Seed / Max ins Runtime-YAML.
 
-**Offen für den nächsten Release (bewusst nicht Teil dieses Passes):**
+**Umgesetzt in 2.4.3b** (die zwei Punkte, die dieser Pass bewusst offengelassen hat):
 
-1. **Slot ohne Name** wird beim Speichern stilllos verworfen (2.4.0-Verhalten, Nutzer hatte JSON
-   eingefügt und nichts bekam) — Rückmeldung beim Speichern wäre fair: Name Pflicht, sobald JSON drin ist.
-2. **Leere Felder beim Speichern** überschreiben bestehende Werte mit leer (bestehend seit 2.3.2, durch
-   die neuen Slots sichtbarer geworden) — Guard-Test + UI-Hinweis sinnvoll.
+1. **Slot ohne Name, aber mit JSON** wird beim Speichern **nicht mehr stilllos verworfen** — die
+   Rückmeldung fehlte, und die Liste ist nun mal nach Namen sortiert: Name Pflicht, sobald JSON drin
+   ist. Ein leerer Slot bleibt ein leerer Slot, und ein POST ohne `wf_*`-Felder behält weiterhin die
+   gespeicherte Liste (der Test dazu existierte schon und ist grün geblieben). Der Guard sitzt in
+   `parse_workflow_slots()`.
+2. **Leere Felder beim Speichern** überschreiben bestehende Werte weiter mit leer — das ist gewollt,
+   denn das Formular sendet seine Bedienelemente immer, und ein Prompt muss löschbar bleiben (nur ein
+   *fehlendes* Feld behält seinen Wert, siehe die Regel oben und der Datumsstempel-Select in §10). Was
+   fehlte, war die Rückmeldung: die Seite nennt die Felder, die von „gespeichert“ auf „leer“ gehen, und
+   fragt nach, bevor sie speichert (derselbe Modal, den der Reset schon nutzt).
+
+Tests: `TestFR033WorkflowSelection` (zwei Fälle: Name-pflicht-bei-Inhalt — bewiesen durch Abschalten des
+Guards — und leer + ohne Name bleibt harmlos), `TestFR021SettingsVocabulary` (leer überschreibt
+Gespeichertes, samt Warn-Markup). Suite: funktional 97 → **100**, offline **205**, kombiniert **213**.
+
+**Auf dem Produktions-Image bestätigt (L3, 2026-11-22, Report §6.9):** der Guard antwortet über HTTP
+mit **400** und nennt den Slot, dasselbe JSON **mit** Namen wird angenommen und gespeichert, ein
+geleertes Feld schreibt ins Runtime-YAML, und das Warn-Markup hängt in der ausgelieferten Seite.
+
+**Weiter offen:** „Save & restart“-Button über der Reset-Zeile (Punkt 5 des Vorschlags oben). Die
+**Optik** — der Look der neuen Bestätigung inklusive — bleibt der Browser-Abnahme in Chrome/Firefox/
+Safari, Light+Dark, 375/768/1440 px vorbehalten.
 
 ---
 
