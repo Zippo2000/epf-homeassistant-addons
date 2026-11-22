@@ -256,6 +256,13 @@ tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
 ======================= 205 passed, 8 skipped in 23.34s ========================
 ```
 
+> **First CI run of this job** (GitHub Actions, 2026-11-22, run `121969072464`): **205 passed,
+> 8 skipped in 18.66 s — job green**, same suite, same image build. The junit artifact step was dead
+> weight in its first version: the XML was written *inside* the `--rm` container, so the copy step
+> copied from a container in which pytest had never run. It now mounts the report directory into the
+> container and points `run.test.sh` at it via `EPF_JUNIT_XML` (default unchanged for local runs);
+> verified before pushing — the report lands on the host and parses as 213/0/0/8.
+
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
 
 ```
