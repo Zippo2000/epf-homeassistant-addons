@@ -499,7 +499,7 @@ den rohen Port 5000 offen) — s. §14.11.
 | Prepare/Deliver | — | **neu** (`/prepare-photo` + Status-State-Machine) | + (besseres UX) |
 | UI | Basic Settings-Form | **Full-UI** (Health, Batterie, Gallery, Dark Mode, CSP) | + |
 | Health/API | — | `/health`, `/api/*`, Docker-HEALTHCHECK | + |
-| Doku/Test | README/ARCH/ANALYSE/TESTSPEC + kleine pytest | **ASPICE-Deliverables** (4 Doku) + **~104 Pytest** | + (strenger; aber Report veraltet) |
+| Doku/Test | README/ARCH/ANALYSE/TESTSPEC + kleine pytest | **ASPICE-Deliverables** (4 Doku) + **202 Offline- + 8 Live-Pytest-Fälle** (Stand v2.4.3, 2026-11-20) | + (strenger; der Report ist wieder auf dem Code-Stand) |
 | Firmware | im Repo (`Arduino/`) | **nicht** im Repo | neutral (saubere Trennung) |
 
 **Kernaussage:** Das Add-on **baut auf** dem EPF auf (Pipeline, Dithering, Batterie, Sleep,
@@ -645,7 +645,7 @@ Der **HA-Deploy-Stack** (bashio-Options→Env, Ingress + ProxyFix, gunicorn 2×2
 5 Archs, **Cython im Build** statt committed ELF) ist **besser gelöst als beim Standalone-EPF** und
 entfernt dessen größte Build-Schwäche (platte `cpy.so`-Binaries). Die **Prepare/Deliver-Entkopplung**,
 die **Galerie**, **Health/Batterie-Telemetrie** und die **Dark-Mode-UI** sind echte UX-Gewinne, und
-das **ASPICE-Doku- + ~104-Test-Paket** ist disziplinär deutlich über dem Basisprojekt.
+das **ASPICE-Doku- + 202-Fall-Test-Paket** (Stand v2.4.3, dazu 8 Live-Fälle) ist disziplinär deutlich über dem Basisprojekt.
 
 **Wo es hakt** (Priorität):
 1. **§14.4 (kritisch):** `run.sh` Gate **source-conditional** machen — reine ComfyUI-Setups heute
