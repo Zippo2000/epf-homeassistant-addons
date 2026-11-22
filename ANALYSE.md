@@ -123,7 +123,7 @@ Uhrzeit/Jahreszeit/„Wetter“ anpassen lassen und durch ein Tageslimit vor GPU
 | `epf-eink-addon/run.sh` | bashio | `#!/usr/bin/with-contenv bashio`: liest alle `options` via `bashio::config`, **exportiert sie als Env**, **validiert `IMMICH_API_KEY`+`IMMICH_URL`** (sonst fatal), setzt `INGRESS_PATH`, **startet gunicorn 2×2 auf :5000**. |
 | `epf-eink-addon/run.test.sh` | bash | `pytest tests/ -v --junitxml=…` im Test-Image. |
 | `epf-eink-addon/templates/settings.html` (≈1209 Z.) | HTML/JS | Die Web-UI (Jinja + Inline-CSS/JS). |
-| `epf-eink-addon/tests/*` | Python | 4 Dateien (conftest + 3) → ~104 gemoockte Fälle, strukturiert nach ASPICE-IDs. |
+| `epf-eink-addon/tests/*` | Python | 6 Dateien (conftest + 5) → **202** Offline-Fälle (+ **8** Live-Fälle im opt-in-Tier § 5b von TESTSPEC), strukturiert nach ASPICE-IDs. Stand v2.4.3, 2026-11-20. |
 
 ---
 
@@ -223,7 +223,11 @@ Der Unterschied zum standalone-EPF ist hier am größten:
   (fetch+pipeline+Previews, Status `delivered`). In beiden Fällen `copy2(processed→delivered)` fürs
   UI. **Das ist die v2-„Prepare/Deliver“-Entkopplung** (Design-Entscheidung D-003).
 * **`/cleanup-previews`**: `cleanup_old_previews()` — **doppelte Eviction**: (a) älter als 7 Tage;
-  (b) > 50 Dateien pro Muster → älteste weg; schützt aktuelle Previews. (v1.0.4)
+  (b) > 50 Dateien pro Muster → älteste weg; schützt aktuelle Previews. (v1.0.4) Gilt für das
+  **Live-Verzeichnis** (FR-024). Die **Archiv-Galerie** räumt seit **2.4.3 pro Schuss** auf
+  (`cleanup_gallery()` → `_cleanup_previews_per_shot()`): Cap und Retention zählen **Schüsse**, ein
+  Schuss geht komplett — sonst reißt ein Schuss halbiert auseinander (Live-Befund Report §6.3,
+  Abschluss §6.7; Entscheidung `plans/preview-galerie-geschichte.md` §14).
 
 ### 5.8 Routes (Kurzform — vgl. §10)
 `/` (UI+Save), `/health`, `/download`, `/prepare-photo`, `/preview-*` (5), `/api/battery-status`,
@@ -328,8 +332,10 @@ Eine **einzige, selbstdenkende Seite** (Inline-`<style>`/`<script>`, Jinja-Serve
 * **Photo-Panel:** Vorschau des aktuellen Frames, **Status-Badge** („Ready to deliver“/„Already
   delivered“, `./preview-status`, 10 s), Buttons **Prepare New Photo** (`POST /prepare-photo`),
   **Cleanup Previews** (`POST /cleanup-previews`), **Gallery** (Modal).
-* **Gallery-Modal:** `GET /api/gallery-previews` → Raster aus `latest_{original,processed,delivered}_*.jpg`;
-  Klick öffnet original in neuem Tab.
+* **Gallery-Modal:** `GET /api/gallery-previews` → Raster **pro Schuss** aus dem Archiv
+  (`original_<id>.jpg` + `processed_<id>.jpg`, gruppiert über die Korrelations-ID), neuster Schuss
+  zuerst, Cap = `gallery_max_count` **Schüsse** (2.4.3); Klick öffnet original in neuem Tab.
+  *(Früher: Raster aus `latest_{original,processed,delivered}_*.jpg` — die Live-Slots.)*
 * **Config (einklappbar):** Karten je nach `image_source` (`immich` / `comfyui_ha` / `comfyui_direct`),
   Sliders (color-enhance **max 3,0** — mit Schema abgestimmt, contrast, strength), Rotation, Display-Mode,
   Bildreihenfolge, Dithering-Methode, Schlaffenster (h/min), Wake-Intervall.
@@ -403,9 +409,9 @@ Beide Wege (UI-POST **und** Datei-Änderung) münden in `update_app_config`; **k
 | GET | `/preview-status` | `{exists,status,timestamp,formatted_time}` | für Badge |
 | GET | `/api/battery-status` | `{voltage, voltage_v, percentage, last_update, formatted_timestamp, age_seconds}` | |
 | GET | `/api/generation-status` | `{source,count_today,max_per_day,last_generation}` (ComfyUI) bzw. Nullwerte (Immich) | |
-| GET | `/api/gallery-previews` | `{files:[{name,url,modified,timestamp}]}` (newest first) | |
+| GET | `/api/gallery-previews` | `{files:[{id,kind,name,url,modified,timestamp}],count}` — pro **Schuss** gruppiert (id = Korrelations-ID, kind = original/processed), neuster Schuss zuerst, Cap zählt Schüsse (2.4.3) | `count` = Schüsse, nicht Dateien |
 | GET | `/preview-file/<f>` | JPEG / 404 | `os.path.basename` gegen Directory-Traversal |
-| POST | `/cleanup-previews` | `{success, files_removed, message}` / 500 | 7-Tage / 50-Count-Eviction |
+| POST | `/cleanup-previews` | `{success, files_removed, message}` / 500 | 7-Tage / 50-Count-Eviction **pro Muster** (Live-Verzeichnis); das Archiv räumt pro Schuss auf (2.4.3) |
 | GET | `/sleep` | `{sleep_duration(ms), current_time, next_wakeup}` | **Zoné = Container-Uhr** (TZ-Option beachten) |
 
 **Auth-Modell:** Die `x-api-key`/`Bearer`-Header werden **nur** serverseitig (Add-on→Immich/HA)

@@ -1146,23 +1146,34 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 ### 5.1 Test Coverage
 
-| Category | Requirements | Test Cases | Coverage |
-|----------|-------------|------------|----------|
-| Functional | 25 | 33 | 100% |
-| Non-Functional | 8 | 8 | 100% |
-| Interface | 5 | 5 | 100% |
-| Security | 4 | 4 | 100% |
-| Performance | 3 | 3 | 100% |
-| **Total** | **45** | **53** | **100%** |
+| Category | Requirements | Test Cases | Requirements Covered |
+|----------|-------------|------------|----------------------|
+| Functional | 33 | 33 | 28 — see note |
+| Non-Functional | 10 | 10 | 10 — 100% |
+| Interface | 5 | 5 | 5 — 100% |
+| Security | 4 | 4 | 4 — 100% |
+| Performance | 3 | 3 | 3 — 100% |
+| **Total** | **55** | **55** | **50** |
+
+> Counted from the §4 matrix on 2026-11-20 (v2.4.3 baseline); it replaces the v2.0.0 numbers
+> (45 / 53) that had drifted since. The **33** test-case rows are one per requirement plus the split
+> **TC-FR-005** family (RAW / HEIC / STD). Five requirements — **FR-027 … FR-031**, the provider
+> layer — still carry **no row of their own**; they are exercised through the shared cases
+> **TC-FR-025** / **TC-FR-026** and `tests/test_providers.py`, which is why 55 rows cover 50
+> requirements. Adding those five rows is a documentation task of its own (the matrix statuses are
+> the v2.0.0 baseline; results live in EPF-RPT-001).
 
 ### 5.2 Verification Method Distribution
 
 | Method | Count |
 |--------|-------|
-| Test | 41 |
-| Inspection | 7 |
+| Test | 45 |
+| Inspection | 8 |
+| Inspection + Test | 1 |
 | Analysis | 1 |
-| Test + Inspection | 1 |
+| **Total** | **55** |
+
+> Counted from the §4 matrix on 2026-11-20 (v2.4.3 baseline).
 
 ---
 

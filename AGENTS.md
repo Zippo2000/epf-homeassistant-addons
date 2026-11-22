@@ -94,6 +94,8 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
     test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve)
     test_nonfunctional.py     # NFR (health, logging, timing, memory, theme, typing) + IFR (immich hdr, esp32, ingress, port) + SEC + PER
     test_providers.py         # Prompt variables, GenerationTracker, each Provider, factory, multi-source integration
+    test_gallery_history.py   # FR-032 gallery history: shot ids, pairing, grouped reader, **per-shot** pruning (2.4.3), option round trip
+    test_live.py              # L1 live tier (opt-in: EPF_LIVE_TESTS=1 + git-ignored .env) — real Immich + real ComfyUI; auto-skips otherwise
   README.md                   # the ADD-ON's user-facing README (shown in HA); keep in sync with config.yaml options
 ```
 

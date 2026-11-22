@@ -118,7 +118,9 @@ Reachable two ways: **(a)** the **HA panel** (icon `mdi:image-frame`) via ingres
 * **live health** (green/red dot — 60 s poll), **battery** (%/V + timestamp — 30 s poll),
   **current-photo status** (10 s poll);
 * **"Prepare new photo"** (fetch + render a frame now, mark it *ready to deliver*), **"Cleanup old
-  previews"**, and a **preview gallery**;
+  previews"**, and a **preview gallery** (one card per generation — the original + processed pair of
+  one shot, newest shot first; the gallery limits count **shots**, so a pruned generation is deleted
+  complete);
 * a collapsible **configuration** section with per-source cards, sliders (colour enhance / contrast /
   dither strength), rotation, display mode (fit/fill), image order, dithering method, and the
   sleep window + wake-up interval — all saved without a page reload.
