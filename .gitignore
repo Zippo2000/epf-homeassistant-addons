@@ -184,3 +184,6 @@ run.test.sh
 node_modules/
 npm-debug.log
 yarn-error.log
+
+# Downloaded GitHub Actions log bundles (scratch, e.g. the first L0 run)
+.github/Actions_log/

@@ -310,8 +310,9 @@ before quoting them.**
   mangled shebang is what is "missing"). Mitigated three ways: (1) `.gitattributes` forces
   `eol=lf` for `*.sh`/sources on checkout; (2) `Dockerfile.test` normalises the entrypoint
   **in-image** (strips trailing carriage returns) and runs it via an explicit `bash /run.sh`
-  rather than a shebang; (3) note `run.test.sh` itself is **git-ignored**, so the *committed*
-  robustness lives entirely in `.gitattributes` plus the Dockerfile.
+  rather than a shebang; (3) `run.test.sh` is matched by a `.gitignore` pattern but **is tracked**
+  (it is the documented test entrypoint), so the script itself is part of the committed robustness
+  together with `.gitattributes` and the Dockerfile.
 
 - **The production image cannot self-start outside Home Assistant.** `run.sh`'s shebang is
   `#!/usr/bin/with-contenv bashio`, and the HA base image has no `bashio` — the plain (non-supervised)

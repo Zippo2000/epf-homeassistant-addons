@@ -9,6 +9,10 @@
 #     docker build -f epf-eink-addon/Dockerfile.test -t epf-eink-tests:local epf-eink-addon
 #     docker run --rm epf-eink-tests:local          # -> pytest tests/ (+ junitxml)
 #
+# In CI the report has to survive the container, so the job mounts a host directory into
+# it and points run.test.sh at it via EPF_JUNIT_XML; the run itself is the gate (a non-zero
+# pytest exit fails the job), the junit file is the artifact.
+#
 # The opt-in live tier (L1) is NOT run here: it talks to a real Immich and a real
 # ComfyUI and performs real GPU generations, so it stays a manual, consented step
 # (`sh epf-eink-addon/run-live-tests.sh`). Without a .env it skips, and skipped
@@ -55,22 +59,19 @@ jobs:
       - name: Run the offline suite
         # The image CMD is `bash /run.sh` -> run.test.sh -> pytest with --junitxml;
         # a non-zero exit fails the job. Do not pass /run.sh as an argument here.
+        # EPF_JUNIT_XML points the report at the mounted host dir (default inside the
+        # container is /app, which `--rm` deletes).
         run: |
-          docker run --rm epf-eink-tests:ci
-
-      - name: Collect the junit report
-        if: always()
-        run: |
+          mkdir -p artifacts
           docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/out" \
-            --entrypoint bash \
-            epf-eink-tests:ci \
-            -c 'cp -f /app/test-results.xml /out/ 2>/dev/null || echo "no junit file (suite died before writing it)"'
+            -v "${GITHUB_WORKSPACE}/artifacts:/out" \
+            -e EPF_JUNIT_XML=/out/test-results.xml \
+            epf-eink-tests:ci
 
       - name: Upload junit report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-l0
-          path: test-results.xml
-          if-no-files-found: ignore
+          path: artifacts/test-results.xml
+          if-no-files-found: warn
