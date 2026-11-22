@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.3] - 2026-11-20
+
+### Changed
+- **The Gallery counts shots, not files.** `gallery_max_count` and `gallery_retention_days` used to
+  count **files per pattern** (`original_*`, `processed_*`, `delivered_*` each up to the limit) while
+  the Gallery lists, sorts and reports in **shots** — the same setting with two units, so a limit could
+  split a generation apart: on a real server a shot kept its original and lost its processed file
+  (report §6.3). Both limits now count **whole shots**: the newest `gallery_max_count` shots survive,
+  a shot older than `gallery_retention_days` is deleted complete, and a shot's age is the timestamp of
+  its newest file — exactly the measure the Gallery sorts by, so pruner and reader finally agree and
+  the number you set is the number of cards you see.
+- An install that already holds half-pairs from before will lose those files on the next cleanup; that
+  is the intended consolidation, and it touches archived shots only. Practical effect at cap *N*: the
+  archive now holds at most *N* shots instead of up to *2N* files.
+- The settings page labels the field **Max shots** and says a shot is pruned whole; the add-on README
+  option text says the same.
+
+### Unchanged
+- The **live preview directory** cleanup (`POST /cleanup-previews`) still prunes **per pattern** — that
+  directory holds the single live "current photo" slot, not groups, and it is never a gallery entry.
+  Files whose name carries no shot id are left alone by gallery pruning.
+
+### Tests
+- Three new cases: the crossed-mtime layout that split a shot in the field (this one **fails under the
+  old semantics** — forcing the pruner back to per-pattern turns it red), pruner/reader agreement on
+  the cap, and a name without a shot id neither deleted nor counted. Gallery file: **24** cases;
+  offline suite **202** (24.4 s, 8 live cases skipped by design).
+
 ## [2.4.2] - 2026-11-17
 
 ### Added

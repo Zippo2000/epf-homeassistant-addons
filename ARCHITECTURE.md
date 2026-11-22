@@ -166,9 +166,9 @@ plain HTTP/S. Two endpoints matter (both also used by the browser).
 | GET | `/preview-status` | `{exists, status, timestamp, formatted_time}` for the current frame. |
 | GET | `/api/battery-status` | Voltage/percentage/last-read. |
 | GET | `/api/generation-status` | ComfyUI: today's count, cap, last generation (else zeros). |
-| GET | `/api/gallery-previews` | List of preview files (newest first) for the gallery. |
+| GET | `/api/gallery-previews` | The archive **grouped into shots** (one entry per `id`, newest shot first, capped at `gallery_max_count` **shots**). |
 | GET | `/preview-file/<name>` | One preview by file name. |
-| POST | `/cleanup-previews` | Run the age(7 d)/count(50) evictor on the preview files. |
+| POST | `/cleanup-previews` | Run the age(7 d)/count(50) evictor on the **live-slot** preview directory — **per pattern** (`latest_*`), there is nothing to group there. The gallery archive has its own evictor, `cleanup_gallery()`, which prunes **whole shots** (see the invariant below). |
 | GET | `/sleep` | Hibernate duration (see Interface C). |
 
 ---
@@ -240,3 +240,11 @@ Size ≈ **576 KB** of text per refresh.
 4. **The container is only "healthy" when the source is reachable** (HEALTHCHECK → `/health`). That
    is a deliberate choice (see ANALYSE for the trade-off) — a down Immich shows as an *unhealthy
    container*, even though the app itself is fine.
+5. **The gallery counts shots, the live slot does not** (2.4.3). `gallery_max_count` and
+   `gallery_retention_days` are enforced **per shot** — `cleanup_gallery()` groups the archive by the
+   correlation id, judges a group by the mtime of its newest member (the same measure
+   `/api/gallery-previews` sorts by), and drops it **whole**, so a shot never arrives as half a pair
+   and both sides read the setting the same way. The live-slot evictor (`POST /cleanup-previews`,
+   `FR-024`) stays **per pattern** because that directory holds single files, not groups. Files whose
+   name has no shot id belong to neither view. Do not "unify" the two units — the split unit was the
+   bug (live finding, report §6.3, closed in §6.7).

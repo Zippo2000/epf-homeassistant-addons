@@ -193,14 +193,21 @@ built-in workflow and says so in the log.
 ### Gallery
 
 **gallery_max_count**
-- Maximum number of shots the Gallery keeps (per preview kind before cleanup)
+- Maximum number of shots the Gallery keeps. The unit is the **shot** (its `original` + `processed`
+  pair): pruning drops whole shots, so a shot is never left as half a pair
 - Range: 1 - 500
 - Default: 50
 
 **gallery_retention_days**
-- How long archived previews are kept; older ones are deleted on cleanup
+- How long archived shots are kept; a shot older than this is deleted — whole — on the next cleanup
 - Range: 1 - 365
 - Default: 7
+
+The Gallery lists **shots**, not files: one entry is the `original` + `processed` pair of one
+generation, sorted by the newest file of that pair, and both limits above are counted in **shots** —
+so a pruned generation disappears complete and the number you set is the number of cards you see.
+The live slot (the `latest_*` files behind the "current photo" cards) is a single slot, is counted
+per file, and is never touched by gallery pruning.
 
 ### Power Management
 
@@ -241,7 +248,7 @@ built-in workflow and says so in the log.
 | `/sleep` | GET | Get ESP32 sleep duration |
 | `/cleanup-previews` | POST | Clean up old preview files |
 | `/preview-photo` | GET | Serve a preview image (processed, falling back to original) |
-| `/api/gallery-previews` | GET | List available preview files |
+| `/api/gallery-previews` | GET | List the archived shots (one entry per generation: original + processed) |
 | `/preview-file/<filename>` | GET | Serve a specific preview file |
 
 ## Usage

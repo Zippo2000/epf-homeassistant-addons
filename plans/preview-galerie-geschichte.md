@@ -1,6 +1,8 @@
 # Preview-Galerie mit Historie – „Archiv- statt Single-Slot"
 
 > **Status:** ✅ **CLOSED (M1 + M2-Optionen)** — geliefert in **2.2.0** (`d825e7b`) + Ingress-Fix **2.2.1** (`ef1a0d1`, relative `./preview-file/`-URLs) + **M2-Optionen in 2.3.0** (`gallery_max_count` / `gallery_retention_days` als Add-on-Optionen + Settings-Felder). **M2-Rest:** `_archive_delivered()` offen. **M3 teilweise** (Lazy-Load + Cleanup-Button sind da, Paginierung nicht). DoD: L0 ✅ (162+5) + L3 ✅ am 2026-11-15 (Produktions-Image + echtes Immich: Prepare → archiviertes Paar, gruppierte Reader-Ausgabe, relative URLs — Report §6.2); **L4-Feld offen**. Siehe §12/§13.
+> **2.4.3 nachtrag:** Die Cap-Einheit ist beschlossen und umgesetzt — **pro Schuss** (§14); die
+> Aufräumung des Live-Slots (`POST /cleanup-previews`) bleibt pro Muster. L0 grün (202 + 8, 2026-11-20).
 > **Betreff:** `epf-eink-addon/app.py` (Prepare/Deliver-Pipeline, `cleanup_old_previews()`,
 > `/api/gallery-previews`) + `epf-eink-addon/templates/settings.html` (Gallery-Tab)
 > **Ziel:** Die Preview-Galerie soll eine echte **Geschichte** ansammeln (z. B. die letzten 50
@@ -171,7 +173,7 @@ Alle Änderungen in **`app.py`** (außer UI in `settings.html`); keine Änderung
 ```
 GALLERY_DIR           : str  = os.path.join(photo_dir, 'gallery')     # os.makedirs(exist_ok=True)
 GALLERY_PATTERNS      : List[str] = ['original_*.jpg', 'processed_*.jpg', 'delivered_*.jpg']
-GALLERY_MAX_COUNT     : int  = int(os.getenv('GALLERY_MAX_COUNT', '50'))         # Paare
+GALLERY_MAX_COUNT     : int  = int(os.getenv('GALLERY_MAX_COUNT', '50'))         # Paare (Schüsse) — 2.4.3
 GALLERY_MAX_AGE_SECONDS: int = 7 * 24 * 3600 * int(os.getenv('GALLERY_RETENTION_DAYS', '1')) // 1  # → 7 Tage
 ```
 (Exakter Wert: `GALLERY_MAX_AGE_SECONDS = 86400 * int(os.getenv('GALLERY_RETENTION_DAYS','7'))`.)
@@ -207,6 +209,7 @@ Semantik in der Galerie anzeigen wollen.
 ```
 - Sortierung absteigend nach `modified`, hart begrenzt auf `GALLERY_MAX_COUNT` **Paare**
   (gruppenweise begrenzen, nicht einzelnes Files, damit Paare zusammen bleiben).
+  *(2.2.0 anders gebaut — pro Muster; **2.4.3** auf die Empfehlung zurückgeholt, siehe §14.)*
 - `/preview-file/<filename>` bleibt wie heute (`photo_dir`-relativ) → auf `GALLERY_DIR` ausweiten
   (`os.path.join(photo_dir, 'gallery', basename)`), weiterhin nur `basename` (Path-Traversal-sicher).
 
@@ -253,7 +256,7 @@ Manifest/Schema-Drift klein bleibt (siehe AGENTS: „schema & run.sh halten im G
 
 | Schlüssel | Default | Bedeutung | Phase |
 |-----------|---------|-----------|-------|
-| `GALLERY_MAX_COUNT` | `50` | max. Paare (original+processed) im Archiv — **aber:** die Implementierung zählt pro Pattern (Live-Befund 2.3.0, Report §6.3; Entscheidung offen) | M1 (Env), M2 (Option) |
+| `GALLERY_MAX_COUNT` | `50` | max. **Schüsse** (Paar original+processed) im Archiv — **2.4.3 beschlossen und umgesetzt:** gekappt wird pro Schuss, nie halbe Paare (Live-Finding Report §6.3, Abschluss §6.7; Entscheidung §14 unten) | M1 (Env), M2 (Option), 2.4.3 (Einheit) |
 | `GALLERY_RETENTION_DAYS` | `7` | max. Alter eines Archiv-Eintrags | M1 (Env), M2 (Option) |
 | `gallery/` (Verz.) | auto | Zielverzeichnis, liegt im `photos/`-Bind-Mount | M1 |
 
@@ -353,19 +356,70 @@ Erweiterungen: `tests/test_functional.py` (Prepare/Deliver-Regression), `tests/t
 1. Paar (original + processed) — umgesetzt; „delivered" wird in M1 **nicht** archiviert (M2).
 2. Sortierung nach Dateimalter (`modified`, absteigend), `id` nur zur Gruppierung — umgesetzt.
 3. Nein — der Liefer-Nachweis bleibt der Live-Slot (`latest_delivered.jpg`); Galerie zeigt Original + Processed.
-4. **Abweichung zur Empfehlung:** gekappt wird **pro Muster** (`original_*`, `processed_*`, `delivered_*`
-   je `GALLERY_MAX_COUNT`), nicht pro Paar — ein Paar kann also beim Pruning auseinandergerissen werden.
-   Belegt durch `test_prunes_each_kind_to_max_count`; der gemeinsame Zähler-Bug (nur das erste Muster
-   gekappt) wurde in 2.2.0 behoben.
+4. **Zuerst Abweichung, jetzt die Empfehlung (2.4.3):** zunächst gekappt **pro Muster**
+   (`original_*`, `processed_*`, `delivered_*` je `GALLERY_MAX_COUNT`) — ein Paar konnte dabei
+   auseinandergerissen werden (live beobachtet, Report §6.3). **2.4.3** hat die ursprüngliche
+   Empfehlung umgesetzt: gekappt wird **pro Schuss** (siehe §14). Der alte Fall
+   `test_prunes_each_kind_to_max_count` war kein echter Beleg — seine Assertions galten unter beiden
+   Lesarten; der Scharnier ist jetzt `test_pruning_never_splits_a_shot`.
 
 > **Doku-Lücke:** für das Feature existieren **kein** Requirement und **kein** Testfall in
 > `docs/requirements_specification_aspice.md` / `docs/test_specification_aspice.md` (EPF-REQ/TST-001).
 > Die 17 Fälle in `tests/test_gallery_history.py` hängen an keinem ID — nachziehen, wenn der Report
 > formal vollständig sein soll.
+>
+> **Erledigt:** **FR-032** (EPF-REQ-001) und **TC-FR-032** (EPF-TST-001) existieren seit dem 2.3.0-Pass;
+> für die Cap-Einheit **pro Schuss** wurden beide in der Revision 2.4.3 neu gefasst (§14).
 
 ---
 
-## 14 · Querverweise
+## 14 · Cap-Einheit: beschlossen auf „pro Schuss" (2.4.3)
+
+**Entscheidung (Report §6.3, Finding 2):** Dokumentieren **oder** pro Schuss prunen — **gewählt: pro
+Schuss** (Code).
+
+**Warum die ursprüngliche Empfehlung gewinnt:** der Reader (`/api/gallery-previews`) zählte schon immer
+in **Schüssen** (Gruppen), der Pruner in **Dateien pro Muster** — dieselbe Einstellung, zwei Einheiten.
+Der Live-Lauf hat es bewiesen: Cap 3, Schuss `sim2` behielt sein Original und verlor sein Processed.
+Seit diesem Pass reden Pruner und Reader dieselbe Sprache: `gallery_max_count` = Schüsse,
+`gallery_retention_days` = Alter eines **ganzen** Schusses.
+
+**Umsetzung**
+
+- `app.py`: `_gallery_groups()` (gruppiert `<kind>_<id>.jpg` nach `id`; Namen ohne `id` sind keine
+  Galerie-Einträge und bleiben liegen — gleiche Regel wie der Reader) und
+  `_cleanup_previews_per_shot()` (Alters- **und** Anzahl-Eviction auf Gruppenebene, Gruppenalter =
+  mtime des neuesten Mitglieds = genau das Sortierkriterium des Readers).
+  `cleanup_old_previews()` bekam den Schalter `group_by_shot`, `cleanup_gallery()` setzt ihn.
+- **Unangetastet:** die Aufräumung des Live-Verzeichnisses (`POST /cleanup-previews`, **FR-024**) bleibt
+  **pro Muster** — dort liegt der Einzel-Live-Slot, keine Gruppen. Bitte nicht „vereinheitlichen".
+- **Nebeneffekt Speicher:** bei Cap N liegt das Archiv jetzt bei ≤ N Gruppen statt bis zu 2 N Dateien.
+  Eine Bestandsinstallation mit Waisen verliert beim nächsten Cleanup-Button Dateien — nur Archive,
+  der Live-Slot bleibt unangetastet.
+
+**Tests ( diese Datei 21 → 24, L0 gesamt 199 → 202)**
+
+| Fall | Was er sichert |
+|------|----------------|
+| `test_pruning_never_splits_a_shot` | **Das Schloss.** Gekreuzte mtime-Lage: Pro-Muster-Pruning lässt **vier** Schüsse liegen, zwei davon als halbe Paare (`id3` nur Original, `id0` nur Processed). Pro-Schuss-Pruning behält genau die drei neuesten Schüsse **vollständig** (`id0`/`id2`/`id3`) und wirft `id1` ganz raus. **Beidseitig bewiesen:** zwingt man den Pruner zurück auf Pro-Muster, fällt genau dieser Fall (23 bestanden, 1 gefallen) |
+| `test_pruner_and_reader_speak_the_same_unit` | Nach dem Prunen ist Reader-Ausgabe = Plattenstand (Cap 3 → 3 Schüsse, 6 Dateien) |
+| `test_files_without_a_shot_id_are_left_alone` | Eine Datei ohne Shot-id im Galerie-Ordner wird weder gelöscht noch gegen den Cap gezählt |
+| `test_prunes_whole_shots_to_max_count` (umbenannt + verschärft) | Cap zählt Schüsse; die neuesten drei Schüsse überleben je vollständig — jetzt mit expliziten Gruppen-Assertions |
+
+**Doku-Abgleich:** `AGENTS.md` (Cap-Einheit + Report-Counts), `TESTSPEC.md`, `README.md`
+(Options-Text, Englisch), `templates/settings.html` (Label + Hilfetext, Englisch),
+`docs/requirements_specification_aspice.md` (**FR-032** neu gefasst, Revision 2.4.3),
+`docs/test_specification_aspice.md` (**TC-FR-032** auf 24 Fälle erweitert),
+`docs/test_report_aspice.md` (§6.3 Finding 2 geschlossen, neuer §6.7, Counts 202 + 8 = 210).
+
+**Stand dieses Passes:** **L0 grün** — 202 passed, 8 skipped, 24,4 s (2026-11-20). **L1 und L3 noch
+nicht auf diesem Code-Stand gefahren** (letzter grüner Lauf 2026-11-15/17 auf v2.4.2) — vor dem
+v2.4.3-Tag nachziehen; der L3-Smoke soll dann **mehr Schüsse als der Cap** archivieren, damit die
+Pruning-Pfade auf dem ausgelieferten Image laufen. Das QA-Zeichen im Report (§8) steht weiter aus.
+
+---
+
+## 15 · Querverweise
 
 - Wire-Vertrag & Invarianten: [`ARCHITECTURE.md`](../ARCHITECTURE.md) (§ Prepare/Deliver-Entkopplung).
 - Testmodel/Ebenen: [`TESTSPEC.md`](../TESTSPEC.md) + `docs/test_specification_aspice.md`.

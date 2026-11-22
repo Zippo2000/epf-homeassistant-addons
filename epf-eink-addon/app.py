@@ -330,11 +330,87 @@ GALLERY_MAX_COUNT: int = int(os.getenv('GALLERY_MAX_COUNT', '50'))
 GALLERY_RETENTION_DAYS: int = int(os.getenv('GALLERY_RETENTION_DAYS', '7'))
 GALLERY_MAX_AGE_SECONDS: int = 86400 * GALLERY_RETENTION_DAYS
 
-def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None, patterns: Optional[List[str]] = None) -> int:
+def _gallery_groups(target_dir: str, patterns: List[str]) -> Dict[str, List[Tuple[str, float]]]:
+    """Group the archived gallery files by shot id (the '<kind>_<id>.jpg' naming rule).
+
+    A group is one shot: its original, its processed render, and (once M2 lands) its delivered
+    file. Files whose name does not carry a shot id are not gallery entries - the live single
+    slot, a stray file - and are left untouched, which is the same rule the reader applies.
+    """
+    groups: Dict[str, List[Tuple[str, float]]] = {}
+    for pattern in patterns:
+        for filepath in glob_module.glob(os.path.join(target_dir, pattern)):
+            stem: str = os.path.splitext(os.path.basename(filepath))[0]
+            parts: List[str] = stem.split('_', 1)
+            if len(parts) != 2:
+                continue
+            try:
+                mtime: float = os.path.getmtime(filepath)
+            except OSError:
+                continue
+            groups.setdefault(parts[1], []).append((filepath, mtime))
+    return groups
+
+
+def _cleanup_previews_per_shot(target_dir: str, age_limit: int, count_limit: int, patterns: List[str]) -> int:
+    """Prune the gallery **per shot**, so a shot is never left with half of its pair.
+
+    Both limits apply to whole shots: age eviction drops a shot whose newest file is older than
+    the retention window, count eviction keeps the newest `count_limit` shots and drops the rest
+    whole. A shot's age is the mtime of its newest member - the key the reader sorts by - so the
+    pruner and /api/gallery-previews judge by the same measure and the cap means shots (pairs),
+    not files per pattern (live finding, report 6.3).
+    """
+    groups: Dict[str, List[Tuple[str, float]]] = _gallery_groups(target_dir, patterns)
+    total_removed: int = 0
+    now: float = time.time()
+
+    def group_age(files: List[Tuple[str, float]]) -> float:
+        return max(mtime for _, mtime in files)
+
+    def remove_files(files: List[Tuple[str, float]], reason: str) -> None:
+        nonlocal total_removed
+        for filepath, mtime in files:
+            try:
+                os.remove(filepath)
+                total_removed += 1
+                logger.info(f"Cleaned up {reason}: {filepath} (age: {(now - mtime) / 3600:.1f}h)")
+            except OSError as e:
+                logger.warning(f"Failed to remove {filepath}: {e}")
+
+    # 1. age eviction - whole shots, even when under the count limit
+    dropped_by_age: set = set()
+    for shot, files in groups.items():
+        if now - group_age(files) > age_limit:
+            remove_files(files, "old preview")
+            dropped_by_age.add(shot)
+
+    # 2. count eviction - keep the newest count_limit shots whole
+    survivors: List[Tuple[str, float]] = [
+        (shot, group_age(files))
+        for shot, files in groups.items()
+        if shot not in dropped_by_age
+    ]
+    survivors.sort(key=lambda item: item[1], reverse=True)
+    for shot, _age in survivors[count_limit:]:
+        remove_files(groups[shot], "excess preview")
+
+    if total_removed > 0:
+        logger.info(f"Preview cleanup complete: {total_removed} files removed")
+    return total_removed
+
+
+def cleanup_old_previews(directory: Optional[str] = None, max_age_seconds: Optional[int] = None, max_count: Optional[int] = None, patterns: Optional[List[str]] = None, group_by_shot: bool = False) -> int:
     target_dir: str = directory or photo_dir
     age_limit: int = max_age_seconds or MAX_PREVIEW_AGE_SECONDS
     count_limit: int = max_count or MAX_PREVIEW_COUNT
     use_patterns: List[str] = patterns or PREVIEW_PATTERNS
+
+    # The gallery prunes per shot so that pairs stay pairs; the live preview directory keeps the
+    # original per-pattern behaviour (it holds single-slot files, not groups).
+    if group_by_shot:
+        return _cleanup_previews_per_shot(target_dir, age_limit, count_limit, use_patterns)
+
     total_removed: int = 0
     now: float = time.time()
 
@@ -562,11 +638,14 @@ def _archive_previews(source_id: Optional[str]) -> None:
     logger.info(f"Archived previews for shot '{shot}'")
 
 def cleanup_gallery() -> int:
+    # group_by_shot: gallery_max_count / gallery_retention_days count shots (pairs), not files
+    # per pattern - see _cleanup_previews_per_shot.
     return cleanup_old_previews(
         directory=_gallery_dir(),
         patterns=GALLERY_PATTERNS,
         max_age_seconds=GALLERY_MAX_AGE_SECONDS,
         max_count=GALLERY_MAX_COUNT,
+        group_by_shot=True,
     )
 
 

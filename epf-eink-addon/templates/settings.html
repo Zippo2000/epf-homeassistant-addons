@@ -1066,14 +1066,14 @@ footer {
                     <div class="card">
                         <div class="card-title">Photo Gallery<span class="channel-badge">runtime YAML</span></div>
                         <div class="form-group">
-                            <label for="gallery_max_count">Max entries (per pattern):</label>
+                            <label for="gallery_max_count">Max shots:</label>
                             <input type="text" id="gallery_max_count" name="gallery_max_count" value="{{ config.get('gallery', {}).get('max_count', 50) }}">
-                            <small class="small-text">Range: 1 - 500. How many archived shots the Gallery keeps before cleanup prunes.</small>
+                            <small class="small-text">Range: 1 - 500. How many archived shots the Gallery keeps before cleanup prunes. The unit is the shot: a shot is pruned whole (original + processed together).</small>
                         </div>
                         <div class="form-group">
                             <label for="gallery_retention_days">Retention (days):</label>
                             <input type="text" id="gallery_retention_days" name="gallery_retention_days" value="{{ config.get('gallery', {}).get('retention_days', 7) }}">
-                            <small class="small-text">Range: 1 - 365. Older archived previews are deleted on the next cleanup.</small>
+                            <small class="small-text">Range: 1 - 365. Shots older than this are deleted — whole — on the next cleanup.</small>
                         </div>
                     </div>
 

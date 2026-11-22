@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~199 tests); no network |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~202 tests); no network |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -335,11 +335,24 @@ pass counts.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **199 offline + 8 live = 207**-case suite, **2.4.2**, re-counted 2026-11-17 — L0, L1 against a real
-  Immich *and* a real ComfyUI, and the L3 production-image smoke all re-run green). If a PR adds or removes tests, update the
+  **202 offline + 8 live = 210**-case suite, **2.4.3**, re-counted 2026-11-20 — L0 re-ran green on the
+  new code; **L1 and the L3 production-image smoke last ran green on 2026-11-17 against a real Immich
+  *and* a real ComfyUI and must be re-run before the v2.4.3 tag is cut**). If a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
-  the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, and the
-  named-workflow feature **FR-033 / TC-FR-033** in this one.
+  the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, the
+  named-workflow feature **FR-033 / TC-FR-033** in the 2.4.0 one, and the 2.4.3 pass re-worded
+  **FR-032 / TC-FR-032** for the per-shot gallery pruning (see the gallery unit note below).
+- **One unit for the gallery cap (2.4.3).** `gallery_max_count` / `gallery_retention_days` count
+  **shots** (whole `original` + `processed` pairs): `cleanup_gallery()` prunes through
+  `_cleanup_previews_per_shot()`, which groups by shot id and judges a group by its newest member —
+  the same measure `/api/gallery-previews` sorts and caps by, so the setting means one thing. The
+  **live preview directory** cleanup (`POST /cleanup-previews`, `FR-024`) is deliberately different:
+  it prunes **per pattern**, because that directory holds the single live slot, not groups. Do not
+  "unify" the two. The lock is the cross-mtime test in `tests/test_gallery_history.py` — forcing the
+  pruner back to per-pattern makes exactly that case fail (verified 2026-11-20), so never weaken it
+  back to a case that passes under both semantics; the split was first seen in the field, not in the
+  suite (report §6.3, closed in §6.7).
+
 - **Fonts for the date overlay.** The prod `Dockerfile` installs `fonts-dejavu-core` (14.7)
   so the date overlay renders with the intended typeface; without it Pillow would silently fall
   back to the tiny bitmap default.

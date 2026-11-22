@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.2 (2026-11-17)
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.3 (2026-11-20)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -114,9 +114,12 @@ Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `t
 
 ### `tests/test_gallery_history.py` → **FR-032** (2.2.0; Optionen 2.3.0)
 
-21 Fälle: Shot-id-Bereinigung, Archiv-Hook (Paar-Kopie), gruppierte Reader-Ausgabe, relative
-Ingress-URLs, Beschneiden pro Muster (Anzahl + Alter), Live-Slot Finger Weg, Prepare-End-to-End, und
-der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
+24 Fälle: Shot-id-Bereinigung, Archiv-Hook (Paar-Kopie), gruppierte Reader-Ausgabe, relative
+Ingress-URLs, **Beschneiden pro Schuss** (Anzahl + Alter — ein Schuss geht immer komplett, 2.4.3),
+Live-Slot Finger Weg, Prepare-End-to-End, und der Optionendurchlauf Formular → Runtime-YAML →
+wirksame Grenzwerte (2.3.0). Die drei neuen Fälle (2.4.3) sind die **Locks** für das
+Paar-Auseinanderreißen aus Report §6.3: gekreuzte mtime-Lage (unter der alten Pro-Muster-Logik würde
+sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleibt liegen.
 
 ### `tests/test_providers.py` → **Provider-Abstraktion** (FR-027…FR-033)
 | Klasse | Prüft |
@@ -130,8 +133,8 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.4.2):** **199** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **207**,
+> **Coverage-Grob (Stand 2.4.3):** **202** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **210**,
 > 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall. Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
 > ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
@@ -140,8 +143,9 @@ der Optionendurchlauf Formular → Runtime-YAML → wirksame Grenzwerte (2.3.0).
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.2 / 207 Tests / 100 %** (L0 22,1 s,
-   L1 26,9 s, nachgezählt am 2026-11-17). Code, Specs und Report sind wieder auf demselben Stand
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.3 / 210 Tests / 100 %** (L0 24,4 s am
+   2026-11-20 nachgezählt; **L1 und L3 zuletzt am 2026-11-17 auf v2.4.2 grün** — vor dem
+   v2.4.3-Tag neu fahren, Report §6.7). Code, Specs und Report sind auf demselben Stand
    (33 FR, volles Provider-Modul, sechs Test-Dateien). Vor jedem Release neu fahren und neu zählen —
    sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf

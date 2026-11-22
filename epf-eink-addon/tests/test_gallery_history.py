@@ -6,7 +6,8 @@ Covers:
   * _shot_id derivation (sanitisation, length cap, ts+uuid fallback)
   * _archive_previews() copying fixed-name latest_* into the gallery dir
   * the /api/gallery-previews reader (grouping by id, newest-first, count cap)
-  * cleanup_gallery() pruning (and, critically, never touching the live slot)
+  * cleanup_gallery() pruning **per shot** — a pair is never split (2.4.3, live finding report 6.3)
+  * an end-to-end /prepare-photo test proving the archive hook fires
   * an end-to-end /prepare-photo test proving the archive hook fires
 
 The suite is fully hermetic: preview "files" are tiny placeholder bytes (never
@@ -41,6 +42,34 @@ def _seed_pairs(app, n, base_ts, step=60):
             with open(p, 'wb') as f:
                 f.write(b'\xff\xd8\xff\xe0')
             os.utime(p, (ts, ts))
+
+
+def _seed_shot(app, shot, kind, ts):
+    """Write one gallery file under <kind>_<shot>.jpg with an explicit mtime."""
+    gal = app._gallery_dir()
+    os.makedirs(gal, exist_ok=True)
+    p = os.path.join(gal, '%s_%s.jpg' % (kind, shot))
+    with open(p, 'wb') as f:
+        f.write(b'\xff\xd8\xff\xe0')
+    os.utime(p, (ts, ts))
+    return p
+
+
+def _shots_on_disk(app):
+    """Shot ids present in the gallery dir, mapped to the kinds present for each."""
+    gal = app._gallery_dir()
+    shots = {}
+    if not os.path.isdir(gal):
+        return shots
+    for base in os.listdir(gal):
+        stem = os.path.splitext(base)[0]
+        if '_' not in stem:
+            continue
+        kind, shot = stem.split('_', 1)
+        shots.setdefault(shot, []).append(kind)
+    for kinds in shots.values():
+        kinds.sort()
+    return shots
 
 
 def _gallery_file_count(app):
@@ -162,15 +191,68 @@ class TestReader:
 # --------------------------------------------------------------------------
 
 class TestGalleryPruning:
-    def test_prunes_each_kind_to_max_count(self, app_module):
+    def test_prunes_whole_shots_to_max_count(self, app_module):
         app_module.GALLERY_MAX_COUNT = 3
         _seed_pairs(app_module, 6, time.time() - 90000)
         assert _gallery_file_count(app_module) == 12
         app_module.cleanup_gallery()
-        # 3 originals + 3 processed of the newest ids retained
+        # the cap counts shots: the newest three shots survive, each of them complete
         assert _gallery_file_count(app_module) == 6
+        assert _shots_on_disk(app_module) == {'id3': ['original', 'processed'],
+                                             'id4': ['original', 'processed'],
+                                             'id5': ['original', 'processed']}
         assert os.path.exists(os.path.join(app_module._gallery_dir(), 'original_id5.jpg'))
         assert not os.path.exists(os.path.join(app_module._gallery_dir(), 'original_id0.jpg'))
+
+    def test_pruning_never_splits_a_shot(self, app_module):
+        # Live finding (report 6.3): pruning per pattern let a shot keep its original and lose its
+        # processed file (`sim2`). Cross the mtimes so the two patterns would disagree about the
+        # newest three shots — under per-shot pruning they cannot.
+        base = time.time() - 90000
+        offsets = {                       # shot -> (original offset, processed offset)
+            'id0': (100, 350),            # processed of id0 is the 2nd newest processed file
+            'id1': (200, 250),
+            'id2': (300, 150),            # processed of id2 is the 3rd newest processed file
+            'id3': (400, 100),            # original of id3 is the newest original file
+        }
+        for shot, (orig_off, proc_off) in offsets.items():
+            _seed_shot(app_module, shot, 'original', base + orig_off)
+            _seed_shot(app_module, shot, 'processed', base + proc_off)
+        app_module.GALLERY_MAX_COUNT = 3
+        # group ages (newest member): id3 400 > id0 350 > id2 300 > id1 250
+        # per-pattern pruning would keep originals id3/id2/id1 and processed id0/id1/id2,
+        # i.e. it would leave id3 with only its original and id0 with only its processed file.
+        app_module.cleanup_gallery()
+        survivors = _shots_on_disk(app_module)
+        assert sorted(survivors) == ['id0', 'id2', 'id3']
+        assert all(sorted(kinds) == ['original', 'processed'] for kinds in survivors.values()), survivors
+
+    def test_pruner_and_reader_speak_the_same_unit(self, app_module):
+        # the invariant the finding was about: what the reader reports is what is on disk, and
+        # gallery_max_count means the same thing on both sides
+        app_module.GALLERY_MAX_COUNT = 3
+        _seed_pairs(app_module, 5, time.time() - 90000)
+        removed = app_module.cleanup_gallery()
+        assert removed == 4                                   # the two oldest shots, whole
+        data = _get(app_module, '/api/gallery-previews')
+        assert data['count'] == 3
+        assert sorted(_shots_on_disk(app_module)) == ['id2', 'id3', 'id4']
+        assert sorted(f['id'] for f in data['files']) == ['id2', 'id2', 'id3', 'id3', 'id4', 'id4']
+
+    def test_files_without_a_shot_id_are_left_alone(self, app_module):
+        # the pruner only owns '<kind>_<id>.jpg' names — a stray file in the gallery dir is neither
+        # deleted nor counted against the cap (same rule the reader applies)
+        gal = app_module._gallery_dir()
+        os.makedirs(gal, exist_ok=True)
+        stray = os.path.join(gal, 'stray.jpg')
+        with open(stray, 'wb') as f:
+            f.write(b'\xff\xd8\xff\xe0')
+        _seed_pairs(app_module, 2, time.time() - 90000)
+        app_module.GALLERY_MAX_COUNT = 1
+        app_module.cleanup_gallery()
+        assert os.path.exists(stray)
+        assert _shots_on_disk(app_module) == {'id1': ['original', 'processed']}
+
 
     def test_respects_age_limit(self, app_module):
         # all older than the retention window -> pruned even if under count limit
@@ -258,5 +340,5 @@ class TestGalleryOptions:
         assert app_module.GALLERY_MAX_COUNT == 2          # the hot-reload path fired
         _seed_pairs(app_module, 4, time.time())
         app_module.cleanup_gallery()
-        # cap of 2 per pattern -> 2 originals + 2 processed survive
+        # cap of 2 shots -> the newest two shots survive, each of them complete
         assert _gallery_file_count(app_module) == 4
