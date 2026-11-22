@@ -4,6 +4,8 @@
 > **2.4.3 nachtrag:** Die Cap-Einheit ist beschlossen und umgesetzt — **pro Schuss** (§14); die
 > Aufräumung des Live-Slots (`POST /cleanup-previews`) bleibt pro Muster. L0 grün (205 + 8, Stand 2.4.3b,
 > 2026-11-20 — der Stand dieses Passes war 202 + 8; seither sind die Settings-Guard-Fälle dazugekommen).
+> **Getaggt:** `v2.4.3` (annotiert) am 2026-11-22 — L0 (lokale **und** CI-Läufe grün), L1 und L3 auf
+> diesem Stand grün. Browser-Optik (jetzt **inkl. neuem Save-Warn-Dialog**) und 14.9 bleiben offen.
 > **Betreff:** `epf-eink-addon/app.py` (Prepare/Deliver-Pipeline, `cleanup_old_previews()`,
 > `/api/gallery-previews`) + `epf-eink-addon/templates/settings.html` (Gallery-Tab)
 > **Ziel:** Die Preview-Galerie soll eine echte **Geschichte** ansammeln (z. B. die letzten 50

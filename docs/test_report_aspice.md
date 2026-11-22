@@ -10,6 +10,10 @@ gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI 
 settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
 pruning 2.4.3** + settings-page guards & full traceability 2.4.3b)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
+**Tag:** `v2.4.3` — annotated, cut on 2026-11-22 at this baseline and pushed. Note for the field: the
+add-on store does **not** read tags, it compares the manifest `version:` with the *installed* version,
+so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pending update while running
+without them — reinstall in HA to get them (see `plans/findings.md` §5).
 **Status:** all three automatable tiers are green on the **v2.4.3 / 2.4.3b** code base — **L0** 205/205,
 **L1** 8/8 against a real Immich *and* a real ComfyUI, **L3** production-image smoke on the shipped
 image; all three re-run **2026-11-22** (§6.9). What remains is not automatable from here: the browser

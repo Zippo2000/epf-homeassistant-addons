@@ -69,7 +69,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 ```
 repository.yaml               # marks this as a HA ADD-ON STORE (name/url/maintainer) — required for the add-on store
 LICENSE                       # MIT
-.github/workflows/l0.yml      # the L0 tier in CI: build Dockerfile.test, run pytest (L1 auto-skips; no secrets)
+.github/workflows/l0.yml      # the L0 tier in CI: build Dockerfile.test, run pytest (L1 auto-skips; no secrets), upload the junit artifact
 .gitignore                    # note: whitelists (!) epf-eink-addon/cpy.so and the add-on manifest; ignores the runtime config/ + photos/
 docs/                         # formal ASPICE deliverables (German/English): 
                                 #   requirements_specification_aspice.md  (EPF-REQ-001: 33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER)
@@ -402,6 +402,15 @@ before quoting them.**
   manifest's `version:` field → `"dev"`, and `BUILD_TIMESTAMP` from the `BUILD_TIMESTAMP` env →
   the `.build_stamp` file written by the `Dockerfile` at image-build time → `"unknown"`.
   Release by bumping `version:` in `epf-eink-addon/config.yaml` only.
+
+- **HA does not read git tags — the version number is the whole comparison.** The store compares the
+  manifest's `version:` against the *installed* version, so a tag is a labelling step, not a release
+  trigger. Consequence, hit for real on 2026-11-22: the `2.4.3` CHANGELOG entry is dated 20.11., but
+  the 2.4.3b code (settings guards, warning dialog, CI) landed on 22.11. **under the same number** —
+  so an install that pulled 2.4.3 in between shows *no pending update* while running without that
+  code. The only remedy is **reinstall the add-on in HA** (a restart pulls no code). Cut the tag on
+  the commit where the version's content is actually complete, and if code lands after the bump,
+  say so in the changelog/plan instead of letting the number quietly cover it.
 
 ---
 

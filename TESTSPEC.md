@@ -50,6 +50,10 @@ Der Exit-Code von `pytest` wird weitergegeben (Grün/Rot im CI).
 > ohne `.env`, und übersprungene Live-Fälle machen den Job **nicht** rot. L1 und L3 bleiben manuell
 > (echte Generationen, echte HA-/s6-Startpfad) — die CI-Phase ersetzt also keine Release-Gates, sie
 > nimmt nur die billige, mechanisierbare Schicht ab.
+>
+> Der junit-Report überlebt den `--rm`-Container nur, weil der Job ein Host-Verzeichnis in den Container
+> mountet und `run.test.sh` per `EPF_JUNIT_XML` dorthin zeigt (lokaler Default `/app/test-results.xml`
+> = unverändert). Der erste grüne Lauf (2026-11-22) lieferte 205/8 **und** das Artifact `junit-l0`.
 
 **Alternativ: lokal** (Python 3.11, Dependencies aus `requirements.txt`, v. a. `responses`, `rawpy`,
 `Cython`/`numpy`/`Pillow`):
