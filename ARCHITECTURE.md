@@ -153,7 +153,11 @@ plain HTTP/S. Two endpoints matter (both also used by the browser).
   pings the **active provider**'s connectivity — returning `503` when the source is unreachable.
 * **The web UI** (`/`, `settings.html`) is the full control surface — source cards, sliders,
   sleep window, **health** (60 s), **battery** (30 s), **photo status** (10 s) polling, and the
-  **prepare / cleanup / gallery** actions. It also persists a **dark/light theme** in `localStorage`.
+  **prepare / cleanup / gallery** actions. It also persists a **dark/light theme** in `localStorage`,
+  and clicking a dashboard preview or a gallery thumbnail opens the **shared in-page lightbox**
+  (2.5.0) — one overlay, FLIP-zoom from the clicked element, `Esc` closes, `←`/`→` step through the
+  group; the gallery anchors keep their `href` as the no-JS fallback, so the JS path calls
+  `preventDefault()`.
 
 ### Other HTTP endpoints (catalogue)
 | Method | Path | Purpose |

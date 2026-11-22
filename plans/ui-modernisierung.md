@@ -354,8 +354,11 @@ Mobile-Tüftelei).
 
 ## 7 · Offene Fragen / Follow-ups (optional, nicht blockierend)
 
-- Soll der **Gallery-Tab** später auch einen Lightbox-Viewer mit Vor/Zurück-Pfeilen bekommen?
-  (Aktuell: Click → `window.open` in neuem Tab. Könnte in 2. Iteration.)
+- ~~Soll der **Gallery-Tab** später auch einen Lightbox-Viewer mit Vor/Zurück-Pfeilen bekommen?
+  (Aktuell: Click → `window.open` in neuem Tab. Könnte in 2. Iteration.)~~ **Ist gebaut**
+  (**2.5.0**): Klick auf Dashboard-Vorschau *oder* Galerie-Daumen zoomt das Bild per FLIP-Animation
+  nahezu fullscreen auf; `Esc` zu, `←`/`→` blättern durch die Gruppe, Pfeile nur bei mehreren
+  Bildern. `href` bleibt als No-JS-Fallback erhalten.
 - **i18n:** Aktuell Englisch. Bei zukünftiger DE-LOkalisierung sollte die UI-Strings
   in ein externes Dictionary ausgelagert werden – bewusst hier *nicht* gemacht.
 - **Accessibility:** ARIA-Labels für Tabs (`role="tablist"`, `aria-selected`), `focus-visible` Styles –

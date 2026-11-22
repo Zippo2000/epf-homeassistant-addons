@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~205 tests); no network — and in CI (`.github/workflows/l0.yml`, 2.4.3b) |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~206 tests); no network — and in CI (`.github/workflows/l0.yml`, 2.4.3b) |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -89,7 +89,7 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
   requirements.txt            # Flask 3.0.3, Pillow 10.4, numpy 1.24, rawpy 0.21, pillow-heif, gunicorn 23, watchdog, ntplib, pytest, responses (pinned)
   run.sh                      # `#!/usr/bin/with-contenv bashio`: reads add-on options via bashio::config -> exports env -> starts gunicorn (2x2) on :5000
   run.test.sh                 # runs `python3 -m pytest tests/ -v --junitxml=...` inside the test image
-  templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode
+  templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode, in-page image zoom (lightbox) for dashboard previews and gallery shots
   tests/
     conftest.py               # fixtures: app_module (fresh import w/ env+NTP+watchdog mocked), client_with_mocks (Flask client + `responses` Immich mocks)
     test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b)
@@ -261,6 +261,11 @@ before quoting them.**
 - **The web UI is a single self-contained `templates/settings.html`** (inline `<style>` +
   `<script>`). It polls `/health` (60 s), `/api/battery-status` (30 s), `/preview-status` (10 s).
   Keep the **CSP** meta tag and the named `POLL_INTERVALS`/`NOTIFICATION_DURATION` constants intact.
+- **Images zoom in the one lightbox overlay** (`#lightbox`, dashboard previews and gallery thumbs
+  both open it): the click FLIP-zooms the image out of the thumbnail it came from, `Esc` closes,
+  `←`/`→` navigate the group (the three dashboard previews, or the gallery as rendered). Gallery
+  anchors keep their `href` as the no-JS fallback, so the click handler must `preventDefault()`, and
+  the overlay markup stays **outside** `#settingsForm` (one field name per config key, 2.4.1).
 - **Docs & language split:**
   - **Code-facing docs** (`README.md`, `AGENTS.md`, `ARCHITECTURE.md`) are **English**;
     **analytical docs** (`ANALYSE.md`, `TESTSPEC.md`) and **working docs** (`plans/findings*.md`)
@@ -344,14 +349,16 @@ before quoting them.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **205 offline + 8 live = 213**-case suite, **2.4.3 / 2.4.3b**, re-counted 2026-11-22 — **L0, L1 and the
-  L3 production-image smoke all re-ran green on this code base on 2026-11-22** (report §6.9; the L3 run
+  **206 offline + 8 live = 214**-case suite, **2.5.0**, re-counted 2026-11-22 — **L0, L1 and the
+  L3 production-image smoke all re-ran green on this code base on 2026-11-22** (report §6.10; the L3 run
   deliberately used a cap of 2 and three real preparations so the shipped per-shot pruner executed). If
   a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
   the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, the
-  named-workflow feature **FR-033 / TC-FR-033** in the 2.4.0 one, and the 2.4.3 pass re-worded
-  **FR-032 / TC-FR-032** for the per-shot gallery pruning (see the gallery unit note below).
+  named-workflow feature **FR-033 / TC-FR-033** in the 2.4.0 one, the 2.4.3 pass re-worded
+  **FR-032 / TC-FR-032** for the per-shot gallery pruning, and the 2.5.0 in-page image zoom (Dashboard
+  previews + Gallery) is written as a clause on **FR-026** — no new requirement ID, it is a control on
+  an existing one (see the gallery unit note below).
 - **One unit for the gallery cap (2.4.3).** `gallery_max_count` / `gallery_retention_days` count
   **shots** (whole `original` + `processed` pairs): `cleanup_gallery()` prunes through
   `_cleanup_previews_per_shot()`, which groups by shot id and judges a group by its newest member —
