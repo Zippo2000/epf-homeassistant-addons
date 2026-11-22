@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.4.2  
-**Date:** 2026-11-17  
-**Baseline:** Repository commit (main branch, v2.4.2)  
-**Status:** Released
+**Version:** 2.4.3  
+**Date:** 2026-11-20  
+**Baseline:** Repository commit (main branch, working basis for **v2.4.3**; previous baseline v2.4.2)  
+**Status:** Issued — FR-032 re-worded for the per-shot gallery pruning; L1/L3 re-runs pending before the v2.4.3 tag
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
 > 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
@@ -19,6 +19,12 @@
 > enabled) that the settings page owns; the requirement text is re-worded accordingly and
 > **TC-FR-010-EXIF** is extended with the switch cases (status set to Executed — Passed). No new
 > requirement ID: the switch is a control on an existing requirement.
+>
+> **Revision 2.4.3 (2026-11-20):** **FR-032** is re-worded after the live finding of EPF-RPT-001 §6.3:
+> gallery pruning now counts in **shots** (whole `original` + `processed` pairs) for both limits, so a
+> shot can no longer be left as half a pair, and the pruner judges a shot by the same measure the
+> reader sorts by. **FR-024** (the live preview directory, a single slot rather than a group) keeps
+> the original per-pattern semantics — the two cleanups are deliberately different.
 
 ---
 
@@ -465,11 +471,11 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **ID** | FR-032 |
 | **Title** | Archived preview history for the gallery |
 | **Priority** | Medium |
-| **Description** | The system SHALL archive every prepared shot as a correlated pair (`original_<shot-id>.jpg`, `processed_<shot-id>.jpg`) under `photos/gallery/`, keyed by a sanitised shot id derived from the image-source identifier (fallback: timestamp + uuid). The gallery reader `/api/gallery-previews` SHALL group entries by shot id, sort newest first, report the number of shots, and return **relative** `./preview-file/...` URLs so the UI works behind Home Assistant ingress. Cleanup SHALL prune **per pattern** by count (option `gallery_max_count`, default 50) and by age (option `gallery_retention_days`, default 7 days); both are add-on options, editable in the settings UI and hot-reloaded through the runtime YAML. Cleanup SHALL never touch the live single-slot files (`latest.*`) used by the ESP32 hand-shake. |
+| **Description** | The system SHALL archive every prepared shot as a correlated pair (`original_<shot-id>.jpg`, `processed_<shot-id>.jpg`) under `photos/gallery/`, keyed by a sanitised shot id derived from the image-source identifier (fallback: timestamp + uuid). The gallery reader `/api/gallery-previews` SHALL group entries by shot id, sort newest first, report the number of shots, and return **relative** `./preview-file/...` URLs so the UI works behind Home Assistant ingress. Cleanup SHALL prune **per shot** — a shot is dropped whole, never half a pair — by count (option `gallery_max_count`, default 50 shots) and by age (option `gallery_retention_days`, default 7 days); a shot's age is the modification time of its newest member, the same measure the reader sorts by, so the pruner and the reader agree on what the limits mean. Both limits are add-on options, editable in the settings UI and hot-reloaded through the runtime YAML. Files in the gallery directory whose name carries no shot id are not gallery entries and are left alone. Cleanup SHALL never touch the live single-slot files (`latest.*`) used by the ESP32 hand-shake. |
 | **Input** | POST /prepare-photo (archive hook), POST /cleanup-previews, GET /api/gallery-previews |
 | **Output** | Archived pairs on disk; JSON list of shots grouped by id; cleanup returns removed-file count |
 | **Verification** | Test |
-| **Traceability** | `app.py:_shot_id, _gallery_dir, _archive_previews, gallery_previews, cleanup_gallery`, `templates/settings.html (Gallery tab)`, `tests/test_gallery_history.py` |
+| **Traceability** | `app.py:_shot_id, _gallery_dir, _archive_previews, gallery_previews, cleanup_gallery, _gallery_groups, _cleanup_previews_per_shot`, `templates/settings.html (Gallery tab)`, `tests/test_gallery_history.py` |
 
 #### FR-033: Named ComfyUI Workflow Selection
 

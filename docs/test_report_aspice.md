@@ -2,14 +2,17 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.4.2
-**Date:** 2026-11-17
-**Baseline:** branch `main` — code base **v2.4.2** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Version:** 2.4.3
+**Date:** 2026-11-20
+**Baseline:** branch `main` — code base **v2.4.3** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
-settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
+settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
+pruning 2.4.3**)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
-**Status:** Completed — all tiers green (L0 offline, L1 live Immich, L3 production-image smoke)
+**Status:** L0 re-run green for the v2.4.3 code base (202 cases, 2026-11-20). The **L1 live tier** and
+the **L3 production-image smoke** were last run green on 2026-11-15/17 for v2.4.2 (§6.1–§6.6) and
+still have to be re-run before the **v2.4.3** tag is cut — see §6.7
 
 > **Why a new report:** the previous revision (1.1.0) described the *v1* single-source build
 > (93 nominal / 78 executed cases) and was already internally inconsistent. This revision re-baselines
@@ -61,6 +64,16 @@ settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
 > hot reload, partial POST keeps the stored value, page shows stored state) → offline suite **199**;
 > the live tier is unchanged at **8**. L0, L1 and the production-image smoke were re-run green on
 > 2026-11-17, including the switch demonstrated on a real Immich photo (§6.6).
+>
+> The **2.4.3** revision closes live finding **2** of §6.3 (the cap could **split a pair**): gallery
+> pruning now counts whole **shots**, so both limits drop a shot complete and the pruner judges a shot
+> by the same measure the reader sorts by — the cap finally means the same thing on both sides. Three
+> new cases in `tests/test_gallery_history.py` → **24** there, offline suite **202**, combined
+> **210** (§6.7). **FR-032** was re-worded in EPF-REQ-001 and **TC-FR-032** extended in EPF-TST-001.
+> The live preview directory (`POST /cleanup-previews`, a single slot rather than a group) keeps its
+> per-pattern behaviour — **FR-024** is unchanged. **L0 re-ran green on 2026-11-20; the L1 tier and
+> the production-image smoke have not been re-run for this code base yet, so the 100 % below is the
+> L0 tier plus the v2.4.2 live/L3 runs.**
 
 ---
 
@@ -68,15 +81,15 @@ settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **207** (199 offline + 8 opt-in live) |
-| **Passed** | **207** — 199 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)** |
+| **Total Test Cases** | **210** (202 offline + 8 opt-in live) |
+| **Passed** | **210** — 202 offline (L0, re-run 2026-11-20) **+ 8 live against a real Immich and a real ComfyUI (L1, last run 2026-11-17)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 22.1 s (2026-11-17) · L1 26.9 s incl. three real GPU generations (2026-11-17) · L3 production smoke incl. two real Immich generations through the switch (2026-11-17, §6.6) |
+| **Execution Time** | L0 **24.4 s (2026-11-20)** · L1 26.9 s incl. three real GPU generations (2026-11-17) · L3 production smoke incl. two real Immich generations through the switch (2026-11-17, §6.6) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5), and the global date-stamp switch governs the pipeline on the shipped image (§6.6) |
-| **L3 production smoke** | **PASS** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2 |
+| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5), the global date-stamp switch governs the pipeline on the shipped image (§6.6), and gallery pruning keeps a shot whole (§6.7). **Caveat for the v2.4.3 baseline:** only L0 has been re-run on this code base (§6.7); the L1 and L3 evidence above is from 2026-11-15/17 on v2.4.2 |
+| **L3 production smoke** | **PASS at v2.4.2 (2026-11-17)** — shipped `Dockerfile` image (gunicorn 2×2, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery, footer — see §6.2; **re-run for 2.4.3 pending (§6.7)** |
 
 ---
 
@@ -134,7 +147,7 @@ settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| Shot-id sanitisation, archiving a pair, grouped reader, per-pattern pruning, live-slot safety, end-to-end prepare, option round-trip (M2) | **21** | **21** | **0** | **100%** |
+| Shot-id sanitisation, archiving a pair, grouped reader, **per-shot** pruning (a shot is dropped whole — the 2.4.3 split lock, the pruner/reader agreement, names without a shot id left alone), live-slot safety, end-to-end prepare, option round-trip (M2) | **24** | **24** | **0** | **100%** |
 
 ### 3.5 Live tier (opt-in) — `tests/test_live.py`  *(ComfyUI cases added in v2.4.0)*
 
@@ -142,8 +155,8 @@ settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2)
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 207 collected — 199 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
-→ 207/207, 0 failed (100 %).**
+**Total: 210 collected — 202 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1)
+→ 210/210, 0 failed (100 %).**
 
 ---
 
@@ -156,9 +169,10 @@ the v1.x report, this release **adds coverage** for the multi-source feature set
 - **FR-027** — image-source selection (`immich` / `comfyui_ha` / `comfyui_direct`): covered.
 - **FR-028** — ComfyUI via Home Assistant (`ai_task.generate_image`): covered (unit + integration).
 - **FR-002** — album-asset retrieval is now asserted against the **v3 `search/metadata`** endpoint (14.3).
-- **FR-032 / TC-FR-032 — gallery history** (features 2.2.0–2.3.0): covered by **21** automated
-  cases in `tests/test_gallery_history.py`; the requirement and test-case IDs were added to
-  EPF-REQ-001 / EPF-TST-001 in this revision.
+- **FR-032 / TC-FR-032 — gallery history** (features 2.2.0–2.3.0; per-shot pruning 2.4.3): covered
+  by **24** automated cases in `tests/test_gallery_history.py`; the requirement and test-case IDs were
+  added to EPF-REQ-001 / EPF-TST-001 in the 2.3.0 revision, and both were re-worded for the per-shot
+  pruning in the 2.4.3 revision.
 - **FR-021 / TC-FR-021 — web settings UI** (2.3.2): the form-name/option-key vocabulary, the
   legacy short-name alias, the read-only secret & log-level echo, the channel labels and the new
   `comfyui_entity_id` field are covered by **7** automated cases (`TestFR021WebSettings` +
@@ -221,14 +235,14 @@ Defect found and fixed on the **2.4.1** track (reported from a real installation
 ```
 platform linux -- Python 3.11, pytest-7.4.3, pluggy-1.x
 rootdir: /app
-collected 207 items
+collected 210 items
 
 tests/test_functional.py      :: 97 passed
 tests/test_nonfunctional.py  :: 27 passed
 tests/test_providers.py      :: 54 passed
-tests/test_gallery_history.py :: 21 passed
+tests/test_gallery_history.py :: 24 passed
 tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
-======================= 199 passed, 8 skipped in 22.06s ========================
+======================= 202 passed, 8 skipped in 24.42s ========================
 ```
 
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
@@ -308,11 +322,18 @@ This is the live proof of the multi-source claim (FR-027/FR-030) and of the 2.3.
    workflow JSON is configured), with the previously hardcoded name kept as the last-resort fallback.
    Both paths proven live in the two rows above; four offline cases cover option precedence,
    auto-detection, fallback and the no-lookup rule.
-2. **The per-pattern cap can split a pair.** Pruning counts files *per pattern*, so a shot can be left
-   with only its original or only its processed file (seen live: `sim2` kept its original, lost its
-   processed file) — the plan worded the limit as "max. **pairs**". Either document the semantics or
-   prune per shot — **decision still open**. Related, already accepted as the 14.12 trade-off: the generation counter lives per
-   process and is rebuilt on hot reload — the live run reported `count_today: 1` after two generations.
+2. **The per-pattern cap can split a pair — closed in 2.4.3.** Pruning counted files *per pattern*, so
+   a shot could be left with only its original or only its processed file (seen live: `sim2` kept its
+   original, lost its processed file) — the plan worded the limit as "max. **pairs**". **Decision taken
+   and implemented (2.4.3):** prune **per shot** — both limits drop a shot complete, a shot's age is
+   the mtime of its newest member (the key the reader sorts by), and names without a shot id are left
+   alone; so the cap means shots on both sides and the two views agree. The live preview directory
+   (`POST /cleanup-previews`) keeps the per-pattern behaviour — it holds the single live slot, not
+   groups (**FR-024** unchanged). Three lock cases in `tests/test_gallery_history.py`: the cross-mtime
+   layout this very run produced (per-pattern pruning would split it), the pruner/reader agreement, and
+   the name-without-id rule; see §6.7. Related, already accepted as the 14.12 trade-off: the generation
+   counter lives per process and is rebuilt on hot reload — the live run reported `count_today: 1`
+   after two generations.
 
 ---
 
@@ -395,6 +416,34 @@ path, because Docker's container environment reaches the main program only throu
 
 ---
 
+### 6.7 L0 re-run for 2.4.3 — gallery pruning keeps a shot whole (run 2026-11-20)
+
+Closes live finding **2** of §6.3. The pruning unit moved from *files per pattern* to *whole shots*
+(`app.py:_gallery_groups`, `app.py:_cleanup_previews_per_shot`, reached through
+`cleanup_gallery(group_by_shot=True)`); the live preview directory keeps the old per-pattern path
+(`FR-024`, `POST /cleanup-previews`), because there is nothing to group there.
+
+| Check | Result |
+|-------|--------|
+| **L0 offline suite** (the tier that owns this behaviour) | **202 passed, 8 skipped in 24.4 s** (2026-11-20) ✓ — gallery file **24** (21 + 3 new) |
+| Pruning caps by **shots** | cap 3, six shots → the newest **three shots** survive, each with **both** of its files ✓ |
+| **The split lock** (this run's finding, reproduced) | mtimes crossed so the two patterns disagree about the newest three: per-pattern pruning leaves **four** shots on disk, two of them half-pairs (`id3` original-only, `id0` processed-only) — per-shot pruning keeps exactly the three newest shots **complete** (`id0`/`id2`/`id3`) and drops `id1` whole. Proven both ways: forcing the pruner back to per-pattern makes this case fail (23 passed, 1 failed) ✓ |
+| Pruner and reader agree | after pruning, what `/api/gallery-previews` reports is what is on disk (cap 3 → 3 shots, 6 files) ✓ |
+| Names without a shot id | a stray file in the gallery dir is neither deleted nor counted against the cap ✓ |
+| Age eviction | a shot older than the retention window is deleted **whole** ✓ (pre-existing case, still green) |
+| Live-slot regression | `latest_original.jpg` untouched by gallery pruning ✓ (pre-existing case, still green) |
+| Live-preview cleanup (`FR-024`) | per-pattern behaviour unchanged ✓ (pre-existing cases, still green) |
+| **L1 live tier** | **not re-run for this code base** — last green 2026-11-17 on v2.4.2 (§6.1); it touches the Immich/ComfyUI wire paths, which this change does not, but it is a release gate (§6.1) |
+| **L3 production-image smoke** | **not re-run for this code base** — last green 2026-11-17 on v2.4.2 (§6.2, §6.4–§6.6); the re-run should archive **more shots than the cap** so the pruning path runs on the shipped image against a real Immich |
+
+**What this proves:** the behaviour that the live run falsified is now pinned by a test — and pinned by
+a case that **fails under the old semantics** (the crossed-mtime layout), not just by a case that would
+also pass under them, which is what the old "each kind to max count" case was: its assertions held
+under both readings, so it proved nothing about the unit. The pruner and the reader now share one
+measure, so the setting has one meaning.
+
+---
+
 ## 7. Reproduction
 
 The add-on test entrypoint is `Dockerfile.test`; all Immich/HA values are supplied by the mocks, so
@@ -442,18 +491,21 @@ exported workflow graph the live tier posts is a `.env` value too):
 
 | Role | Name | Date | Signature |
 |------|------|------|-----------|
-| Test Manager | EPF Project | 2026-11-17 | - |
-| Quality Assurance | - | - | *(menschliches Zeichen steht aus)* |
-| Project Lead | EPF Project | 2026-11-17 | - |
+| Test Manager | EPF Project | 2026-11-20 | - |
+| Quality Assurance | - | - | *(human signature still outstanding)* |
+| Project Lead | EPF Project | 2026-11-20 | - |
 
 ---
 
-*Regenerated for code base **v2.4.2** on branch `main`, 2026-11-17: **199** offline cases pass,
-the **8** live cases pass against a real Immich *and* a real ComfyUI (including a real exported
-workflow graph), and the production image passes the L3 smoke (form vocabulary §6.2, named workflows
-§6.4, form-delivers-every-field §6.5, global date-stamp switch §6.6) plus the live ComfyUI-direct leg
-(§6.3) — the release gate of
-`AGENTS.md` is satisfied.
+*Regenerated for code base **v2.4.3** on branch `main`, 2026-11-20: **202** offline cases pass
+(**L0**, re-run today, 24.4 s), the **3** new cases of §6.7 included; **210/210** counting the **8**
+live cases, which last ran green against a real Immich *and* a real ComfyUI on 2026-11-17 and have
+**not** been re-run on this code base. Same for the production-image smoke (last green 2026-11-17 on
+v2.4.2: form vocabulary §6.2, named workflows §6.4, form-delivers-every-field §6.5, global date-stamp
+switch §6.6, live ComfyUI-direct leg §6.3) — **both have to be re-run before the v2.4.3 tag is cut**
+(§6.7). The catalogue side is aligned: **FR-032** re-worded in EPF-REQ-001, **TC-FR-032** extended in
+EPF-TST-001. Live finding 2 of §6.3 is closed by this revision; the QA row of §8 still awaits a human
+signature.
 Still open (not automatable here):
 the browser-side visual acceptance (light/dark/mobile/CSP) and the L4 field run on a real frame —
 see `plans/findings.md`.*

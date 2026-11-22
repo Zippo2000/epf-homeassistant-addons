@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.4.2  
-**Date:** 2026-11-17  
-**Baseline:** Repository commit (main branch, v2.4.2)  
-**Status:** Released
+**Version:** 2.4.3  
+**Date:** 2026-11-20  
+**Baseline:** Repository commit (main branch, working basis for **v2.4.3**; previous baseline v2.4.2)  
+**Status:** Issued — TC-FR-032 extended for the per-shot gallery pruning; L1/L3 re-runs pending before the v2.4.3 tag
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
 > against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
@@ -35,6 +35,15 @@
 > switch, and the page showing the stored state — **6 automated cases**, status "Executed — Passed".
 > FR-010 itself was re-worded in EPF-REQ-001 for the switch. Results in EPF-RPT-001 (re-baselined for
 > 2.4.2).
+>
+> **Revision 2.4.3 (2026-11-20):** **TC-FR-032** is extended by three automated cases and re-worded,
+> because **FR-032** changed: gallery pruning counts whole **shots** now (the live finding of
+> EPF-RPT-001 §6.3 — pruning per pattern could leave a shot with only its original or only its
+> processed file). New cases: a cross-mtime layout in which per-pattern pruning would split a shot
+> (the exact live observation), the pruner/reader agreement on the cap, and a name without a shot id
+> being left alone. **TC-FR-024** (the live preview directory, single slot rather than a group) keeps
+> its per-pattern wording and is deliberately different. **24 automated cases**, status
+> "Executed — Passed". Results in EPF-RPT-001 (re-baselined for 2.4.3).
 
 **Parent Document:** EPF-REQ-001 (Requirements Specification)
 
@@ -692,11 +701,11 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Title** | Verify the archived preview gallery (correlation, grouping, limits, live-slot safety) |
 | **Priority** | Medium |
 | **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path`; placeholder preview files (never decoded by these cases) |
-| **Test Input** | 21 automated cases in `tests/test_gallery_history.py` (offline tier L0) |
-| **Test Steps** | 1. Verify shot-id sanitisation (filename-safe charset, separator stripping, 64-char cap, ts+uuid fallback)<br>2. Verify the archive hook copies the live pair into `photos/gallery/` under the shot id<br>3. Verify the reader groups by shot id, sorts newest first and reports the shot count<br>4. Verify entry URLs are relative `./preview-file/...` (ingress-safe)<br>5. Verify pruning caps each pattern independently by count and by age<br>6. Verify the live single slot (`latest.*`) is never pruned<br>7. Verify POST /prepare-photo fires the archive and leaves the hand-shake status at `new`<br>8. Verify the option round-trip: settings form -> runtime YAML -> effective limits (defaults 50 / 7 days)<br>9. Verify a form submitted without gallery fields keeps the defaults |
-| **Expected Result** | One archived pair per shot; grouped reader output; per-pattern pruning within both limits; live slot untouched; configured options take effect without a restart |
+| **Test Input** | 24 automated cases in `tests/test_gallery_history.py` (offline tier L0) |
+| **Test Steps** | 1. Verify shot-id sanitisation (filename-safe charset, separator stripping, 64-char cap, ts+uuid fallback)<br>2. Verify the archive hook copies the live pair into `photos/gallery/` under the shot id<br>3. Verify the reader groups by shot id, sorts newest first and reports the shot count<br>4. Verify entry URLs are relative `./preview-file/...` (ingress-safe)<br>5. Verify pruning caps whole **shots** by count and by age — the newest N shots survive, each of them complete<br>6. Verify pruning never splits a shot: with the per-pattern orderings crossed (so per-pattern pruning would have split the boundary shots), every survivor still holds both of its files<br>7. Verify the pruner and the reader report the same set — the cap means shots on both sides<br>8. Verify a gallery-directory file without a shot id is neither deleted nor counted against the cap<br>9. Verify the live single slot (`latest.*`) is never pruned<br>10. Verify POST /prepare-photo fires the archive and leaves the hand-shake status at `new`<br>11. Verify the option round-trip: settings form -> runtime YAML -> effective limits (defaults 50 / 7 days)<br>12. Verify a form submitted without gallery fields keeps the defaults |
+| **Expected Result** | One archived pair per shot; grouped reader output; **per-shot** pruning within both limits (a shot is dropped whole, never half a pair); pruner and reader agree on what the limits count; live slot untouched; configured options take effect without a restart |
 | **Verification Method** | Test (Automated) |
-| **Actual Result** | 21/21 passed (offline tier L0, 2026-11-15) |
+| **Actual Result** | 24/24 passed (offline tier L0, 2026-11-20) |
 | **Status** | Executed — Passed |
 
 ---
@@ -1116,7 +1125,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-010 | NFR-010 | Inspection | Not Executed |
 | TC-FR-025 | FR-025 | Test | Not Executed |
 | TC-FR-026 | FR-026 | Test | Not Executed |
-| TC-FR-032 | FR-032 | Test | Executed — Passed (21 cases, 2026-11-15) |
+| TC-FR-032 | FR-032 | Test | Executed — Passed (24 cases, 2026-11-20) |
 | TC-FR-033 | FR-033 | Test | Executed — Passed (18 offline + 3 live cases, 2026-11-15) |
 | TC-IFR-001 | IFR-001 | Test | Not Executed |
 | TC-IFR-002 | IFR-002 | Test | Not Executed |
