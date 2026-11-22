@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.4.3  
-**Date:** 2026-11-20  
-**Baseline:** Repository commit (main branch, working basis for **v2.4.3**; previous baseline v2.4.2)  
-**Status:** Issued — TC-FR-032 extended for the per-shot gallery pruning; L1/L3 re-runs pending before the v2.4.3 tag
+**Version:** 2.5.0  
+**Date:** 2026-11-22  
+**Baseline:** Repository commit (main branch, working basis for **v2.5.0**; previous baseline v2.4.3 / 2.4.3b)  
+**Status:** Issued — TC-FR-026 extended with the in-page image zoom (step 9); L0, L1 and the L3 production smoke all re-ran green on this baseline on 2026-11-22 (EPF-RPT-001 §6.10)
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
 > against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
@@ -660,11 +660,12 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Priority** | Medium |
 | **Preconditions** | SUT running; Flask test client available |
 | **Test Input** | GET / (settings page) |
-| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined |
-| **Expected Result** | All UI improvements present and functional |
+| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined<br>9. Verify the in-page image zoom (2.5.0): the shared overlay is served, the three Dashboard previews and the gallery renderer are wired to it, and no control opens a new browser window |
+| **Expected Result** | All UI improvements present and functional; for step 9 the overlay markup is served, both groups are wired, and no `target="_blank"` remains |
 | **Verification Method** | Test (Automated) |
-| **Actual Result** | _To be filled during execution_ |
-| **Status** | Not Executed |
+| **Automated Test IDs** | `tests/test_functional.py::TestFR026UISettingsImprovements` — 9 cases (CSP, referrer, cleanup, year, unicode, slider ids, polling constants, `safeGet`, in-page zoom) |
+| **Actual Result** | See EPF-RPT-001 §6.10 (run 2026-11-22) |
+| **Status** | Executed — Passed (9 cases, 2026-11-22) |
 
 #### TC-FR-025: Health Check Indicator
 
@@ -692,11 +693,12 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | **Priority** | Medium |
 | **Preconditions** | SUT running; Flask test client available |
 | **Test Input** | GET / (settings page) |
-| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined |
-| **Expected Result** | All UI improvements present and functional |
+| **Test Steps** | 1. Verify Content-Security-Policy meta tag present<br>2. Verify Referrer-Policy meta tag present<br>3. Verify cleanup button exists<br>4. Verify dynamic copyright year (getFullYear in JS)<br>5. Verify Unicode HTML entities used instead of emoji<br>6. Verify slider output elements have id attributes<br>7. Verify POLL_INTERVALS constants defined<br>8. Verify safeGet helper function defined<br>9. Verify the in-page image zoom (2.5.0): the shared overlay is served, the three Dashboard previews and the gallery renderer are wired to it, and no control opens a new browser window |
+| **Expected Result** | All UI improvements present and functional; for step 9 the overlay markup is served, both groups are wired, and no `target="_blank"` remains |
 | **Verification Method** | Test (Automated) |
-| **Actual Result** | _To be filled during execution_ |
-| **Status** | Not Executed |
+| **Automated Test IDs** | `tests/test_functional.py::TestFR026UISettingsImprovements` — 9 cases (CSP, referrer, cleanup, year, unicode, slider ids, polling constants, `safeGet`, in-page zoom) |
+| **Actual Result** | See EPF-RPT-001 §6.10 (run 2026-11-22) |
+| **Status** | Executed — Passed (9 cases, 2026-11-22) |
 
 ---
 
@@ -1217,7 +1219,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | TC-NFR-009 | NFR-009 | Inspection | Not Executed |
 | TC-NFR-010 | NFR-010 | Inspection | Not Executed |
 | TC-FR-025 | FR-025 | Test | Not Executed |
-| TC-FR-026 | FR-026 | Test | Not Executed |
+| TC-FR-026 | FR-026 | Test | Executed — Passed (9 cases, 2026-11-22) |
 | TC-FR-027 | FR-027 | Test | Executed — Passed (5 cases, 2026-11-20) |
 | TC-FR-028 | FR-028 | Test | Executed — Passed (10 cases + 1 live, 2026-11-20 / 2026-11-17) |
 | TC-FR-029 | FR-029 | Test | Executed — Passed (9 cases + shared + 1 live, 2026-11-20 / 2026-11-17) |
@@ -1257,7 +1259,8 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 > had drifted since. **Every requirement now has a documented test case** — FR-027 … FR-031 got
 > **TC-FR-027 … TC-FR-031** in this revision. The FR row count (38) sits above the FR requirement
 > count (33) because of the split **TC-FR-005** family (RAW / HEIC / STD) and the duplicated
-> **TC-FR-025 / TC-FR-026** sections carried from the baseline, both kept as-is in the body. Matrix
+> **TC-FR-025 / TC-FR-026** sections carried from the baseline, both kept as-is in the body (both now
+> carrying the 2.5.0 zoom step, so the two copies stay identical). Matrix
 > statuses are the v2.0.0 baseline except the rows explicitly re-baselined; actual results live in
 > EPF-RPT-001.
 
@@ -1273,6 +1276,11 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 > Counted from the §4 matrix on 2026-11-20 (v2.4.3b): the five new provider cases are automated, so
 > Test goes 45 → 50.
+>
+> **Revision 2.5.0 (2026-11-22):** **TC-FR-026** gains step 9 — the in-page image zoom shared by the
+> Dashboard previews and the Gallery — and its status is set to Executed — Passed (**9 cases**). No new
+> test case ID; the catalogue keeps **33 FR / 10 NFR / 5 IFR / 4 SEC / 3 PER** and **60** cases. Results
+> in EPF-RPT-001 (re-baselined for 2.5.0).
 
 ---
 

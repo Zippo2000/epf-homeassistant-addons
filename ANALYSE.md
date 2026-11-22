@@ -55,8 +55,8 @@ Der zentrale Designgedanke bleibt identisch zum Ursprung — **Trennung von Bere
 
 Dazu: **`/health`** (quellen-unabhängig), **Prepare/Deliver-Entkopplung** (Foto vorher vorbereiten,
 später liefern), **Preview-Galerie**, **Dark Mode**, **CSP-Härtung** und ein **ASPICE-Doku- &
-Test-Paket** (33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER; **205** vollständig gemoockte Pytest-Fälle,
-Stand v2.4.3b, dazu 8 Live-Fälle im opt-in-Tier).
+Test-Paket** (33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER; **206** vollständig gemoockte Pytest-Fälle,
+Stand v2.5.0, dazu 8 Live-Fälle im opt-in-Tier).
 
 **Ergebnis:** Frame-Refresh im Sekundenbereich, minimale Geräte-Leistung, und — neu — die Möglichkeit,
 den Rahmen mit **KI-generierten Bildern** zu betreiben, die sich per Prompt-Vorlage an
@@ -124,7 +124,7 @@ Uhrzeit/Jahreszeit/„Wetter“ anpassen lassen und durch ein Tageslimit vor GPU
 | `epf-eink-addon/run.sh` | bashio | `#!/usr/bin/with-contenv bashio`: liest alle `options` via `bashio::config`, **exportiert sie als Env**, **validiert `IMMICH_API_KEY`+`IMMICH_URL`** (sonst fatal), setzt `INGRESS_PATH`, **startet gunicorn 2×2 auf :5000**. |
 | `epf-eink-addon/run.test.sh` | bash | `pytest tests/ -v --junitxml=…` im Test-Image. |
 | `epf-eink-addon/templates/settings.html` (≈1209 Z.) | HTML/JS | Die Web-UI (Jinja + Inline-CSS/JS). |
-| `epf-eink-addon/tests/*` | Python | 6 Dateien (conftest + 5) → **205** Offline-Fälle (+ **8** Live-Fälle im opt-in-Tier § 5b von TESTSPEC), strukturiert nach ASPICE-IDs; laufen seit 2.4.3b zusätzlich als CI-Job. Stand v2.4.3b, 2026-11-20. |
+| `epf-eink-addon/tests/*` | Python | 6 Dateien (conftest + 5) → **206** Offline-Fälle (+ **8** Live-Fälle im opt-in-Tier § 5b von TESTSPEC), strukturiert nach ASPICE-IDs; laufen seit 2.4.3b zusätzlich als CI-Job. Stand v2.5.0, 2026-11-22. |
 
 ---
 
@@ -500,7 +500,7 @@ den rohen Port 5000 offen) — s. §14.11.
 | Prepare/Deliver | — | **neu** (`/prepare-photo` + Status-State-Machine) | + (besseres UX) |
 | UI | Basic Settings-Form | **Full-UI** (Health, Batterie, Gallery, Dark Mode, CSP) | + |
 | Health/API | — | `/health`, `/api/*`, Docker-HEALTHCHECK | + |
-| Doku/Test | README/ARCH/ANALYSE/TESTSPEC + kleine pytest | **ASPICE-Deliverables** (4 Doku) + **205 Offline- + 8 Live-Pytest-Fälle** (Stand v2.4.3b, 2026-11-20) | + (strenger; der Report ist wieder auf dem Code-Stand) |
+| Doku/Test | README/ARCH/ANALYSE/TESTSPEC + kleine pytest | **ASPICE-Deliverables** (4 Doku) + **206 Offline- + 8 Live-Pytest-Fälle** (Stand v2.5.0, 2026-11-22) | + (strenger; der Report ist wieder auf dem Code-Stand) |
 | Firmware | im Repo (`Arduino/`) | **nicht** im Repo | neutral (saubere Trennung) |
 
 **Kernaussage:** Das Add-on **baut auf** dem EPF auf (Pipeline, Dithering, Batterie, Sleep,
@@ -646,7 +646,7 @@ Der **HA-Deploy-Stack** (bashio-Options→Env, Ingress + ProxyFix, gunicorn 2×2
 5 Archs, **Cython im Build** statt committed ELF) ist **besser gelöst als beim Standalone-EPF** und
 entfernt dessen größte Build-Schwäche (platte `cpy.so`-Binaries). Die **Prepare/Deliver-Entkopplung**,
 die **Galerie**, **Health/Batterie-Telemetrie** und die **Dark-Mode-UI** sind echte UX-Gewinne, und
-das **ASPICE-Doku- + 205-Fall-Test-Paket** (Stand v2.4.3b, dazu 8 Live-Fälle) ist disziplinär deutlich über dem Basisprojekt.
+das **ASPICE-Doku- + 206-Fall-Test-Paket** (Stand v2.5.0, dazu 8 Live-Fälle) ist disziplinär deutlich über dem Basisprojekt.
 
 **Wo es hakt** (Priorität):
 1. **§14.4 (kritisch):** `run.sh` Gate **source-conditional** machen — reine ComfyUI-Setups heute

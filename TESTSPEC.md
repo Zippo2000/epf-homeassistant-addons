@@ -144,8 +144,8 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.4.3b):** **205** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **213**,
+> **Coverage-Grob (Stand 2.5.0):** **206** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **214**,
 > 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall — und seit 2.4.3b gilt das
 > wörtlich für **alle 55**: die Provider-Requirements FR-027 … FR-031 haben jetzt eigene Testfälle
 > **TC-FR-027 … TC-FR-031** (die Fälle liefen längst in `test_providers.py`, es fehlte nur die
@@ -157,8 +157,8 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.4.3 (inkl. 2.4.3b) / 213 Tests / 100 %** —
-   L0 (**23,3 s**), **L1** (echter Immich **+** echtes ComfyUI, drei echte GPU-Generationen, 40,2 s) und
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.5.0 / 214 Tests / 100 %** —
+   L0 (**28,5 s**), **L1** (echter Immich **+** echtes ComfyUI, 27,2 s) und
    der **L3-Produktions-Smoke** (Cap 2, drei echte Immich-Generierungen → der Per-Shot-Pruner lief auf
    dem ausgelieferten Image; beide 2.4.3b-Regeln zusätzlich über HTTP auf dem ausgelieferten Image
    bestätigt) sind **am 2026-11-22 auf diesem Code-Stand grün gefahren** (Report §6.9). Code, Specs und

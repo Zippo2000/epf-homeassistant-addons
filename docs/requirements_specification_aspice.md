@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.4.3  
-**Date:** 2026-11-20  
-**Baseline:** Repository commit (main branch, working basis for **v2.4.3**; previous baseline v2.4.2)  
-**Status:** Issued — FR-032 re-worded for the per-shot gallery pruning; L1/L3 re-runs pending before the v2.4.3 tag
+**Version:** 2.5.0  
+**Date:** 2026-11-22  
+**Baseline:** Repository commit (main branch, working basis for **v2.5.0**; previous baseline v2.4.3 / 2.4.3b)  
+**Status:** Issued — FR-026 gains the in-page image zoom (clause 8); L0, L1 and the L3 production smoke all re-ran green on this baseline on 2026-11-22 (EPF-RPT-001 §6.10)
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
 > 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
@@ -25,6 +25,10 @@
 > shot can no longer be left as half a pair, and the pruner judges a shot by the same measure the
 > reader sorts by. **FR-024** (the live preview directory, a single slot rather than a group) keeps
 > the original per-pattern semantics — the two cleanups are deliberately different.
+>
+> **Revision 2.5.0 (2026-11-22):** **FR-026** gains clause (8), the in-page image zoom (one shared
+> lightbox overlay behind the Dashboard previews and the Gallery thumbnails). No new requirement ID —
+> it is a control on an existing requirement. **TC-FR-026** is extended accordingly in EPF-TST-001.
 
 ---
 
@@ -397,7 +401,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **ID** | FR-026 |
 | **Title** | Enhanced settings UI with cleanup, security, and robustness |
 | **Priority** | Medium |
-| **Description** | The settings web interface SHALL include: (1) a "Cleanup Old Previews" button that triggers POST `/cleanup-previews`, (2) Content-Security-Policy and Referrer-Policy meta tags, (3) dynamic copyright year via JavaScript `getFullYear()`, (4) Unicode HTML entities instead of emoji for cross-platform compatibility, (5) robust DOM access via `safeGet()` helper, (6) slider output elements with explicit `id` attributes, and (7) polling intervals defined as named constants. |
+| **Description** | The settings web interface SHALL include: (1) a "Cleanup Old Previews" button that triggers POST `/cleanup-previews`, (2) Content-Security-Policy and Referrer-Policy meta tags, (3) dynamic copyright year via JavaScript `getFullYear()`, (4) Unicode HTML entities instead of emoji for cross-platform compatibility, (5) robust DOM access via `safeGet()` helper, (6) slider output elements with explicit `id` attributes, (7) polling intervals defined as named constants, and (8) **an in-page image zoom (2.5.0)** — one shared overlay that both the Dashboard previews and the Gallery thumbnails open, so clicking an image enlarges it in the page instead of handing the click to the browser (no new window/tab); the gallery anchors keep their `href` as the no-JS fallback. |
 | **Input** | User interaction with settings page |
 | **Output** | Updated UI with improved security and usability |
 | **Verification** | Test |

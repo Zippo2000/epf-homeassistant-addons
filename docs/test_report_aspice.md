@@ -2,21 +2,21 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.4.3
+**Version:** 2.5.0
 **Date:** 2026-11-22
 **Baseline:** branch `main` — code base **v2.4.3** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
 settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
-pruning 2.4.3** + settings-page guards & full traceability 2.4.3b)
+pruning 2.4.3** + settings-page guards & full traceability 2.4.3b + **in-page image zoom (FR-026 control) 2.5.0**)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
-**Tag:** `v2.4.3` — annotated, cut on 2026-11-22 at this baseline and pushed. Note for the field: the
+**Tag:** `v2.5.0` — annotated, cut on 2026-11-22 at this baseline and pushed. Note for the field: the
 add-on store does **not** read tags, it compares the manifest `version:` with the *installed* version,
 so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pending update while running
 without them — reinstall in HA to get them (see `plans/findings.md` §5).
-**Status:** all three automatable tiers are green on the **v2.4.3 / 2.4.3b** code base — **L0** 205/205,
+**Status:** all three automatable tiers are green on the **v2.5.0** code base — **L0** 206/206,
 **L1** 8/8 against a real Immich *and* a real ComfyUI, **L3** production-image smoke on the shipped
-image; all three re-run **2026-11-22** (§6.9). What remains is not automatable from here: the browser
+image; all three re-run **2026-11-22** on this baseline (§6.10). What remains is not automatable here: the browser
 acceptance (§6.5, incl. the new save-time dialog), finding 14.9, the `comfyui_ha` live leg, the
 multi-day field run, and the human QA signature (§8)
 
@@ -90,18 +90,25 @@ multi-day field run, and the human QA signature (§8)
 > gained **TC-FR-027 … TC-FR-031**, so its traceability names all **55** requirements for the first
 > time (§6.8).
 
+> **The 2.5.0** revision closes `plans/ui-modernisierung.md` §7 item 1: clicking an image — a Dashboard
+> preview or a Gallery thumbnail — now zooms it in the page through one shared lightbox overlay instead
+> of handing the click to the browser. One new functional case (functional file **100 → 101**), offline
+> suite **205 → 206**, combined **213 → 214**; EPF-REQ-001 writes it as clause (8) of **FR-026** and
+> EPF-TST-001 extends **TC-FR-026** with step 9 (no new IDs — it is a control on an existing
+> requirement). All three automatable tiers re-ran green on this baseline the same day (§6.10).
+
 ---
 
 ## 1. Executive Summary
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **213** (205 offline + 8 opt-in live) |
-| **Passed** | **213** — 205 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)**; both tiers re-run green on this code base, 2026-11-22 (§6.9) |
+| **Total Test Cases** | **214** (206 offline + 8 opt-in live) |
+| **Passed** | **214** — 206 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)**; both tiers re-run green on this code base, 2026-11-22 (§6.10) |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 **23.3 s (2026-11-22)** · L1 **40.2 s** incl. three real GPU generations (2026-11-22) · L3 production smoke incl. three real Immich generations **over** the gallery cap (2026-11-22, §6.9) |
+| **Execution Time** | L0 **28.5 s (2026-11-22)** · L1 **27.2 s** against the real Immich and the real ComfyUI (2026-11-22) · L3 production smoke on the shipped image (2026-11-22, §6.10) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
 | **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5) and now refuses an unnamed workflow slot and warns before an emptied field overwrites (§6.8), the global date-stamp switch governs the pipeline on the shipped image (§6.6), and gallery pruning keeps a shot whole (§6.7). **Baseline:** all three automatable tiers — L0, L1, L3 — have been re-run green on this code base (2026-11-22, §6.9); what is left is the browser acceptance and the human QA signature |
 | **L3 production smoke** | **PASS on this code base (2026-11-22, §6.9)** — shipped `Dockerfile` image (gunicorn 2×2, real `with-contenv`, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery **pruned per shot over the cap**, watchdog reload, footer; the two 2.4.3b settings behaviours were confirmed over HTTP on the shipped image |
@@ -144,7 +151,7 @@ multi-day field run, and the human QA signature (§8)
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1; empty-field-overwrites pin + the save-time warning, 2.4.3b) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation incl. **content without a name**, 2.4.0/2.4.3b) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) | **100** | **100** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1; empty-field-overwrites pin + the save-time warning, 2.4.3b) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation incl. **content without a name**, 2.4.0/2.4.3b) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) + the **in-page image zoom** case (overlay served, both groups wired, no `target="_blank"` left, 2.5.0) | **101** | **101** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -170,8 +177,8 @@ multi-day field run, and the human QA signature (§8)
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 213 collected — 205 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
-re-run green 2026-11-22, §6.9) → 213/213, 0 failed (100 %).**
+**Total: 214 collected — 206 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
+re-run green 2026-11-22, §6.10) → 214/214, 0 failed (100 %).**
 
 ---
 
@@ -518,6 +525,26 @@ release gate of the top-level goal is met. Open and **not automatable from here*
 acceptance incl. the new save-time dialog (§6.5), finding **14.9**, the `comfyui_ha` live leg, the
 multi-day field run (EPD wear), and the **human QA signature** (§8).
 
+### 6.10 L0 + L1 + L3 re-run for 2.5.0 — the settings page zooms (run 2026-11-22)
+
+Closes `plans/ui-modernisierung.md` §7 item 1. The change is one control on **FR-026**: a click on a
+Dashboard preview or a Gallery thumbnail opens the shared lightbox instead of a new browser window, so
+the page has to serve the overlay, wire both groups to it, and stop opening windows. One new functional
+case (`TestFR026UISettingsImprovements::test_image_click_zooms_in_page_lightbox`); no backend code
+changed, which makes the live tier a regression run rather than a new-behaviour probe.
+
+| Tier | Result |
+|-------|--------|
+| **L0 offline suite** (`Dockerfile.test`, the image CI builds) | **206 passed, 8 skipped in 28.5 s** ✓ — functional file **101** (100 + the new case), everything else untouched |
+| **L1 live tier** (real Immich + real ComfyUI, `EPF_LIVE_TESTS=1`) | **8 passed in 27.2 s** ✓ — the same eight cases as §6.1/§6.9, nothing red |
+| **L3 production-image smoke** (shipped `Dockerfile` image, real `with-contenv` + gunicorn 2×2, secrets via `--env-file`) | container **healthy** (`wget --spider /health`); `GET /health` → `healthy` / `connected` to the real Immich ✓; `GET /sleep` answers ✓; `GET /download` → `frame.txt`, `text/plain`, 2-hex tokens, **no closing `};`** ✓; and the **page served through gunicorn carries the overlay** — one `#lightbox`, three Dashboard handlers, no `target="_blank"` ✓. Footer still read **v2.4.3** — that image was built a minute before the version bump; the derivation chain is unchanged |
+
+**Consequence:** the three automatable tiers (**L0, L1, L3**) are green on the **2.5.0** code base and the
+traceability now names the zoom under **FR-026 (8) / TC-FR-026 (9 cases)**. What is *not* covered is what
+never is from here: how the animation **looks** — FLIP timing, the cross-fade between gallery shots, the
+`Esc`/arrow handling, the sub-768 px layout — which stays on the browser-acceptance list (§6.5), next to
+finding **14.9**, the `comfyui_ha` live leg, the multi-day field run and the **human QA signature** (§8).
+
 ---
 
 ## 7. Reproduction
@@ -586,3 +613,12 @@ Live finding 2 of §6.3 and the two plan §9 items stay closed. Still open (not 
 browser-side visual acceptance incl. the new save-time warning dialog (§6.5, §6.8), finding **14.9**,
 the `comfyui_ha` live leg, the L4 field run on a real frame — see `plans/findings.md` — and the **human
 QA signature** of §8, which is what the v2.4.3 tag still waits for.*
+
+*Regenerated for code base **v2.5.0** on branch `main`, 2026-11-22: the in-page image zoom (one shared
+lightbox overlay behind the Dashboard previews and the Gallery) closes `plans/ui-modernisierung.md` §7
+item 1 and writes itself as clause (8) on **FR-026** / step 9 on **TC-FR-026** — no new IDs. The suite is
+**206** offline + **8** live = **214** cases, **100 %**, and all three automatable tiers were re-run green
+on this baseline the same day (§6.10): L0 28.5 s, L1 27.2 s against the real Immich and the real ComfyUI,
+and the L3 production-image smoke serving the new page through gunicorn. What stays open stays open: the
+browser-side look of the animation (§6.5), finding **14.9**, the `comfyui_ha` live leg, the L4 field run
+and the **human QA signature** of §8.*
