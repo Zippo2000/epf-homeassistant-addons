@@ -1311,7 +1311,7 @@ class TestFR025HealthIndicator:
 # ============================================================
 
 class TestFR026UISettingsImprovements:
-    """TC-FR-026: Verify UI improvements (CSP, cleanup button, dynamic year, unicode)."""
+    """TC-FR-026: Verify UI improvements (CSP, cleanup button, dynamic year, unicode, in-page zoom)."""
 
     def test_csp_meta_tag_present(self, client_with_mocks):
         """Settings page contains Content-Security-Policy meta tag."""
@@ -1365,6 +1365,22 @@ class TestFR026UISettingsImprovements:
         response = client_with_mocks.get('/')
         html = response.data.decode('utf-8')
         assert 'safeGet' in html
+
+    def test_image_click_zooms_in_page_lightbox(self, client_with_mocks):
+        """FR-026(8): clicking an image zooms it in the page — dashboard and gallery alike.
+
+        Both surfaces used to hand the click to the browser (the gallery anchor opened a
+        new tab). They share one overlay now, so the page has to carry the overlay markup,
+        wire both groups to it, and stop opening windows.
+        """
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'id="lightbox"' in html                                  # the shared overlay
+        assert html.count("openLightbox('dashboard', this)") == 3       # the three preview panels
+        assert "lightboxClick(event, \\'gallery\\', this)" in html        # the gallery renderer
+        assert 'data-caption' in html                                    # the caption it reads
+        assert 'closeLightbox' in html                                   # close button + Esc path
+        assert "e.key === 'Escape'" in html
+        assert 'target="_blank"' not in html                             # no new window any more
 
 
 # ============================================================

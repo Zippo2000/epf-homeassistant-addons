@@ -214,6 +214,10 @@ so a pruned generation disappears complete and the number you set is the number 
 The live slot (the `latest_*` files behind the "current photo" cards) is a single slot, is counted
 per file, and is never touched by gallery pruning.
 
+Clicking a thumbnail — in the Gallery or on the Dashboard — zooms the image into a lightbox overlay
+rather than opening a new browser tab: it animates out of the thumbnail you clicked, `←`/`→` step
+through the shots, and `Esc` (or a click beside the image) closes it again.
+
 ### Power Management
 
 **wakeup_interval**

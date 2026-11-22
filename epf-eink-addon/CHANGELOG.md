@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-11-22
+
+### Added
+- **Clicking an image zooms it in place — on the Dashboard and in the Gallery alike.** Thumbnails no
+  longer open a new browser tab; they open a lightbox overlay: the image FLIP-zooms out of the
+  thumbnail it was clicked on to nearly fullscreen (94vw / 100vh minus the caption), over a blurred
+  backdrop, with the shot label as caption. `Esc` closes, `←`/`→` step through the group (a gallery
+  card's shots, or the three Dashboard previews), the arrows appear only when the group has more than
+  one entry, and a click on the backdrop closes as well. The gallery anchors keep their `href`, so
+  they still work with JavaScript off, and `prefers-reduced-motion` collapses the zoom to a jump.
+
+### Tests
+- One new functional case in `TestFR026UISettingsImprovements` (the requirement the overlay belongs
+  to): the served page carries the overlay, wires all three Dashboard previews and the gallery
+  renderer to it, and no longer contains a `target="_blank"`. Functional file **100 → 101**, offline
+  suite **205 → 206**, combined **213 → 214**.
+- **L0** 206 passed / 8 skipped (28.5 s), **L1** 8/8 against the real Immich and the real ComfyUI
+  (27.2 s) and the **L3** production-image smoke (`/health`, `/sleep`, `/download`, and the page
+  served through gunicorn carrying the overlay — footer still reports the manifest version, 2026-11-22).
+
 ## [2.4.3] - 2026-11-20
 
 ### Changed

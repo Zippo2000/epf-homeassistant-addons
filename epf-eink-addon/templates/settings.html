@@ -318,7 +318,7 @@ h1 {
 .preview-img-container img {
     width: 100%; height: 100%;
     object-fit: contain;
-    cursor: pointer;
+    cursor: zoom-in;
     transition: transform var(--dur-med) var(--ease-out-soft);
 }
 .preview-img-container img:hover { transform: scale(1.02); }
@@ -529,7 +529,8 @@ input[type="submit"]:active { transform: scale(0.98); }
     transition: transform var(--dur-fast) var(--ease-out-soft);
 }
 .gallery-item:hover { transform: scale(1.02); }
-.gallery-item img { width: 100%; height: auto; display: block; cursor: pointer; }
+.gallery-item img { width: 100%; height: auto; display: block; cursor: zoom-in; }
+.gallery-item a { display: block; cursor: zoom-in; }
 .gallery-card { background: var(--surface-1); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: var(--space-sm); }
 .gallery-card-label { font-size: var(--fs-caption); color: var(--text-tertiary); margin-bottom: 0.5rem; }
 .gallery-card-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-sm); }
@@ -545,6 +546,91 @@ input[type="submit"]:active { transform: scale(0.98); }
     padding: var(--space-2xl);
     font-size: var(--fs-body);
 }
+/* Lightbox – click an image and it zooms to nearly fullscreen in place.
+   The zoom is a FLIP: the figure renders at its final size, the inline transform
+   pulls it back onto the thumbnail that was clicked, and the transition below
+   animates it out from there. Below #notification and the confirm modals (both 1000). */
+.lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    align-items: center; justify-content: center;
+    padding: var(--space-xl);
+    z-index: 900;
+    opacity: 0;
+    transition: opacity var(--dur-med) var(--ease-out-soft);
+}
+.lightbox.open { display: flex; opacity: 1; animation: lightboxBackdropIn var(--dur-med) var(--ease-out-soft); }
+.lightbox.open.closing { opacity: 0; pointer-events: none; }
+.lightbox-figure {
+    margin: 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--space-md);
+    max-width: 100%;
+}
+.lightbox-img {
+    max-width: min(94vw, 1600px);
+    max-height: calc(100vh - var(--space-2xl) - var(--space-2xl) - 3rem);
+    object-fit: contain;
+    background: var(--surface-2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-3);
+    transform-origin: center;
+    transition: transform var(--dur-slow) var(--ease-out-soft);
+    will-change: transform;
+}
+.lightbox-caption {
+    max-width: min(94vw, 1600px);
+    padding: 0.4rem 0.9rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: var(--glass-border);
+    border-radius: var(--radius-full);
+    font-size: var(--fs-small);
+    color: var(--text-primary);
+    text-align: center;
+}
+/* display:none → flex does not run a transition, so both use animations. */
+@keyframes lightboxBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lightboxCaptionIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lightboxSwap {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+}
+.lightbox-img.swapping { animation: lightboxSwap var(--dur-med) var(--ease-out-soft); }
+.lightbox.open .lightbox-caption {
+    animation: lightboxCaptionIn var(--dur-med) var(--ease-out-soft) var(--dur-med) both;
+}
+.lightbox-btn {
+    position: absolute;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: var(--glass-border);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-2);
+    transition: transform var(--dur-fast) var(--ease-out-soft),
+                background-color var(--dur-fast) var(--ease-out-soft);
+}
+.lightbox-btn svg { width: 20px; height: 20px; }
+.lightbox-btn:hover { background: var(--accent-soft); color: var(--accent); transform: scale(1.08); }
+.lightbox-btn.hidden { display: none; }
+.lightbox-close { top: var(--space-lg); right: var(--space-lg); }
+.lightbox-prev { left: var(--space-lg); top: 50%; transform: translateY(-50%); }
+.lightbox-next { right: var(--space-lg); top: 50%; transform: translateY(-50%); }
+.lightbox-prev:hover { transform: translateY(-50%) scale(1.08); }
+.lightbox-next:hover { transform: translateY(-50%) scale(1.08); }
 /* Micro-interactions */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -629,6 +715,11 @@ footer {
     .photo-actions-bar { flex-direction: column; }
     .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
     .confirm-content { padding: var(--space-md); }
+    .lightbox { padding: var(--space-md); }
+    .lightbox-img { max-height: calc(100vh - 10rem); }
+    .lightbox-close { top: var(--space-sm); right: var(--space-sm); }
+    .lightbox-prev { left: var(--space-sm); }
+    .lightbox-next { right: var(--space-sm); }
 }
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -703,6 +794,8 @@ footer {
                     </div>
                     <div class="preview-img-container">
                         <img id="previewDelivered" src="./preview-delivered" alt="Delivered photo"
+                             title="Click to zoom"
+                             onclick="openLightbox('dashboard', this)"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="preview-placeholder" style="display: none;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
@@ -719,6 +812,8 @@ footer {
                             <div class="next-photo-label">Original</div>
                             <div class="preview-img-container" style="aspect-ratio: 5/3;">
                                 <img id="previewOriginal" src="./preview-original" alt="Original photo"
+                                     title="Click to zoom"
+                                     onclick="openLightbox('dashboard', this)"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="preview-placeholder" style="display: none;">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -730,6 +825,8 @@ footer {
                             <div class="next-photo-label">Processed for e-ink frame</div>
                             <div class="preview-img-container" style="aspect-ratio: 5/3;">
                                 <img id="previewProcessed" src="./preview-processed" alt="Processed photo"
+                                     title="Click to zoom"
+                                     onclick="openLightbox('dashboard', this)"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="preview-placeholder" style="display: none;">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -1123,6 +1220,22 @@ footer {
         </div>
     </div>
 
+    <!-- Lightbox: shared by the dashboard previews and the gallery. Static markup, no
+         form field in it, so it must stay outside #settingsForm (one field name per key). -->
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer"
+         onclick="lightboxBackdropClick(event)">
+        <button type="button" class="lightbox-btn lightbox-prev hidden" id="lightboxPrev"
+                aria-label="Previous image" onclick="lightboxNav(-1)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button type="button" class="lightbox-btn lightbox-next hidden" id="lightboxNext"
+                aria-label="Next image" onclick="lightboxNav(1)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button type="button" class="lightbox-btn lightbox-close" id="lightboxClose"
+                aria-label="Close" onclick="closeLightbox()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        <figure class="lightbox-figure">
+            <img class="lightbox-img" id="lightboxImg" alt="">
+            <figcaption class="lightbox-caption" id="lightboxCaption"></figcaption>
+        </figure>
+    </div>
+
     <script>
         const POLL_INTERVALS = { HEALTH: 60000, PHOTO_STATUS: 10000, BATTERY: 30000 };
         const NOTIFICATION_DURATION = 4000;
@@ -1404,7 +1517,8 @@ footer {
                 items.forEach(function(f) {
                     var tag = (f.kind === 'processed') ? 'E-Paper' : (f.kind === 'delivered' ? 'On frame' : 'Original');
                     html += '<div class="gallery-item">';
-                    html += '<a href="' + f.url + '" target="_blank"><img src="' + f.url + '" alt="' + f.name + '" title="' + tag + '"></a>';
+                    // The href is only the no-JS fallback; the click zooms the shot in the lightbox.
+                    html += '<a href="' + f.url + '" data-caption="' + escapeAttr(label + ' · ' + id + ' · ' + tag) + '" onclick="lightboxClick(event, \'gallery\', this)"><img src="' + f.url + '" alt="' + f.name + '" title="' + tag + '"></a>';
                     html += '<div class="gallery-item-info">' + tag + '</div>';
                     html += '</div>';
                 });
@@ -1417,6 +1531,150 @@ footer {
             body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
         });
 }
+
+        // Lightbox – click an image, it zooms to nearly fullscreen in place.
+        const LIGHTBOX_DURATION = 400;   // ms, matches --dur-slow used by .lightbox-img
+        // Dashboard group is resolved from the live DOM (a missing preview has no slot there).
+        const LIGHTBOX_DASHBOARD_IMAGES = {
+            previewDelivered: 'Current photo · delivered to the frame',
+            previewOriginal: 'Next photo · original',
+            previewProcessed: 'Next photo · processed for the e-ink frame'
+        };
+        var lightboxState = { group: null, index: 0 };
+
+        function escapeAttr(value) {
+            return String(value === null || value === undefined ? '' : value)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function lightboxReducedMotion() {
+            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        }
+
+        // A group is always read from the live DOM, so navigation follows a re-rendered gallery.
+        function lightboxGroup(name) {
+            var items = [];
+            if (name === 'dashboard') {
+                Object.keys(LIGHTBOX_DASHBOARD_IMAGES).forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el || el.style.display === 'none') return;   // placeholder is showing
+                    items.push({ el: el, src: el.getAttribute('src'), caption: LIGHTBOX_DASHBOARD_IMAGES[id] });
+                });
+                return items;
+            }
+            var body = document.getElementById('galleryBody');
+            if (!body) return items;
+            body.querySelectorAll('.gallery-item a').forEach(function (a) {
+                items.push({ el: a, src: a.getAttribute('href'),
+                             caption: a.getAttribute('data-caption') || a.getAttribute('title') || '' });
+            });
+            return items;
+        }
+
+        function openLightbox(name, el) {
+            var items = lightboxGroup(name);
+            if (!items.length) return;
+            var index = 0;
+            for (var i = 0; i < items.length; i++) { if (items[i].el === el) { index = i; break; } }
+            showLightboxItem(name, index);
+        }
+
+        function lightboxClick(event, name, el) {
+            if (event) event.preventDefault();   // keep the href as fallback, never open a window
+            openLightbox(name, el);
+            return false;
+        }
+
+        function lightboxNav(step) {
+            var items = lightboxGroup(lightboxState.group);
+            if (items.length < 2) return;
+            showLightboxItem(lightboxState.group, (lightboxState.index + step + items.length) % items.length);
+        }
+
+        function restartAnimation(el, className) {
+            el.classList.remove(className);
+            void el.offsetWidth;   // reflow, so re-adding the class starts the animation again
+            el.classList.add(className);
+        }
+
+        function showLightboxItem(name, index) {
+            var items = lightboxGroup(name);
+            if (!items.length) return;
+            var box = safeGet('lightbox'), img = safeGet('lightboxImg'), caption = safeGet('lightboxCaption');
+            if (!box || !img) return;
+
+            var wasOpen = box.classList.contains('open');
+            var item = items[index];
+            lightboxState = { group: name, index: index };
+            caption.textContent = item.caption;
+            img.alt = item.caption || 'Photo preview';
+            img.src = item.src;
+
+            var navigable = items.length > 1;
+            var prev = safeGet('lightboxPrev'), next = safeGet('lightboxNext');
+            if (prev) prev.classList.toggle('hidden', !navigable);
+            if (next) next.classList.toggle('hidden', !navigable);
+
+            if (wasOpen) {
+                // Navigating inside an open lightbox: cross-fade to the new shot, no FLIP.
+                img.style.transform = 'none';
+                restartAnimation(img, 'swapping');
+            } else {
+                // FLIP: show at final size, push the image back onto the thumbnail it came from,
+                // then let the CSS transition zoom it out. Without a known image size (not decoded
+                // yet) there is nothing to measure, so it zooms from the centre instead.
+                var from = item.el ? item.el.getBoundingClientRect() : null;
+                img.style.transition = 'none';
+                box.classList.remove('closing');
+                box.classList.add('open');
+                var target = (from && from.width && img.complete && img.naturalWidth) ? img.getBoundingClientRect() : null;
+                if (target) {
+                    var scale = Math.min(from.width / target.width, from.height / target.height);
+                    var dx = (from.left + from.width / 2) - (target.left + target.width / 2);
+                    var dy = (from.top + from.height / 2) - (target.top + target.height / 2);
+                    img.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + Math.max(0.12, scale) + ')';
+                } else {
+                    img.style.transform = 'scale(0.92)';
+                }
+                img.getBoundingClientRect();   // force a reflow so the transition has a start value
+                img.style.transition = '';
+                if (lightboxReducedMotion()) img.style.transform = 'none';
+                else requestAnimationFrame(function () { img.style.transform = 'none'; });
+            }
+
+            if (!wasOpen) {
+                var closeBtn = safeGet('lightboxClose');
+                if (closeBtn) closeBtn.focus();
+            }
+        }
+
+        function closeLightbox() {
+            var box = safeGet('lightbox'), img = safeGet('lightboxImg');
+            if (!box || !box.classList.contains('open')) return;
+            var items = lightboxGroup(lightboxState.group);
+            var item = items[lightboxState.index];
+            var to = (item && item.el) ? item.el.getBoundingClientRect() : null;
+            if (to && to.width && img.complete && img.naturalWidth) {
+                var from = img.getBoundingClientRect();
+                var scale = Math.min(to.width / from.width, to.height / from.height);
+                var dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+                var dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+                img.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + Math.max(0.08, scale) + ')';
+            } else {
+                img.style.transform = 'scale(0.92)';
+            }
+            box.classList.add('closing');
+            setTimeout(function () {
+                box.classList.remove('open', 'closing');
+                img.removeAttribute('src');
+                img.style.transform = '';
+            }, lightboxReducedMotion() ? 0 : LIGHTBOX_DURATION);
+        }
+
+        function lightboxBackdropClick(event) {
+            if (event && event.target && event.target.id === 'lightbox') closeLightbox();
+        }
 
         // Slider
         function updateSliderValue(slider) {
@@ -1596,8 +1854,14 @@ footer {
             }, NOTIFICATION_DURATION);
         }
 
-        // Close on escape (no-op now – gallery is a tab, not a modal)
+        // Close on escape – the lightbox has priority, then the confirm modals
         document.addEventListener('keydown', function(e) {
+            var box = safeGet('lightbox');
+            if (box && box.classList.contains('open')) {
+                if (e.key === 'Escape') { closeLightbox(); return; }
+                if (e.key === 'ArrowRight') { lightboxNav(1); return; }
+                if (e.key === 'ArrowLeft') { lightboxNav(-1); return; }
+            }
             if (e.key === 'Escape') {
                 var m = safeGet('confirmModal');
                 if (m) m.style.display = 'none';
