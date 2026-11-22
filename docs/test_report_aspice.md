@@ -261,7 +261,9 @@ tests/test_live.py           :: 8 skipped (opt-in, no .env in the offline run)
 > weight in its first version: the XML was written *inside* the `--rm` container, so the copy step
 > copied from a container in which pytest had never run. It now mounts the report directory into the
 > container and points `run.test.sh` at it via `EPF_JUNIT_XML` (default unchanged for local runs);
-> verified before pushing — the report lands on the host and parses as 213/0/0/8.
+> verified before pushing — the report lands on the host and parses as 213/0/0/8. **Re-run after the
+> fix** (run `121972075681`, same day): **205 passed, 8 skipped in 30.39 s**, nothing red, and the
+> `junit-l0` artifact really uploaded — so DoD line 1 now rests on CI, not only on a local Docker run.
 
 ### 6.1 L1 — live tier against the real backends (Immich + ComfyUI, run 2026-11-15)
 
