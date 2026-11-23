@@ -358,7 +358,7 @@ Mobile-Tüftelei).
   (Aktuell: Click → `window.open` in neuem Tab. Könnte in 2. Iteration.)~~ **Ist gebaut**
   (**2.5.0**): Klick auf Dashboard-Vorschau *oder* Galerie-Daumen zoomt das Bild per FLIP-Animation
   nahezu fullscreen auf; `Esc` zu, `←`/`→` blättern durch die Gruppe, Pfeile nur bei mehreren
-  Bildern. `href` bleibt als No-JS-Fallback erhalten.
+  Bildern. `href` bleibt als No-JS-Fallback erhalten. **Optik am 2026-11-23 vom Nutzer abgenommen.**
 - **i18n:** Aktuell Englisch. Bei zukünftiger DE-LOkalisierung sollte die UI-Strings
   in ein externes Dictionary ausgelagert werden – bewusst hier *nicht* gemacht.
 - **Accessibility:** ARIA-Labels für Tabs (`role="tablist"`, `aria-selected`), `focus-visible` Styles –

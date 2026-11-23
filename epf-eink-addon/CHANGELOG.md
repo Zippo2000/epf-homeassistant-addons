@@ -21,6 +21,9 @@ All notable changes to this project will be documented in this file.
 - **L0** 206 passed / 8 skipped (28.5 s), **L1** 8/8 against the real Immich and the real ComfyUI
   (27.2 s) and the **L3** production-image smoke (`/health`, `/sleep`, `/download`, and the page
   served through gunicorn carrying the overlay — footer still reports the manifest version, 2026-11-22).
+- **On-screen look accepted** by the user on 2026-11-23 — FLIP timing, crossfade, `Esc` / `←` `→` and the
+  sub-768 px layout all as specified. The general browser check the older UI passes left open (dark/light,
+  CSP, the save-warning dialog) is untouched and still open.
 
 ### Docs
 - `AGENTS.md`, `ARCHITECTURE.md`, `ANALYSE.md`, `TESTSPEC.md`, the add-on `README.md`, the store

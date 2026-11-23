@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.4.3 (2026-11-20)
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.5.0 (2026-11-23)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -151,7 +151,9 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 > **TC-FR-027 … TC-FR-031** (die Fälle liefen längst in `test_providers.py`, es fehlte nur die
 > Dokumentation). Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
-> ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`.
+> ARM-Performance, EPD-Wear) und gehört in das Feld-Handbuch, nicht in `pytest`. Der **Zoom-Look** (FLIP,
+> Crossfade, Tastatur, Mobile) ist am **2026-11-23 vom Nutzer abgenommen**; die allgemeinen UI-Punkte der
+> früheren Passes (Dark/Light allgemein, CSP, Save-Warn-Dialog) bleiben als manuell offen.
 
 ---
 

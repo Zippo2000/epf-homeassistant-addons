@@ -1,7 +1,7 @@
 # EPF Home Assistant Add-ons – Vollständige Projektanalyse
 
 > **Repo:** [`Zippo2000/epf-homeassistant-addons`](https://github.com/Zippo2000/epf-homeassistant-addons) ·
-> **Add-on:** `epf-eink-addon` (v2.0.0) · **Lizenz:** MIT ·
+> **Add-on:** `epf-eink-addon` (v2.5.0) · **Lizenz:** MIT ·
 > **Status laut Changelog:** Multi-Source (Immich / ComfyUI via HA / ComfyUI Direct), ASPICE-dokumentiert
 > **Relation:** HA-Ableger des standalone-Servers [`Zippo2000/EPF`](https://github.com/Zippo2000/EPF) (der wiederum
 > auf jwchen119s FireBeetle-Rahmen-Projekt fußt). Die **Firmware** lebt **nicht** hier, sondern in `Zippo2000/EPF/Arduino`.

@@ -157,6 +157,7 @@ how to test without any external service is in **[`TESTSPEC.md`](TESTSPEC.md)** 
 | [`ANALYSE.md`](ANALYSE.md) | **German** | full technical analysis + weaknesses |
 | [`TESTSPEC.md`](TESTSPEC.md) | **German** | test model, tiers, how to run |
 | [`docs/`](docs/) | mixed | formal **ASPICE** deliverables (requirements EPF-REQ-001, architecture EPF-ARC-001, test spec EPF-TST-001, report EPF-RPT-001) |
+| [`plans/`](plans/) | **German** | per-feature working plans & decision records — the *why*, the open follow-ups, and the findings trackers |
 
 ---
 

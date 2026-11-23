@@ -4,8 +4,8 @@
 > Getaggt `v2.5.0`). Guard-Test ✅, **L0 ✅ 206+8** (Lauf 2026-11-22, 28,5 s), **L1 ✅ 8/8** (27,2 s),
 > **L3 ✅** (Produktions-Image: `/health`, `/sleep`, `/download` unverändert, Seite liefert Ein `#lightbox`,
 > drei Dashboard-Handler, kein `target="_blank"` — Report §6.10).
-> **Browser-Optik steht aus:** FLIP-Timing, Crossfade, `Esc`/Pfeile, Layout unter 768 px — wie bei allen
-> UI-Themen manuell (TESTSPEC §3).
+> **Browser-Optik ✅ abgenommen** am 2026-11-23 (Nutzer): FLIP-Timing, Crossfade, `Esc`/Pfeile und das
+> Layout unter 768 px passen so. Die allgemeinen UI-Punkte der früheren Passes bleiben offen.
 > **Betreff:** `epf-eink-addon/templates/settings.html` (CSS + Markup + JS; Backend unverändert)
 > **Ziel:** Ein Klick auf ein Bild — **Dashboard und Galerie** — zoomt es schön im Fenster hoch, statt
 > einen Browser-Tab zu öffnen.
@@ -54,7 +54,7 @@ Original mit `target="_blank"` (Browser-Tab), Dashboard ohne Klick-Funktion.
 - **L3:** Produktions-Image durch die echte `with-contenv`-Startzeile: `GET /health` (verbindet sich mit Immich), `GET /sleep`,
   `GET /download` (`frame.txt`, 2-Hex-Tokens, kein schließendes `};`), und die **ausgelieferte** Seite enthält
   das Overlay — damit ist auch der Jinja-Pfad bedient, den der Guard-Test nicht sieht.
-- **Manuell offen:** Animation, Crossfade, Tastatur, Mobile-Layout (siehe Statuszeile).
+- **Manuell:** Animation, Crossfade, Tastatur, Mobile-Layout — am **2026-11-23 vom Nutzer abgenommen** (siehe Statuszeile).
 
 ## 5 · Nebenbefund aus dem Lauf
 

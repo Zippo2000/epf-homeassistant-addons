@@ -16,9 +16,10 @@ so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pendin
 without them — reinstall in HA to get them (see `plans/findings.md` §5).
 **Status:** all three automatable tiers are green on the **v2.5.0** code base — **L0** 206/206,
 **L1** 8/8 against a real Immich *and* a real ComfyUI, **L3** production-image smoke on the shipped
-image; all three re-run **2026-11-22** on this baseline (§6.10). What remains is not automatable here: the browser
-acceptance (§6.5, incl. the new save-time dialog), finding 14.9, the `comfyui_ha` live leg, the
-multi-day field run, and the human QA signature (§8)
+image; all three re-run **2026-11-22** on this baseline (§6.10), and the zoom's on-screen look was accepted by
+the user on **2026-11-23**. What remains is not automatable here: the browser acceptance the earlier UI passes
+left open (§6.5, incl. the new save-time dialog — the zoom itself is signed off), finding 14.9, the
+`comfyui_ha` live leg, the multi-day field run, and the human QA signature (§8)
 
 > **Why a new report:** the previous revision (1.1.0) described the *v1* single-source build
 > (93 nominal / 78 executed cases) and was already internally inconsistent. This revision re-baselines
@@ -619,6 +620,7 @@ lightbox overlay behind the Dashboard previews and the Gallery) closes `plans/ui
 item 1 and writes itself as clause (8) on **FR-026** / step 9 on **TC-FR-026** — no new IDs. The suite is
 **206** offline + **8** live = **214** cases, **100 %**, and all three automatable tiers were re-run green
 on this baseline the same day (§6.10): L0 28.5 s, L1 27.2 s against the real Immich and the real ComfyUI,
-and the L3 production-image smoke serving the new page through gunicorn. What stays open stays open: the
-browser-side look of the animation (§6.5), finding **14.9**, the `comfyui_ha` live leg, the L4 field run
-and the **human QA signature** of §8.*
+and the L3 production-image smoke serving the new page through gunicorn. **The animation's look is accepted** —
+user, 2026-11-23: FLIP timing, crossfade, `Esc`/arrows and the sub-768 px layout all as specified. What stays
+open stays open: the browser acceptance the earlier UI passes left open (§6.5, incl. the save-warning dialog),
+finding **14.9**, the `comfyui_ha` live leg, the L4 field run and the **human QA signature** of §8.*

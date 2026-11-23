@@ -76,6 +76,9 @@ docs/                         # formal ASPICE deliverables (German/English):
                                 #   architecture_document.md              (EPF-ARC-001: components C-001..C-018, design decisions D-001..)
                                 #   test_specification_aspice.md          (EPF-TST-001: test cases, one per requirement)
                                 #   test_report_aspice.md                 (EPF-RPT-001: last full run — see version-skew note in §Gotchas)
+plans/                        # German per-feature working plans & decision records (the why + the open items)
+                                #   ui-modernisierung.md, preview-galerie-geschichte.md, comfyui-workflow-auswahl.md,
+                                #   datumsstempel-schalter.md, lightbox.md, findings.md, findings-14.md
 
 epf-eink-addon/               # THE ADD-ON (everything you will normally edit lives here)
   config.yaml                 # ADD-ON MANIFEST: name, version, arch list, ports, ingress, panel_icon, options{} + schema{}
@@ -428,6 +431,10 @@ before quoting them.**
   HA (bashio/ingress/gunicorn) deployment contract + the invariants to keep in sync (English)
 - [`ANALYSE.md`](ANALYSE.md) — full German technical analysis incl. weaknesses & recommendations
 - [`TESTSPEC.md`](TESTSPEC.md) — test model, tiers, how to run, cross-ref to the ASPICE spec (German)
+- [`plans/`](plans/) — **German** per-feature working plans & decision records (one file per feature:
+  `ui-modernisierung`, `preview-galerie-geschichte`, `comfyui-workflow-auswahl`, `datumsstempel-schalter`,
+  `lightbox`, plus the `findings*.md` trackers). This is where the *why* of a feature lives and where its
+  open follow-ups are listed — read the matching file before touching that area.
 - Formal ASPICE deliverables: [`docs/`](docs/) — `requirements_specification_aspice.md` (EPF-REQ-001),
   `architecture_document.md` (EPF-ARC-001), `test_specification_aspice.md` (EPF-TST-001),
   `test_report_aspice.md` (EPF-RPT-001).
