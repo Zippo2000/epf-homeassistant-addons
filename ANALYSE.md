@@ -335,7 +335,8 @@ Eine **einzige, selbstdenkende Seite** (Inline-`<style>`/`<script>`, Jinja-Serve
   **Cleanup Previews** (`POST /cleanup-previews`), **Gallery** (Modal).
 * **Gallery-Modal:** `GET /api/gallery-previews` → Raster **pro Schuss** aus dem Archiv
   (`original_<id>.jpg` + `processed_<id>.jpg`, gruppiert über die Korrelations-ID), neuster Schuss
-  zuerst, Cap = `gallery_max_count` **Schüsse** (2.4.3); Klick öffnet original in neuem Tab.
+  zuerst, Cap = `gallery_max_count` **Schüsse** (2.4.3); Klick zoomt den Schuss per Lightbox
+  overlay auf (2.5.0; `href` bleibt No-JS-Fallback, `Esc` zu, `←`/`→` blättern).
   *(Früher: Raster aus `latest_{original,processed,delivered}_*.jpg` — die Live-Slots.)*
 * **Config (einklappbar):** Karten je nach `image_source` (`immich` / `comfyui_ha` / `comfyui_direct`),
   Sliders (color-enhance **max 3,0** — mit Schema abgestimmt, contrast, strength), Rotation, Display-Mode,
