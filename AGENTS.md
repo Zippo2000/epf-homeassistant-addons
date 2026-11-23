@@ -92,7 +92,7 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
   templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode, in-page image zoom (lightbox) for dashboard previews and gallery shots
   tests/
     conftest.py               # fixtures: app_module (fresh import w/ env+NTP+watchdog mocked), client_with_mocks (Flask client + `responses` Immich mocks)
-    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b)
+    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b) + the in-page zoom guard (2.5.0)
     test_nonfunctional.py     # NFR (health, logging, timing, memory, theme, typing) + IFR (immich hdr, esp32, ingress, port) + SEC + PER
     test_providers.py         # Prompt variables, GenerationTracker, each Provider, factory, multi-source integration
     test_gallery_history.py   # FR-032 gallery history: shot ids, pairing, grouped reader, **per-shot** pruning (2.4.3), option round trip

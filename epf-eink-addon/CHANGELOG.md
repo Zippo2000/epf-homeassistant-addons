@@ -22,6 +22,21 @@ All notable changes to this project will be documented in this file.
   (27.2 s) and the **L3** production-image smoke (`/health`, `/sleep`, `/download`, and the page
   served through gunicorn carrying the overlay — footer still reports the manifest version, 2026-11-22).
 
+### Docs
+- `AGENTS.md`, `ARCHITECTURE.md`, `ANALYSE.md`, `TESTSPEC.md`, the add-on `README.md`, the store
+  `README.md`, the ASPICE requirements / test-specification / test-report and `plans/ui-modernisierung.md`
+  now describe the overlay and carry the 2.5.0 baseline (offline **206**, live **8**, total **214**).
+- `docs/architecture_document.md` (EPF-ARC-001) had frozen at v2.0.0 (2026-04-03); re-baselined on
+  2026-11-23: IFC-001 now shows the Immich calls the provider really makes (`POST /api/search/metadata`,
+  v3 and paginated — the correction the 14.4 pass promised), the endpoint catalog gained
+  `/cleanup-previews`, `/api/gallery-previews` and `/preview-file/<filename>`, the gallery archive and
+  its per-shot pruning are described, traceability reaches FR-025…FR-033 and NFR-010, AC-001 is closed
+  (the `.so` is compiled at build time), the duplicated C-013…C-018 blocks are marked as intentional,
+  and the sections after §13 are back in order.
+- New `plans/lightbox.md` (the project convention is one plan file per feature, German) with the design
+  decisions and the verification trail; the gallery plan’s older “Hover-Lightbox (Modal)” line now says
+  what it was and points here.
+
 ## [2.4.3] - 2026-11-20
 
 ### Changed

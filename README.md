@@ -50,7 +50,7 @@ seconds and the device barely sips power.
 | Runs as | raw Docker container | **Home Assistant supervised add-on** (config via HA UI, web UI embedded via **ingress**) |
 | Server | Flask dev server | **gunicorn** (2×2) |
 | Image source | Immich only | **Immich · ComfyUI via HA · ComfyUI direct** (swappable in the UI) |
-| Extras | — | `/health`, **prepare/deliver** decoupling, **preview gallery**, **dark mode**, per-day **AI generation cap** + tracking, CSP hardening |
+| Extras | — | `/health`, **prepare/deliver** decoupling, **preview gallery**, **dark mode**, per-day **AI generation cap** + tracking, CSP hardening, in-page image zoom (lightbox, 2.5.0) |
 
 > **Firmware is NOT in this repo.** The ESP32 firmware lives in the sibling
 > [`Zippo2000/EPF/Arduino`](https://github.com/Zippo2000/EPF). Point its "server URL" at this
