@@ -1429,6 +1429,18 @@ def preview_file(filename: str) -> Any:
 app.register_blueprint(bp)
 logger.info("Blueprint registered")
 
+@app.after_request
+def _no_cache_settings_page(response):
+    """The settings page re-renders from the live config (e.g. the body's orientation
+    attribute after a save). Browser heuristic caching of that HTML is exactly how a
+    'saved but the page still shows the old state' complaint appears, so the page is
+    never cached; the binary endpoints (previews, frame, health JSON) are untouched."""
+    if response.content_type and response.content_type.startswith('text/html'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # =============== STARTUP ===============
 try:
     initial_config: Dict[str, Any] = ConfigFileHandler(config_path, update_app_config).config
