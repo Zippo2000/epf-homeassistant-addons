@@ -864,6 +864,36 @@ def _slot_has_content(form: Any, slot: int) -> bool:
     return any((form.get(f'wf_{slot}_{field}') or '').strip() for field in WF_SLOT_FIELDS)
 
 
+def _slot_unchanged(form: Any, slot: int, stored: Dict[str, Any]) -> bool:
+    """True when every resubmitted slot value equals what the YAML already holds (2.6.2).
+
+    The settings page pre-fills the slots from the stored list, so a save always posts the
+    stored content back — even for a nameless legacy slot. The 2.4.3b guard is about *new*
+    pasted content that would vanish silently; resubmitting unchanged stored content is a
+    no-op and must not veto the save (field report: one nameless slot locked every save,
+    including unrelated ones like the frame orientation).
+    """
+    for field in WF_SLOT_FIELDS:
+        if field == 'name':
+            continue
+        posted: str = (form.get(f'wf_{slot}_{field}') or '').strip()
+        have: Any = stored.get(field, '')
+        if field in ('prompt_input', 'negative_input') and have in ('', None) and posted == 'text':
+            continue  # the form's default placeholder, not a stored value
+        if field in ('steps', 'cfg'):
+            if posted:
+                try:
+                    if float(posted) != float(have):
+                        return False
+                except (TypeError, ValueError):
+                    return False
+            elif have not in ('', None):
+                return False
+        elif posted != str(have):
+            return False
+    return True
+
+
 def parse_workflow_slots(form: Any, current_config: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
     """Rebuild the named-workflow list from the settings form slots (2.4.0).
 
@@ -889,6 +919,13 @@ def parse_workflow_slots(form: Any, current_config: Dict[str, Any]) -> Tuple[Lis
         name: str = (form.get(f'wf_{slot}_name') or '').strip()
         if not name:
             if _slot_has_content(form, slot):
+                stored_list: List[Dict[str, Any]] = list(previous.get('workflows') or [])
+                stored: Dict[str, Any] = stored_list[slot - 1] if slot - 1 < len(stored_list) and isinstance(stored_list[slot - 1], dict) else {}
+                if _slot_unchanged(form, slot, stored):
+                    # Unchanged stored content: keep the entry exactly as stored (name and all)
+                    # instead of dropping or vetoing it (2.6.2).
+                    workflows.append(dict(stored))
+                    continue
                 return [], '', (f'slot {slot} has content but no name — a slot is only stored '
                                 'when it is named (give it a name, or clear it)')
             continue
@@ -1018,14 +1055,25 @@ def settings() -> Any:
         if new_config['frame_orientation'] not in ('landscape', 'portrait'):
             return "Invalid frame orientation", 400
         
-        workflows, active_workflow, wf_error = parse_workflow_slots(request.form, current_config)
-        if wf_error:
-            logger.warning(f"Settings rejected: {wf_error}")
-            return f"Invalid workflow configuration: {wf_error}", 400
-        new_config['comfyui']['workflows'] = workflows
-        new_config['comfyui']['active_workflow'] = active_workflow
-        if workflows or active_workflow:
-            logger.info(f"ComfyUI workflows: {[w['name'] for w in workflows]}, active='{active_workflow or '(built-in)'}'")
+        # Workflow slots are a ComfyUI-only setting: a save targeting any other source keeps the
+        # stored list untouched, so a broken slot (content without a name — legacy configs from
+        # before 2.4.3b) cannot veto an immich save (2.6.1). Against a ComfyUI source the 2.4.3b
+        # guard stays in force: name it or clear it.
+        target_source: str = request.form.get('image_source', (current_config or {}).get('immich', {}).get('source', ''))
+        if target_source in ('comfyui_ha', 'comfyui_direct'):
+            workflows, active_workflow, wf_error = parse_workflow_slots(request.form, current_config)
+            if wf_error:
+                logger.warning(f"Settings rejected: {wf_error}")
+                return f"Invalid workflow configuration: {wf_error}", 400
+            new_config['comfyui']['workflows'] = workflows
+            new_config['comfyui']['active_workflow'] = active_workflow
+            if workflows or active_workflow:
+                logger.info(f"ComfyUI workflows: {[w.get('name', '(unnamed)') for w in workflows]}, "
+                            f"active='{active_workflow or '(built-in)'}'")
+        else:
+            stored_comfy = (current_config or {}).get('comfyui', {}) or {}
+            new_config['comfyui']['workflows'] = list(stored_comfy.get('workflows') or [])
+            new_config['comfyui']['active_workflow'] = str(stored_comfy.get('active_workflow') or '')
         
         try:
             with open(config_path, 'w') as f:
