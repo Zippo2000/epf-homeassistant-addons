@@ -16,11 +16,11 @@ add-on store does **not** read tags, it compares the manifest `version:` with th
 so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pending update while running
 without them — reinstall in HA to get them (see `plans/findings.md` §5).
 **Status:** all three automatable tiers are green on the **v2.6.0** code base — **L0** 212/212
-(re-run 2026-11-27 after FR-034 and the settings-page redesign), **L1** 8/8 against a real Immich
-*and* a real ComfyUI (re-run 2026-11-22, §6.10), **L3** production-image smoke on the shipped image
-(2026-11-22, §6.10). Finding **14.9** (colour-slot assignment) was closed with the user on **2026-11-27**
-(“Die Farben passen”). What remains is not automatable here: the browser acceptance of the re-designed
-settings page (§6.5), the `comfyui_ha` live leg, the multi-day field run, and the human QA signature (§8)
+and **L1** 8/8 against a real Immich *and* a real ComfyUI, both re-run **2026-11-27**, **L3** production-image
+smoke on the shipped image (2026-11-22, §6.10). Finding **14.9** (colour-slot assignment) was closed with the
+user on **2026-11-27** (“Die Farben passen”). What remains is not automatable here: the browser acceptance of
+the re-designed settings page (§6.5), the `comfyui_ha` live leg, the multi-day field run, and the human QA
+signature (§8)
 
 > **Why a new report:** the previous revision (1.1.0) described the *v1* single-source build
 > (93 nominal / 78 executed cases) and was already internally inconsistent. This revision re-baselines
@@ -621,10 +621,11 @@ QA signature** of §8, which is what the v2.4.3 tag still waits for.*
 2.4.2 date-stamp switch — lands with **TC-FR-034** (6 offline cases, `TestFR034FrameOrientation`), and the
 settings page is re-designed in the same revision (sidebar layout, dark-navy default with a light
 alternative, unified cards) under the existing FR-021/FR-026 controls. The suite is **212** offline +
-**8** live = **220** cases; **L0 re-ran green on 2026-11-27** (212 passed, 8 skipped, 21.7 s, all P0/SEC/IFR
-including the new FR-034 cases), and the L1/L3 numbers of §6.10 stand from this code base's 2026-11-22 run
-(the re-designed page was already served by that smoke's gunicorn image up to the visual restyle — the
-wire contract, the footer derivation and the `/health`/`/sleep`/`/download` answers are unchanged).
-Finding **14.9** (colour-slot assignment) was closed with the user on 2026-11-27. What stays open stays
-open: the on-screen acceptance of the new settings page (the 2.5.0 zoom itself is signed off, 2026-11-23),
-the `comfyui_ha` live leg, the L4 field run and the **human QA signature** of §8.*
+**8** live = **220** cases, **100 %**: **L0 re-ran green on 2026-11-27** (212 passed, 8 skipped, 21.7 s, all
+P0/SEC/IFR including the new FR-034 cases) and **L1 re-ran green the same day** (8/8 in 25.7 s against the
+real Immich and the real ComfyUI, incl. the named-workflow round trip on the 2.6.0 code); the L3 numbers of
+§6.10 stand from the 2026-11-22 run (wire contract, footer derivation and the `/health`/`/sleep`/`/download`
+answers are unchanged by the 2.6.0 diff). Finding **14.9** (colour-slot assignment) was closed with the user
+on 2026-11-27. What stays open stays open: the on-screen acceptance of the new settings page (the 2.5.0
+zoom itself is signed off, 2026-11-23), the `comfyui_ha` live leg, the L4 field run and the **human QA
+signature** of §8.*
