@@ -169,6 +169,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Global pipeline settings - they belong to no source (2.4.2). The settings page owns
     # them; the add-on option below only seeds the value on first start.
     'date_overlay': _env_bool('DATE_OVERLAY', True),
+    # How the physical frame hangs (2.6.0): landscape is the hardware-native orientation,
+    # portrait adds a 90deg pipeline rotation (see scale_img_in_memory) and shows the web
+    # previews in the same wall orientation. Seeded from the add-on option, like date_overlay.
+    'frame_orientation': os.getenv('FRAME_ORIENTATION', 'landscape'),
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -235,6 +239,8 @@ image_order: str = current_config['immich']['image_order']
 dithering_method: str = current_config['immich'].get('dithering_method', 'atkinson')
 # Global pipeline switch (2.4.2): renders the EXIF date on the processed image when on.
 date_overlay: bool = current_config.get('date_overlay', True)
+# Frame orientation (2.6.0): landscape = hardware-native; portrait rotates the pipeline 90deg.
+frame_orientation: str = current_config.get('frame_orientation', 'landscape')
 sleep_start_hour: int = current_config['immich']['sleep_start_hour']
 sleep_start_minute: int = current_config['immich']['sleep_start_minute']
 sleep_end_hour: int = current_config['immich']['sleep_end_hour']
@@ -493,8 +499,11 @@ def convert_to_hex_format(image_data: PILImage) -> io.BytesIO:
 
 # =============== IMAGE PROCESSING ===============
 def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height: int = 480, bg_color: Tuple[int, int, int] = (255, 255, 255)) -> PILImage:
-    global rotation_angle, dithering_method
-    rotation: int = rotation_angle
+    global rotation_angle, dithering_method, frame_orientation
+    # Effective rotation: the stored rotation plus 90deg when the frame hangs portrait (2.6.0)
+    # so the picture stands upright on the wall. The web UI mirrors this via body[data-orientation]
+    # on the previews; the 'original' preview stays unrotated (FR-034/D3).
+    rotation: int = (rotation_angle + (90 if frame_orientation == 'portrait' else 0)) % 360
     
     datetime_str: Optional[str] = None
     try:
@@ -511,7 +520,7 @@ def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height:
         logger.error("Cython not available - image processing will fail!")
         raise RuntimeError("Cython module 'cpy' is required but not available")
     
-    logger.info(f"Using Cython load_scaled(rotation={rotation}, mode={display_mode})")
+    logger.info(f"Using Cython load_scaled(rotation={rotation}, mode={display_mode}, orientation={frame_orientation})")
     img: PILImage = load_scaled(image, rotation, display_mode)
     logger.info(f"Image after load_scaled: size={img.size}, mode={img.mode}")
     
@@ -753,7 +762,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     global current_config, image_source, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     global GALLERY_MAX_COUNT, GALLERY_RETENTION_DAYS, GALLERY_MAX_AGE_SECONDS
-    global date_overlay
+    global date_overlay, frame_orientation
     
     if new_config is None or 'immich' not in new_config:
         logger.warning("Invalid config received, ignoring update")
@@ -771,6 +780,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     image_order = new_config['immich']['image_order']
     dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
     date_overlay = bool(new_config.get('date_overlay', True))
+    frame_orientation = str(new_config.get('frame_orientation', 'landscape'))
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -783,7 +793,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     
     reset_provider()
     
-    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Dithering={dithering_method}, DateOverlay={date_overlay}")
+    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Orientation={frame_orientation}, Dithering={dithering_method}, DateOverlay={date_overlay}")
 
 def start_config_watcher(cfg_path: str) -> Observer:
     config_handler = ConfigFileHandler(cfg_path, update_app_config)
@@ -956,6 +966,10 @@ def settings() -> Any:
             'image_source': request.form.get('image_source', current_config.get('image_source', 'immich')),
             # global switch, source-independent (2.4.2)
             'date_overlay': form_bool('date_overlay', current_config.get('date_overlay', True)),
+            # frame orientation (2.6.0): the form always posts the select; a partial POST keeps
+            # the stored value (2.4.3b rule) and invalid values are refused below (FR-034/D5).
+            'frame_orientation': (request.form.get('frame_orientation')
+                                  or current_config.get('frame_orientation', 'landscape')),
             'immich': {
                 'url': form_field('immich_url', 'url', current_config['immich']['url']),
                 'album': form_field('album_name', 'album', current_config['immich']['album']),
@@ -1001,6 +1015,8 @@ def settings() -> Any:
         
         if new_config['immich']['rotation'] not in [0, 90, 180, 270]:
             return "Invalid rotation", 400
+        if new_config['frame_orientation'] not in ('landscape', 'portrait'):
+            return "Invalid frame orientation", 400
         
         workflows, active_workflow, wf_error = parse_workflow_slots(request.form, current_config)
         if wf_error:

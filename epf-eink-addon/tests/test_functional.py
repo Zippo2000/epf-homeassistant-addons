@@ -1609,3 +1609,77 @@ class TestFR033WorkflowSelection:
         comfyui = app_module.current_config['comfyui']
         assert comfyui['active_workflow'] == 'flux-dev'
         assert comfyui['workflows'][0]['name'] == 'flux-dev'
+
+
+# ============================================================
+# TC-FR-034: Frame Orientation (2.6.0)
+# ============================================================
+
+class TestFR034FrameOrientation:
+    """TC-FR-034: the frame can hang landscape (hardware-native) or portrait.
+
+    'frame_orientation' is a top-level runtime-YAML key like date_overlay: seeded
+    from the FRAME_ORIENTATION env (add-on option) on first start, edited on the
+    settings page, and honoured by the image pipeline (portrait = +90deg).
+    """
+
+    def test_default_orientation_is_landscape(self, app_module, client_with_mocks):
+        """Without the env var the add-on runs in the hardware-native orientation."""
+        assert app_module.frame_orientation == 'landscape'
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'data-orientation="landscape"' in html
+        assert 'name="frame_orientation"' in html
+
+    def test_page_renders_the_stored_orientation_and_select(self, app_module, client_with_mocks):
+        """After a save the page shows what is stored - and the body carries the attribute."""
+        app_module.current_config['frame_orientation'] = 'portrait'
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'data-orientation="portrait"' in html
+        assert '<option value="portrait" selected>' in html
+
+    def test_portrait_round_trips_through_the_settings_page(self, client_with_mocks, app_module, test_config_path):
+        """The form's select lands in the runtime YAML and hot-reloads the pipeline."""
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'frame_orientation': 'portrait'}, follow_redirects=True)
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['frame_orientation'] == 'portrait'
+        assert app_module.current_config['frame_orientation'] == 'portrait'
+        assert app_module.frame_orientation == 'portrait'
+
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'frame_orientation': 'landscape'}, follow_redirects=True)
+        assert app_module.current_config['frame_orientation'] == 'landscape'
+        assert app_module.frame_orientation == 'landscape'
+
+    def test_a_post_without_the_field_keeps_the_stored_orientation(self, client_with_mocks, app_module):
+        """Silence is not a change: a partial POST must not flip the frame back to landscape."""
+        app_module.current_config['frame_orientation'] = 'portrait'
+        app_module.frame_orientation = 'portrait'
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'album_name': 'some-album'}, follow_redirects=True)
+        assert app_module.current_config['frame_orientation'] == 'portrait'
+        assert app_module.frame_orientation == 'portrait'
+
+    def test_invalid_orientation_is_refused(self, client_with_mocks, app_module):
+        """Same convention as rotation: anything but landscape/portrait is a 400."""
+        resp = client_with_mocks.post('/', data={'image_source': 'immich',
+                                                  'frame_orientation': 'sideways'},
+                                      follow_redirects=False)
+        assert resp.status_code == 400
+        assert 'Invalid frame orientation' in resp.data.decode('utf-8')
+        assert app_module.current_config.get('frame_orientation', 'landscape') == 'landscape'
+
+    def test_pipeline_rotation_depends_on_orientation(self, app_module, test_dir):
+        """Portrait adds 90deg: the processed pixels differ from landscape at the same rotation."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'landscape'
+        landscape = app_module.scale_img_in_memory(create_test_image(EPD_W, EPD_H))
+        app_module.frame_orientation = 'portrait'
+        portrait = app_module.scale_img_in_memory(create_test_image(EPD_W, EPD_H))
+
+        assert list(landscape.getdata()) != list(portrait.getdata()), \
+            "the orientation switch changed nothing in the pipeline"

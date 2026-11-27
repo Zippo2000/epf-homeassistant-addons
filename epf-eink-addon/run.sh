@@ -39,6 +39,9 @@ export LOG_LEVEL=$(bashio::config 'log_level' 'info')
 # Global pipeline settings (default: date stamp on)
 export DATE_OVERLAY=$(bashio::config 'date_overlay' 'true')
 
+# Frame orientation (2.6.0): landscape = hardware-native, portrait = +90deg pipeline rotation
+export FRAME_ORIENTATION=$(bashio::config 'frame_orientation' 'landscape')
+
 # Gallery history limits (defaults: 50 shots, 7 days)
 export GALLERY_MAX_COUNT=$(bashio::config 'gallery_max_count' '50')
 export GALLERY_RETENTION_DAYS=$(bashio::config 'gallery_retention_days' '7')
@@ -76,6 +79,8 @@ bashio::log.info "  Dithering Strength: ${DITHERING_STRENGTH}"
 bashio::log.info "  Display Mode: ${DISPLAY_MODE}"
 bashio::log.info "  Image Order: ${IMAGE_ORDER}"
 bashio::log.info "  Dithering Method: ${DITHERING_METHOD}"
+bashio::log.info "  Date Overlay: ${DATE_OVERLAY}"
+bashio::log.info "  Frame Orientation: ${FRAME_ORIENTATION}"
 bashio::log.info "  Wake Up Interval: ${WAKEUP_INTERVAL} minutes"
 bashio::log.info "  Sleep Time: ${SLEEP_START_HOUR}:${SLEEP_START_MINUTE} - ${SLEEP_END_HOUR}:${SLEEP_END_MINUTE}"
 bashio::log.info "  Log Level: ${LOG_LEVEL}"

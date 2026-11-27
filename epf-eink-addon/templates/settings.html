@@ -3,1251 +3,1075 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title>E-paper Photo Frame Settings</title>
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'">
+    <title>E-Paper Photo Frame — Settings</title>
     <style>
-/* ═══════════════════════════════════════════════════════════
-   DESIGN TOKENS  (Phase 1 – Foundation)
-   Apple-grade: neutral base, single dynamic accent, generous
-   spacing, large radii, frosted glass, light typography.
-   ═══════════════════════════════════════════════════════════ */
-@property --accent {
-    syntax: '<color>';
-    inherits: true;
-    initial-value: #007aff;
-}
-:root {
-    /* ── Surface (backgrounds) ── */
-    --surface-0: #ffffff;              /* page background */
-    --surface-1: #f5f5f7;             /* cards, panels */
-    --surface-2: #e8e8ed;             /* inputs, chips */
-
-    /* ── Accent (dynamic – overridden by Phase 4) ── */
-    --accent: #007aff;                /* default: Apple system blue */
-    --accent-soft: rgba(0, 122, 255, 0.12);
-    --accent-glow: rgba(0, 122, 255, 0.25);
-
-    /* ── Text ── */
-    --text-primary: #1d1d1f;
-    --text-secondary: #6e6e73;
-    --text-tertiary: #86868b;
-
-    /* ── Border & Separators ── */
-    --border-subtle: rgba(0, 0, 0, 0.06);
-    --border: rgba(0, 0, 0, 0.1);
-
-    /* ── Status Colours ── */
-    --success: #30d158;
-    --error: #ff3b30;
-    --warning: #ff9f0a;
-
-    /* ── Shadows (very subtle) ── */
-    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.04);
-    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.06);
-    --shadow-3: 0 12px 28px rgba(0, 0, 0, 0.08);
-
-    /* ── Frosted Glass ── */
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-blur: 20px;
-    --glass-border: 1px solid rgba(0, 0, 0, 0.06);
-
-    /* ── Typography Scale ── */
-    --fs-display: clamp(2rem, 4vw, 2.75rem);
-    --fs-h2: 1.375rem;
-    --fs-body: 1rem;
-    --fs-small: 0.875rem;
-    --fs-caption: 0.75rem;
-
-    /* ── Spacing ── */
-    --space-xs: 0.25rem;
-    --space-sm: 0.5rem;
-    --space-md: 1rem;
-    --space-lg: 1.5rem;
-    --space-xl: 2.5rem;
-    --space-2xl: 4rem;
-
-    /* ── Radius ── */
-    --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
-    --radius-xl: 24px;
-    --radius-full: 9999px;
-
-    /* ── Motion ── */
-    --ease-out-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --dur-fast: 150ms;
-    --dur-med: 250ms;
-    --dur-slow: 400ms;
-
-    /* ── Photo Panel Tints ── */
-    --current-photo-bg: rgba(48, 209, 88, 0.06);
-    --current-photo-border: rgba(48, 209, 88, 0.35);
-    --next-photo-bg: rgba(0, 122, 255, 0.06);
-    --next-photo-border: rgba(0, 122, 255, 0.35);
-
-    /* ── Backward-Compat Aliases (remove in Phase 3) ── */
-    --primary: var(--accent);
-    --primary-dark: var(--accent);
-    --bg-primary: var(--surface-0);
-    --bg-secondary: var(--surface-1);
-    --bg-tertiary: var(--surface-2);
-    --shadow-sm: var(--shadow-1);
-    --shadow-md: var(--shadow-2);
-    --shadow-lg: var(--shadow-3);
-    --shadow-xl: var(--shadow-3);
-}
-[data-theme="dark"] {
-    --surface-0: #1c1c1e;
-    --surface-1: #2c2c2e;
-    --surface-2: #3a3a3c;
-
-    --accent: #0a84ff;
-    --accent-soft: rgba(10, 132, 255, 0.15);
-    --accent-glow: rgba(10, 132, 255, 0.3);
-
-    --text-primary: #f5f5f7;
-    --text-secondary: #a1a1a6;
-    --text-tertiary: #636366;
-
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border: rgba(255, 255, 255, 0.12);
-
-    --success: #30d158;
-    --error: #ff453a;
-    --warning: #ff9f0a;
-
-    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-3: 0 12px 28px rgba(0, 0, 0, 0.4);
-
-    --glass-bg: rgba(28, 28, 30, 0.72);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-
-    --current-photo-bg: rgba(48, 209, 88, 0.1);
-    --current-photo-border: rgba(48, 209, 88, 0.4);
-    --next-photo-bg: rgba(10, 132, 255, 0.1);
-    --next-photo-border: rgba(10, 132, 255, 0.4);
-
-    /* Backward-compat (same mapping) */
-    --primary: var(--accent);
-    --primary-dark: var(--accent);
-    --bg-primary: var(--surface-0);
-    --bg-secondary: var(--surface-1);
-    --bg-tertiary: var(--surface-2);
-    --shadow-sm: var(--shadow-1);
-    --shadow-md: var(--shadow-2);
-    --shadow-lg: var(--shadow-3);
-    --shadow-xl: var(--shadow-3);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-    background: var(--surface-0);
-    color: var(--text-primary);
-    line-height: 1.6;
-    letter-spacing: -0.01em;
-    transition: background-color var(--dur-med) var(--ease-out-soft),
-                color var(--dur-med) var(--ease-out-soft),
-                --accent var(--dur-slow) var(--ease-out-soft);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-/* Frosted-glass utility (used by header, modals) */
-.glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-    border: var(--glass-border);
-}
-header {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
-    border-bottom: var(--glass-border);
-    padding: 0.875rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-.header-title { display: flex; align-items: center; gap: 0.75rem; }
-.header-icon {
-    width: 36px; height: 36px;
-    background: var(--accent-soft);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-}
-.header-icon svg { width: 20px; height: 20px; stroke: var(--accent); }
-h1 {
-    font-size: var(--fs-h2); font-weight: 300;
-    color: var(--text-primary);
-    letter-spacing: -0.02em;
-}
-.header-right { display: flex; align-items: center; gap: 1rem; }
-.battery-status-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.4rem 0.75rem;
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    font-size: var(--fs-small);
-    color: var(--text-secondary);
-}
-.battery-text { display: flex; flex-direction: column; line-height: 1.2; }
-.battery-percentage { font-weight: 500; color: var(--text-primary); }
-.battery-voltage { font-size: var(--fs-caption); color: var(--text-tertiary); }
-.battery-timestamp { font-size: var(--fs-caption); color: var(--text-tertiary); }
-.health-status {
-    display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.4rem 0.75rem;
-    border-radius: var(--radius-full);
-    font-size: var(--fs-small); font-weight: 500;
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
-    color: var(--text-tertiary);
-}
-.health-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text-tertiary);
-    transition: background-color var(--dur-med) var(--ease-out-soft),
-                box-shadow var(--dur-med) var(--ease-out-soft);
-}
-.health-status.healthy .health-dot {
-    background: var(--success);
-    box-shadow: 0 0 6px var(--success);
-}
-.health-status.healthy { color: var(--success); }
-.health-status.degraded .health-dot {
-    background: var(--error);
-    box-shadow: 0 0 6px var(--error);
-}
-.health-status.degraded { color: var(--error); }
-.theme-toggle {
-    background: var(--surface-1); border: 1px solid var(--border-subtle);
-    width: 36px; height: 36px; border-radius: 50%;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; color: var(--text-secondary);
-    transition: all var(--dur-fast) var(--ease-out-soft);
-}
-.theme-toggle:hover { background: var(--surface-2); color: var(--text-primary); transform: scale(1.08); }
-.theme-toggle svg { width: 18px; height: 18px; }
-.container { max-width: 1200px; margin: var(--space-lg) auto; padding: 0 var(--space-lg) 2rem; }
-.card {
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
-    margin-bottom: var(--space-md);
-    box-shadow: var(--shadow-1);
-    transition: box-shadow var(--dur-med) var(--ease-out-soft);
-}
-.card:hover { box-shadow: var(--shadow-2); }
-.card-title {
-    font-size: var(--fs-h2); font-weight: 500;
-    margin-bottom: var(--space-md);
-    display: flex; align-items: center; gap: 0.6rem;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
-}
-.card-icon {
-    width: 28px; height: 28px;
-    background: var(--accent-soft);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.card-icon svg { width: 16px; height: 16px; stroke: var(--accent); }
-/* Photo Preview Section */
-.photo-preview-section {
-    display: flex;
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
-}
-.photo-panel {
-    flex: 1;
-    border-radius: var(--radius-lg);
-    padding: var(--space-md);
-    border: 1.5px solid;
-    transition: border-color var(--dur-med) var(--ease-out-soft);
-}
-.photo-panel.current {
-    background: var(--current-photo-bg);
-    border-color: var(--current-photo-border);
-}
-.photo-panel.next {
-    background: var(--next-photo-bg);
-    border-color: var(--next-photo-border);
-}
-.panel-title {
-    font-size: var(--fs-body); font-weight: 600;
-    margin-bottom: var(--space-sm);
-    text-align: center;
-}
-.panel-title.current-title { color: var(--current-photo-border); }
-.panel-title.next-title { color: var(--next-photo-border); }
-.delivered-at {
-    text-align: center;
-    font-size: var(--fs-small);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-sm);
-}
-.delivered-at strong { color: var(--text-primary); font-weight: 500; }
-.preview-img-container {
-    width: 100%;
-    aspect-ratio: 5/3;
-    background: var(--surface-2);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    border: 1px solid var(--border-subtle);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.preview-img-container img {
-    width: 100%; height: 100%;
-    object-fit: contain;
-    cursor: zoom-in;
-    transition: transform var(--dur-med) var(--ease-out-soft);
-}
-.preview-img-container img:hover { transform: scale(1.02); }
-.preview-placeholder {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    height: 100%;
-    color: var(--text-tertiary);
-    padding: 1rem;
-}
-.preview-placeholder span { font-size: 2.5rem; opacity: 0.3; margin-bottom: 0.5rem; }
-.preview-placeholder p { font-size: 0.8rem; text-align: center; }
-.next-photo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-}
-.next-photo-label {
-    font-size: var(--fs-caption);
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-bottom: 0.3rem;
-}
-/* Photo Actions */
-.photo-actions-bar {
-    display: flex;
-    gap: var(--space-sm);
-    flex-wrap: wrap;
-    align-items: center;
-}
-.prepare-status {
-    margin-top: var(--space-sm);
-    padding: 0.75rem var(--space-md);
-    border-radius: var(--radius-sm);
-    font-size: var(--fs-small);
-    font-weight: 500;
-    transition: all var(--dur-med) var(--ease-out-soft);
-}
-.prepare-status.loading { background: var(--accent-soft); color: var(--accent); }
-.prepare-status.success { background: rgba(48,209,88,0.1); color: var(--success); }
-.prepare-status.error { background: rgba(255,59,48,0.1); color: var(--error); }
-.hidden { display: none !important; }
-.btn {
-    color: white; border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: var(--fs-body);
-    font-weight: 500;
-    font-family: inherit;
-    transition: all var(--dur-fast) var(--ease-out-soft);
-    box-shadow: var(--shadow-1);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    -webkit-font-smoothing: antialiased;
-}
-.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
-.btn:active { transform: translateY(0) scale(0.98); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-prepare { background: var(--accent); }
-.btn-cleanup { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-subtle); }
-.btn-gallery { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
-.btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-small); }
-/* Form */
-.form-group { margin-bottom: var(--space-md); }
-label { display: block; margin-bottom: 0.4rem; font-weight: 500; color: var(--text-primary); font-size: var(--fs-small); }
-input[type="text"], select, textarea {
-    width: 100%;
-    padding: 0.65rem 0.85rem;
-    border: 1.5px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    font-size: var(--fs-body);
-    font-family: inherit;
-    background: var(--surface-0);
-    color: var(--text-primary);
-    transition: border-color var(--dur-fast) var(--ease-out-soft),
-                box-shadow var(--dur-fast) var(--ease-out-soft);
-}
-input[type="text"]:focus, select:focus, textarea:focus {
-    border-color: var(--accent);
-    outline: none;
-    box-shadow: 0 0 0 3px var(--accent-glow);
-}
-textarea { resize: vertical; line-height: 1.5; }
-.small-text { font-size: var(--fs-caption); color: var(--text-tertiary); margin-top: 0.3rem; display: block; line-height: 1.4; }
-.channel-badge { display: inline-block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-tertiary); }
-/* Named ComfyUI workflows (2.4.0) */
-.wf-slot { border-top: 1px solid var(--border); padding-top: var(--space-sm); margin-top: var(--space-sm); }
-.wf-summary { cursor: pointer; font-size: var(--fs-body); font-weight: 600; color: var(--text-secondary); list-style: none; }
-.wf-summary::-webkit-details-marker { display: none; }
-.wf-summary::before { content: "\25B8"; display: inline-block; margin-right: 0.4rem; transition: transform 0.15s ease; }
-details[open] > .wf-summary::before { transform: rotate(90deg); }
-.field-status { font-size: var(--fs-body); color: var(--text-secondary); padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); }
-/* Slider */
-.slider-container { display: flex; align-items: center; gap: 0.75rem; }
-.slider-container input[type="range"] {
-    flex-grow: 1; height: 5px;
-    -webkit-appearance: none; appearance: none;
-    background: var(--surface-2);
-    border-radius: var(--radius-full);
-    outline: none;
-}
-.slider-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer; box-shadow: var(--shadow-1);
-    transition: transform var(--dur-fast) var(--ease-out-soft);
-}
-.slider-container input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
-.slider-value {
-    background: var(--surface-2);
-    color: var(--text-primary);
-    min-width: 48px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: var(--radius-full);
-    font-size: var(--fs-small); font-weight: 600;
-    font-variant-numeric: tabular-nums;
-}
-/* Buttons */
-.button-group { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); flex-wrap: wrap; }
-input[type="submit"] {
-    background: var(--accent);
-    color: white; border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    cursor: pointer; font-size: var(--fs-body); font-weight: 500;
-    font-family: inherit;
-    transition: all var(--dur-fast) var(--ease-out-soft);
-    box-shadow: var(--shadow-1);
-}
-input[type="submit"]:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); filter: brightness(1.08); }
-input[type="submit"]:active { transform: scale(0.98); }
-.reset-btn {
-    background: var(--surface-1); color: var(--text-secondary);
-    border: 1.5px solid var(--border-subtle);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-md);
-    cursor: pointer; font-size: var(--fs-body); font-weight: 500;
-    font-family: inherit;
-    transition: all var(--dur-fast) var(--ease-out-soft);
-}
-.reset-btn:hover { background: var(--surface-2); color: var(--text-primary); border-color: var(--border); }
-.time-input { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.time-input select { width: 72px; padding: 0.55rem; }
-/* Notification */
-#notification {
-    position: fixed; top: 1.25rem; right: 1.25rem;
-    background: var(--success); color: white;
-    padding: 0.85rem 1.25rem;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-3);
-    display: none; z-index: 1000;
-    font-size: var(--fs-small); font-weight: 500;
-    opacity: 0; transition: opacity var(--dur-med) var(--ease-out-soft),
-                transform var(--dur-med) var(--ease-out-soft);
-    transform: translateY(-8px);
-} /* notification.show */
-/* Tab Bar */
-.tab-bar {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--space-lg);
-    display: flex;
-    gap: 0;
-    border-top: 1px solid var(--border-subtle);
-}
-.tab {
-    appearance: none;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    padding: 0.65rem 1rem;
-    font-size: var(--fs-small);
-    font-weight: 500;
-    font-family: inherit;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: color var(--dur-fast) var(--ease-out-soft),
-                border-color var(--dur-fast) var(--ease-out-soft);
-    letter-spacing: -0.01em;
-}
-.tab:hover { color: var(--text-primary); }
-.tab.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-}
-/* Tab Panels */
-.tab-panel { display: none; }
-.tab-panel.active { display: block; animation: fadeIn var(--dur-med) var(--ease-out-soft); }
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-/* Gallery (inline) */
-.gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-md);
-}
-.gallery-item {
-    background: var(--surface-2);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    border: 1px solid var(--border-subtle);
-    transition: transform var(--dur-fast) var(--ease-out-soft);
-}
-.gallery-item:hover { transform: scale(1.02); }
-.gallery-item img { width: 100%; height: auto; display: block; cursor: zoom-in; }
-.gallery-item a { display: block; cursor: zoom-in; }
-.gallery-card { background: var(--surface-1); border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: var(--space-sm); }
-.gallery-card-label { font-size: var(--fs-caption); color: var(--text-tertiary); margin-bottom: 0.5rem; }
-.gallery-card-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-sm); }
-.gallery-item-info {
-    padding: 0.5rem;
-    font-size: var(--fs-caption);
-    color: var(--text-secondary);
-    text-align: center;
-}
-.gallery-empty {
-    text-align: center;
-    color: var(--text-tertiary);
-    padding: var(--space-2xl);
-    font-size: var(--fs-body);
-}
-/* Lightbox – click an image and it zooms to nearly fullscreen in place.
-   The zoom is a FLIP: the figure renders at its final size, the inline transform
-   pulls it back onto the thumbnail that was clicked, and the transition below
-   animates it out from there. Below #notification and the confirm modals (both 1000). */
-.lightbox {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    align-items: center; justify-content: center;
-    padding: var(--space-xl);
-    z-index: 900;
-    opacity: 0;
-    transition: opacity var(--dur-med) var(--ease-out-soft);
-}
-.lightbox.open { display: flex; opacity: 1; animation: lightboxBackdropIn var(--dur-med) var(--ease-out-soft); }
-.lightbox.open.closing { opacity: 0; pointer-events: none; }
-.lightbox-figure {
-    margin: 0;
-    display: flex; flex-direction: column; align-items: center;
-    gap: var(--space-md);
-    max-width: 100%;
-}
-.lightbox-img {
-    max-width: min(94vw, 1600px);
-    max-height: calc(100vh - var(--space-2xl) - var(--space-2xl) - 3rem);
-    object-fit: contain;
-    background: var(--surface-2);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-3);
-    transform-origin: center;
-    transition: transform var(--dur-slow) var(--ease-out-soft);
-    will-change: transform;
-}
-.lightbox-caption {
-    max-width: min(94vw, 1600px);
-    padding: 0.4rem 0.9rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: var(--glass-border);
-    border-radius: var(--radius-full);
-    font-size: var(--fs-small);
-    color: var(--text-primary);
-    text-align: center;
-}
-/* display:none → flex does not run a transition, so both use animations. */
-@keyframes lightboxBackdropIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes lightboxCaptionIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-@keyframes lightboxSwap {
-    from { opacity: 0.2; }
-    to { opacity: 1; }
-}
-.lightbox-img.swapping { animation: lightboxSwap var(--dur-med) var(--ease-out-soft); }
-.lightbox.open .lightbox-caption {
-    animation: lightboxCaptionIn var(--dur-med) var(--ease-out-soft) var(--dur-med) both;
-}
-.lightbox-btn {
-    position: absolute;
-    width: 44px; height: 44px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: var(--glass-border);
-    border-radius: var(--radius-full);
-    color: var(--text-primary);
-    cursor: pointer;
-    box-shadow: var(--shadow-2);
-    transition: transform var(--dur-fast) var(--ease-out-soft),
-                background-color var(--dur-fast) var(--ease-out-soft);
-}
-.lightbox-btn svg { width: 20px; height: 20px; }
-.lightbox-btn:hover { background: var(--accent-soft); color: var(--accent); transform: scale(1.08); }
-.lightbox-btn.hidden { display: none; }
-.lightbox-close { top: var(--space-lg); right: var(--space-lg); }
-.lightbox-prev { left: var(--space-lg); top: 50%; transform: translateY(-50%); }
-.lightbox-next { right: var(--space-lg); top: 50%; transform: translateY(-50%); }
-.lightbox-prev:hover { transform: translateY(-50%) scale(1.08); }
-.lightbox-next:hover { transform: translateY(-50%) scale(1.08); }
-/* Micro-interactions */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
-.health-status.degraded .health-dot {
-    animation: pulse 2s ease-in-out infinite;
-}
-.spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 0.5rem;
-    vertical-align: middle;
-}
-/* Modal */
-.confirm-modal {
-    display: none; position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    align-items: center; justify-content: center;
-    z-index: 1000;
-}
-.confirm-content {
-    background: var(--glass-bg);
-    backdrop-filter: blur(24px) saturate(1.3);
-    -webkit-backdrop-filter: blur(24px) saturate(1.3);
-    border: var(--glass-border);
-    padding: 2rem; border-radius: var(--radius-xl);
-    text-align: center; max-width: 420px; width: 90%;
-    box-shadow: var(--shadow-3);
-}
-.confirm-content h2 { margin-bottom: var(--space-sm); color: var(--text-primary); font-size: var(--fs-h2); font-weight: 500; }
-.confirm-content p { margin-bottom: var(--space-lg); color: var(--text-secondary); font-size: var(--fs-body); line-height: 1.5; }
-.confirm-buttons { display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap; }
-/* Generation Status */
-.generation-status-bar {
-    background: var(--surface-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem var(--space-md);
-    margin-bottom: var(--space-md);
-    font-size: var(--fs-small);
-    color: var(--text-secondary);
-    font-variant-numeric: tabular-nums;
-}
-.generation-status-bar.hidden { display: none; }
-/* Footer */
-footer {
-    text-align: center; padding: var(--space-lg) 0;
-    margin-top: var(--space-lg);
-    font-size: var(--fs-small);
-    color: var(--text-tertiary);
-    border-top: 1px solid var(--border-subtle);
-}
-.footer-version { margin-top: 0.3rem; font-size: var(--fs-caption); opacity: 0.7; }
-/* Responsive */
-@media (max-width: 768px) {
-    .container { padding: 0 var(--space-md) 2rem; }
-    .header-content { padding: 0 var(--space-md); flex-direction: column; align-items: stretch; }
-    .header-title { justify-content: center; }
-    .header-right { justify-content: center; }
-    h1 { font-size: var(--fs-body); }
-    .card { padding: var(--space-md); }
-    .button-group { flex-direction: column; }
-    input[type="submit"], .btn { width: 100%; justify-content: center; }
-    .photo-preview-section { flex-direction: column; }
-    .next-photo-grid { grid-template-columns: 1fr; }
-    .photo-actions-bar { flex-direction: column; }
-    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-    .confirm-content { padding: var(--space-md); }
-    .lightbox { padding: var(--space-md); }
-    .lightbox-img { max-height: calc(100vh - 10rem); }
-    .lightbox-close { top: var(--space-sm); right: var(--space-sm); }
-    .lightbox-prev { left: var(--space-sm); }
-    .lightbox-next { right: var(--space-sm); }
-}
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-    }
-}
+        /* ============ Design tokens ============ */
+        :root {
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+            --dur-fast: 0.15s; --dur-med: 0.25s; --dur-slow: 0.4s; --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+            --space-xs: 0.25rem; --space-sm: 0.5rem; --space-md: 1rem; --space-lg: 1.5rem;
+            --space-xl: 2.5rem; --space-2xl: 3.5rem;
+            --text-xs: 0.75rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.125rem;
+            --text-xl: 1.375rem; --text-2xl: 1.75rem;
+        }
+        body[data-theme="light"] {
+            --surface-0: #f4f6fb;
+            --surface-1: #ffffff;
+            --surface-2: #e9edf6;
+            --surface-3: #ffffff;
+            --text-primary: #171c2e;
+            --text-secondary: #4c5570;
+            --text-tertiary: #8a93ae;
+            --border: #d9dfee;
+            --border-subtle: #e7ecf6;
+            --accent: #1d4ed8;
+            --accent-soft: rgba(29, 78, 216, 0.1);
+            --accent-glow: rgba(29, 78, 216, 0.35);
+            --success: #0f9d58; --success-soft: rgba(15, 157, 88, 0.12);
+            --error: #d93025; --error-soft: rgba(217, 48, 37, 0.1);
+            --warning: #b45309; --warning-soft: rgba(180, 83, 9, 0.12);
+            --shadow-sm: 0 1px 2px rgba(23, 28, 46, 0.06);
+            --shadow-md: 0 4px 16px rgba(23, 28, 46, 0.08);
+        }
+        body[data-theme="dark"] {
+            --surface-0: #060a1e;
+            --surface-1: #0d1330;
+            --surface-2: #151d44;
+            --surface-3: #090e26;
+            --text-primary: #e8eaf6;
+            --text-secondary: #9aa3c7;
+            --text-tertiary: #5f6890;
+            --border: #232c58;
+            --border-subtle: #1a2248;
+            --accent: #5b7cff;
+            --accent-soft: rgba(91, 124, 255, 0.14);
+            --accent-glow: rgba(91, 124, 255, 0.45);
+            --success: #34d399; --success-soft: rgba(52, 211, 153, 0.12);
+            --error: #f87171; --error-soft: rgba(248, 113, 113, 0.12);
+            --warning: #fbbf24; --warning-soft: rgba(251, 191, 36, 0.12);
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.45);
+        }
+        /* ============ Base ============ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--surface-0);
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-size: var(--text-md);
+            transition: background var(--dur-med) var(--ease), color var(--dur-med) var(--ease);
+        }
+        /* ============ Shell: sidebar + content ============ */
+        .app-shell { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+        .sidebar {
+            position: sticky; top: 0; height: 100vh;
+            display: flex; flex-direction: column; gap: var(--space-sm);
+            padding: var(--space-md);
+            background: var(--surface-3);
+            border-right: 1px solid var(--border-subtle);
+            overflow-y: auto;
+        }
+        .sidebar-logo { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-xs) var(--space-sm) var(--space-md); }
+        .logo-mark {
+            width: 34px; height: 34px; flex-shrink: 0;
+            display: grid; place-items: center;
+            border-radius: var(--radius-md);
+            background: var(--accent); color: #fff;
+            box-shadow: 0 0 18px var(--accent-glow);
+        }
+        .logo-mark svg { width: 20px; height: 20px; }
+        .logo-text { font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.02em; line-height: 1.25; }
+        .logo-text small { display: block; font-weight: 500; color: var(--text-tertiary); font-size: var(--text-xs); }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+        .nav-item {
+            display: flex; align-items: center; gap: var(--space-sm);
+            width: 100%; text-align: left;
+            padding: 0.6rem 0.75rem;
+            border: none; border-radius: var(--radius-md);
+            background: transparent; color: var(--text-secondary);
+            font: inherit; font-size: var(--text-sm); font-weight: 600;
+            cursor: pointer;
+            transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+        }
+        .nav-item:hover { background: var(--surface-2); color: var(--text-primary); }
+        .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+        .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .sidebar-actions { margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm); padding-top: var(--space-md); }
+        .sidebar-version { font-size: var(--text-xs); color: var(--text-tertiary); text-align: center; padding-top: var(--space-sm); }
+        /* ============ Buttons ============ */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: var(--space-sm);
+            padding: 0.6rem 1.1rem;
+            border: 1px solid transparent; border-radius: var(--radius-md);
+            font-family: inherit; font-size: var(--text-sm); font-weight: 600;
+            cursor: pointer; user-select: none;
+            transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+                border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 16px var(--accent-glow); }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-secondary { background: var(--surface-2); color: var(--text-primary); border-color: var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+        .btn-ghost:hover { background: var(--surface-2); color: var(--text-primary); }
+        .btn-ghost.danger:hover { color: var(--error); border-color: var(--error); }
+        .icon-btn {
+            display: grid; place-items: center;
+            width: 34px; height: 34px;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            background: var(--surface-2); color: var(--text-secondary); cursor: pointer;
+            transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+        }
+        .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .icon-btn svg { width: 17px; height: 17px; }
+        /* ============ Content column ============ */
+        .content { display: flex; flex-direction: column; min-width: 0; }
+        .status-strip {
+            position: sticky; top: 0; z-index: 50;
+            display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-md);
+            padding: 0.7rem 1.5rem;
+            background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .pill {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.3rem 0.7rem;
+            border: 1px solid var(--border); border-radius: var(--radius-pill);
+            background: var(--surface-1);
+            font-size: var(--text-xs); font-weight: 600;
+        }
+        .pill b { font-weight: 700; }
+        .pill-success { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, var(--border)); }
+        .pill-error { color: var(--error); border-color: color-mix(in srgb, var(--error) 40%, var(--border)); }
+        .pill-warn { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, var(--border)); }
+        .pill-muted { color: var(--text-tertiary); }
+        .health-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+        .status-strip .spacer { flex: 1; }
+        .strip-title { font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.02em; }
+        .view { display: none; padding: var(--space-lg) 1.5rem; max-width: 1080px; width: 100%; }
+        .view.active { display: block; animation: fadeIn var(--dur-med) var(--ease); }
+        .view-title { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.01em; margin-bottom: var(--space-xs); }
+        .view-subtitle { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-lg); }
+        /* ============ Cards ============ */
+        .card {
+            background: var(--surface-1);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-lg);
+            overflow: hidden;
+        }
+        .card-header {
+            display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--surface-2);
+        }
+        .card-header-icon { color: var(--accent); display: grid; place-items: center; }
+        .card-header-icon svg { width: 18px; height: 18px; }
+        .card-title { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.01em; }
+        .channel-badge {
+            font-size: var(--text-xs); font-weight: 600;
+            padding: 0.1rem 0.55rem; border-radius: var(--radius-pill);
+            background: var(--surface-0); color: var(--text-tertiary);
+            border: 1px solid var(--border-subtle);
+        }
+        .channel-badge.ha { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--border-subtle)); }
+        .card-body { padding: 1.25rem; }
+        .card-note { padding: 0.7rem 1.25rem; border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-tertiary); }
+        /* ============ Status cards (dashboard) ============ */
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+        .status-card {
+            background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem; box-shadow: var(--shadow-sm);
+            display: flex; align-items: flex-start; gap: var(--space-sm);
+        }
+        .status-card-icon { font-size: 1.4rem; line-height: 1; }
+        .status-card-main { flex: 1; min-width: 0; }
+        .status-card-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+        .status-card-value { font-size: var(--text-lg); font-weight: 700; margin-top: 2px; }
+        .status-card-value small { font-size: var(--text-xs); font-weight: 500; color: var(--text-tertiary); }
+        .status-card-detail { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
+        /* ============ Preview panels ============ */
+        .photo-preview-section { margin-bottom: var(--space-lg); }
+        .preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md); }
+        .preview-panel { display: flex; flex-direction: column; }
+        .preview-panel-header {
+            font-size: var(--text-sm); font-weight: 700; color: var(--text-secondary);
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .preview-img-container {
+            background: var(--surface-2);
+            aspect-ratio: 5/3;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            cursor: zoom-in;
+        }
+        .preview-img-container img {
+            width: 100%; height: 100%; object-fit: contain;
+            animation: fadeIn var(--dur-slow) var(--ease);
+        }
+        .preview-placeholder {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: var(--space-sm); color: var(--text-tertiary); font-size: var(--text-sm);
+        }
+        .preview-panel-footer {
+            display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+            padding: 0.5rem 1rem; border-top: 1px solid var(--border-subtle);
+            font-size: var(--text-xs); color: var(--text-tertiary);
+        }
+        .preview-panel-footer b { color: var(--text-secondary); font-weight: 600; }
+        /*
+         * Wall orientation (FR-034): when the frame hangs portrait, the
+         * frame-shaped previews (processed/delivered) show the picture the way it stands
+         * on the wall — rotated 90deg inside a 3:5 box. Width 277.78% = (800/480)*(5/3).
+         * The original panel intentionally stays untouched (it is the source, not the wall).
+         */
+        body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; position: relative; }
+        body[data-orientation="portrait"] .preview-img-container.portrait-box img {
+            position: absolute; top: 50%; left: 50%;
+            width: 277.78%; height: auto;
+            transform: translate(-50%, -50%) rotate(90deg);
+            object-fit: cover;
+        }
+        /* Gallery items in portrait mode: same treatment for wall-oriented files. */
+        .gallery-item a { display: block; overflow: hidden; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--surface-2); }
+        .gallery-item a img { width: 100%; aspect-ratio: 5/3; object-fit: cover; transition: transform var(--dur-med) var(--ease); }
+        .gallery-item:hover a img { transform: scale(1.03); }
+        body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; position: relative; }
+        body[data-orientation="portrait"] .gallery-item a.is-wall img {
+            position: absolute; top: 50%; left: 50%;
+            width: 277.78%; height: auto; aspect-ratio: auto;
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(90deg) scale(1.03); }
+        /* ============ Gallery ============ */
+        .gallery-controls { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); flex-wrap: wrap; }
+        .gallery-count { color: var(--text-tertiary); font-size: var(--text-sm); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-md); }
+        .gallery-item {
+            background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+            overflow: hidden; box-shadow: var(--shadow-sm);
+            transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+        .gallery-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .gallery-item-info { padding: 0.6rem 0.8rem; border-top: 1px solid var(--border-subtle); }
+        .gallery-item-caption { font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gallery-item-date { font-size: 0.6875rem; color: var(--text-tertiary); }
+        .kind-badge {
+            display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+            padding: 0.05rem 0.45rem; border-radius: var(--radius-pill);
+            margin-left: 0.4rem; vertical-align: middle;
+        }
+        .kind-original { background: var(--surface-2); color: var(--text-tertiary); }
+        .kind-processed, .kind-delivered { background: var(--accent-soft); color: var(--accent); }
+        /* ============ Forms ============ */
+        .form-group { margin-bottom: var(--space-lg); }
+        .form-group:last-child { margin-bottom: 0; }
+        .form-group > label {
+            display: block; font-size: var(--text-sm); font-weight: 600;
+            margin-bottom: var(--space-sm); color: var(--text-secondary);
+        }
+        select, input[type="text"], input[type="url"], input[type="email"], input[type="password"],
+        input[type="number"], input[type="time"], textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            background: var(--surface-2); color: var(--text-primary);
+            font-family: inherit; font-size: var(--text-sm);
+            transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        textarea { resize: vertical; min-height: 90px; font-family: var(--font-mono); font-size: 0.8rem; }
+        input[type="time"] { width: auto; }
+        select option { background: var(--surface-1); color: var(--text-primary); }
+        .small-text { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--space-sm); line-height: 1.5; }
+        .hint-block { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-md); }
+        /* ============ Sliders ============ */
+        .slider-container { margin-bottom: var(--space-lg); }
+        .slider-container:last-child { margin-bottom: 0; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm); }
+        .slider-header label { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+        .slider-value { font-size: var(--text-sm); font-weight: 700; color: var(--accent); min-width: 3.5rem; text-align: right; }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 5px; border-radius: var(--radius-pill);
+            background: var(--border); outline: none; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+            cursor: pointer; transition: transform var(--dur-fast) var(--ease);
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px; height: 18px; border: none; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); cursor: pointer;
+        }
+        .slider-range { display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--text-tertiary); margin-top: var(--space-xs); }
+        /* ============ Workflow slots ============ */
+        .wf-slots { display: flex; flex-direction: column; gap: var(--space-md); }
+        .wf-slot {
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            background: var(--surface-2); padding: 1rem;
+        }
+        .wf-slot-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+        .wf-slot-header input { flex: 1; }
+        .slot-toggle { flex-shrink: 0; }
+        .wf-slot-body { display: none; }
+        .wf-slot.open .wf-slot-body { display: block; }
+        .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+        .slot-grid .full { grid-column: 1 / -1; }
+        /* ============ Status / errors ============ */
+        .status-bar { display: none; padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-lg); font-size: var(--text-sm); font-weight: 600; }
+        .status-bar.active { display: flex; align-items: center; gap: var(--space-sm); animation: fadeIn var(--dur-med) var(--ease); }
+        .status-bar.processing { background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+        .status-bar.success { background: var(--success-soft); color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
+        .status-bar.error { background: var(--error-soft); color: var(--error); border: 1px solid color-mix(in srgb, var(--error) 30%, transparent); }
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid var(--accent-glow); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        .actions-row { display: flex; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-lg); }
+        /* ============ Notification ============ */
+        #notification {
+            position: fixed; bottom: var(--space-lg); right: var(--space-lg); z-index: 1000;
+            max-width: 420px;
+            background: var(--surface-1); color: var(--text-primary);
+            border: 1px solid var(--border); border-left: 4px solid var(--accent);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            padding: 0.7rem 1.1rem;
+            font-size: var(--text-sm); font-weight: 600;
+            display: none;
+        }
+        #notification.show { display: block; animation: slideInRight var(--dur-med) var(--ease); }
+        #notification.success { border-left-color: var(--success); }
+        #notification.error { border-left-color: var(--error); }
+        .notification.success { border-left-color: var(--success); }
+        .notification.error { border-left-color: var(--error); }
+        .hidden { display: none !important; }
+        /* ============ Modals ============ */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(6, 10, 30, 0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.visible { display: flex; animation: fadeIn var(--dur-fast) var(--ease); }
+        .modal-card {
+            width: min(92vw, 460px);
+            background: var(--surface-1); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+        }
+        .modal-card h3 { font-size: var(--text-lg); margin-bottom: var(--space-sm); }
+        .modal-card p { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-md); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md); }
+        /* ============ Lightbox ============ */
+        #lightbox {
+            position: fixed; inset: 0; z-index: 3000;
+            background: rgba(3, 6, 20, 0.92);
+            display: none; align-items: center; justify-content: center;
+        }
+        #lightbox.open { display: flex; animation: fadeIn var(--dur-fast) var(--ease); }
+        .lightbox-stage { position: relative; display: flex; align-items: center; justify-content: center; }
+        .lightbox-img {
+            max-width: min(92vw, 1200px); max-height: 84vh;
+            border-radius: var(--radius-md);
+            box-shadow: 0 12px 60px rgba(0, 0, 0, 0.6);
+            transition: transform var(--dur-slow) var(--ease);
+        }
+        .lightbox-img.swapping { animation: fadeIn var(--dur-med) var(--ease); }
+        #lightbox.closing .lightbox-img { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
+        .lightbox-caption {
+            position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+            font-size: var(--text-xs); color: var(--text-secondary);
+            background: rgba(6, 10, 30, 0.7); padding: 0.25rem 0.8rem; border-radius: var(--radius-pill);
+            white-space: nowrap;
+        }
+        .lightbox-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 46px; height: 46px; border-radius: 50%;
+            border: 1px solid var(--border); background: rgba(13, 19, 48, 0.8);
+            color: var(--text-primary); font-size: 1.4rem; cursor: pointer;
+            display: grid; place-items: center;
+        }
+        .lightbox-nav:hover { border-color: var(--accent); color: var(--accent); }
+        .lightbox-nav.prev { left: 24px; }
+        .lightbox-nav.next { right: 24px; }
+        .lightbox-close {
+            position: absolute; top: 20px; right: 24px;
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 1px solid var(--border); background: rgba(13, 19, 48, 0.8);
+            color: var(--text-primary); font-size: 1.1rem; cursor: pointer;
+            display: grid; place-items: center;
+        }
+        .lightbox-close:hover { border-color: var(--error); color: var(--error); }
+        /* ============ Footer ============ */
+        .footer {
+            margin-top: auto;
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm);
+            padding: var(--space-md) 1.5rem;
+            border-top: 1px solid var(--border-subtle);
+            font-size: var(--text-xs); color: var(--text-tertiary);
+        }
+        /* ============ Animations ============ */
+        .lightbox-btn { position: absolute; display: grid; place-items: center; border: 1px solid var(--border); background: rgba(13, 19, 48, 0.85); color: var(--text-primary); cursor: pointer; border-radius: 50%; transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+        .lightbox-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .lightbox-prev, .lightbox-next { top: 50%; transform: translateY(-50%); width: 46px; height: 46px; font-size: 1.5rem; }
+        .lightbox-prev { left: 24px; }
+        .lightbox-next { right: 24px; }
+        .lightbox-close { top: 20px; right: 24px; width: 40px; height: 40px; font-size: 1.15rem; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes expandDown { from { max-height: 0; } to { max-height: 2000px; } }
+        /* ============ Mobile ============ */
+        @media (max-width: 768px) {
+            .app-shell { grid-template-columns: 1fr; }
+            .sidebar {
+                position: sticky; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap;
+                gap: var(--space-xs) var(--space-sm);
+                border-right: none; border-bottom: 1px solid var(--border-subtle);
+                z-index: 60;
+            }
+            .sidebar-logo { padding: 0 var(--space-sm) 0 0; }
+            .logo-text { display: none; }
+            .sidebar-nav { flex-direction: row; overflow-x: auto; max-width: 100%; }
+            .nav-item { width: auto; white-space: nowrap; padding: 0.45rem 0.6rem; }
+            .sidebar-actions { flex-direction: row; margin: 0 0 0 auto; padding: 0; }
+            .sidebar-version { display: none; }
+            .view { padding: var(--space-md) var(--space-md) var(--space-xl); }
+            .slot-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark" data-orientation="{{ config.get('frame_orientation', 'landscape') }}">
+    <!-- notification -->
+    <div id="notification" class="notification">
+        <h4 id="notificationTitle"></h4>
+        <p id="notificationMessage"></p>
+    </div>
+
+    <div class="app-shell">
+        <!-- ============ Sidebar ============ -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                </div>
+                <div class="logo-text">E-Paper Photo Frame<small>EPF Add-on</small></div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Sections">
+                <button type="button" class="nav-item active" data-tab="dashboard" onclick="switchTab(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Dashboard
+                </button>
+                <button type="button" class="nav-item" data-tab="source" onclick="switchTab(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    Image Source
+                </button>
+                <button type="button" class="nav-item" data-tab="display" onclick="switchTab(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    Display
+                </button>
+                <button type="button" class="nav-item" data-tab="schedule" onclick="switchTab(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Schedule
+                </button>
+                <button type="button" class="nav-item" data-tab="gallery" onclick="switchTab(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Gallery
+                </button>
+            </nav>
+
+            <div class="sidebar-actions">
+                <button type="button" class="btn btn-primary" onclick="handleSubmitSave()">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                    Save
+                </button>
+                <button type="button" class="btn btn-ghost danger" onclick="showResetConfirmation()">Reset to Default</button>
+                <div class="sidebar-version">v{{ addon_version }}</div>
+            </div>
+        </aside>
+
+        <!-- ============ Content ============ -->
+        <div class="content">
+            <div class="status-strip">
+                <span class="strip-title">EPF</span>
+                <span id="healthStatus" class="pill pill-muted health-status">
+                    <span id="health-dot" class="health-dot"></span>
+                    <span id="healthText">Checking status…</span>
+                </span>
+                <span id="batteryStatus" class="pill pill-muted" style="display:none">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M6 11v2M10 11v2"/></svg>
+                    <b id="batteryPercentageHeader">--</b>
+                    <span id="batteryVoltageHeader" class="pill-muted"></span>
+                </span>
+                <span id="batteryTimestampHeader" class="pill pill-muted" style="display:none"></span>
+                <span class="spacer"></span>
+                <button type="button" id="theme-toggle" class="icon-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <span id="themeIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+                </button>
+            </div>
+
+            <!-- ============ View: Dashboard ============ -->
+            <section id="tab-dashboard" class="view active">
+                <h2 class="view-title">Dashboard</h2>
+                <p class="view-subtitle">Live status of the frame, its battery and the upcoming picture.</p>
+
+                {% if error %}
+                <div class="status-bar error">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <div class="status-grid">
+                    <div class="status-card">
+                        <span class="status-card-icon">📶</span>
+                        <div class="status-card-main">
+                            <div class="status-card-title">Health</div>
+                            <div class="status-card-value" id="healthText2"><small>Checking…</small></div>
+                            <div class="status-card-detail" id="healthTime2"></div>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <span class="status-card-icon">🔋</span>
+                        <div class="status-card-main">
+                            <div class="status-card-title">Battery</div>
+                            <div class="status-card-value" id="batteryPercentage">--<small> %</small></div>
+                            <div class="status-card-detail" id="batteryVoltage">No data received</div>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <span class="status-card-icon">📸</span>
+                        <div class="status-card-main">
+                            <div class="status-card-title">Photo status</div>
+                            <div class="status-card-value" id="photoStatus">Checking…</div>
+                            <div class="status-card-detail" id="photoStatusTime"></div>
+                        </div>
+                    </div>
+                    <div class="status-card hidden" id="generationInfo">
+                        <span class="status-card-icon">🎨</span>
+                        <div class="status-card-main">
+                            <div class="status-card-title">ComfyUI generation</div>
+                            <div class="status-card-value" id="generationStatus">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="photo-preview-section">
+                    <div class="preview-grid">
+                        <div class="card preview-panel">
+                            <div class="preview-panel-header"><span>Current photo</span><span id="deliveredAtInfo" class="preview-panel-footer" style="border:none;padding:0"></span></div>
+                            <div class="preview-img-container portrait-box" id="previewDeliveredBox" data-caption="Current photo (delivered to the frame)" onclick="openLightbox('dashboard', this)">
+                                <img id="previewDelivered" src="./preview-delivered" alt="Delivered photo" data-caption="Current photo (delivered to the frame)">
+                            </div>
+                            <div class="preview-panel-footer"><span id="deliveredAtTime">—</span><b>frame · 800×480</b></div>
+                        </div>
+
+                        <div class="card preview-panel">
+                            <div class="preview-panel-header"><span>Next photo — original</span></div>
+                            <div class="preview-img-container" id="previewOriginalBox" data-caption="Next photo (original from the source)" onclick="openLightbox('dashboard', this)">
+                                <img id="previewOriginal" src="./preview-original" alt="Original photo" data-caption="Next photo (original from the source)">
+                            </div>
+                            <div class="preview-panel-footer"><span id="originalSize">—</span><b>original</b></div>
+                        </div>
+
+                        <div class="card preview-panel">
+                            <div class="preview-panel-header"><span>Next photo — processed</span></div>
+                            <div class="preview-img-container portrait-box" id="previewProcessedBox" data-caption="Next photo (processed for the e-ink frame)" onclick="openLightbox('dashboard', this)">
+                                <img id="previewProcessed" src="./preview-processed" alt="Processed photo" data-caption="Next photo (processed for the e-ink frame)">
+                            </div>
+                            <div class="preview-panel-footer"><span>frame · 800×480</span><b>ready for e-ink</b></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    <button type="button" id="prepareBtn" class="btn btn-primary" onclick="prepareNewPhoto()">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+                        Prepare new photo
+                    </button>
+                    <button type="button" id="cleanupBtn" class="btn btn-secondary" onclick="cleanupPreviews()">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        Cleanup Old Previews
+                    </button>
+                    <button type="button" class="btn btn-ghost" onclick="switchTab(document.querySelector('[data-tab=gallery]'))">Browse gallery</button>
+                </div>
+
+                <div id="prepareStatus" class="status-bar" style="display:none"></div>
+            </section>
+
+            <form id="settingsForm" method="POST" action="/" onsubmit="return false;">
+                <!-- ============ View: Image Source ============ -->
+                <section id="tab-source" class="view">
+                    <h2 class="view-title">Image Source</h2>
+                    <p class="view-subtitle">Where the pictures come from. Fields marked <span class="channel-badge">runtime YAML</span> are edited here and hot-reloaded; fields marked <span class="channel-badge ha">HA option</span> come from the add-on options and <b>needs an add-on restart</b> to change.</p>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="image_source">Image Source:</label>
+                                <select id="image_source" name="image_source" onchange="updateSourceVisibility()">
+                                    <option value="immich" {% if config.get('image_source', 'immich') == 'immich' %}selected{% endif %}>Immich</option>
+                                    <option value="comfyui_ha" {% if config.get('image_source', 'immich') == 'comfyui_ha' %}selected{% endif %}>ComfyUI via Home Assistant</option>
+                                    <option value="comfyui_direct" {% if config.get('image_source', 'immich') == 'comfyui_direct' %}selected{% endif %}>ComfyUI direct API</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="immichConfig">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+                            <span class="card-title">Immich</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="immich_url">Immich Server URL:</label>
+                                <input type="text" id="immich_url" name="immich_url" value="{{ config['immich']['url'] }}" placeholder="http://immich.example.com:2283">
+                            </div>
+                            <div class="form-group">
+                                <label for="album_name">Album Name:</label>
+                                <input type="text" id="album_name" name="album_name" value="{{ config['immich']['album'] }}" placeholder="eink">
+                            </div>
+                            <div class="form-group">
+                                <label>Immich API Key <span style="font-weight:400;color:var(--text-tertiary)">(set once in the add-on options — secret, never stored here)</span>:</label>
+                                <div style="padding:0.6rem 0.8rem;border:1px dashed var(--border);border-radius:var(--radius-md);background:var(--surface-2);font-size:var(--text-sm);color:var(--text-secondary)">
+                                    {% if runtime_status and runtime_status.get('immich_api_key_set') %}
+                                        &#10003; set <span class="channel-badge ha">HA option</span>
+                                    {% else %}
+                                        &mdash; not set <span class="channel-badge ha">HA option</span>
+                                    {% endif %}
+                                </div>
+                                <p class="small-text">Secrets live only in the add-on options (environment) and are never written to the runtime YAML.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="comfyuiHAConfig">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="20" height="12" rx="2"/><path d="M12 9v8M6 17h.01M18 17h.01M12 3l4 4-4 4-4-4z"/></svg></span>
+                            <span class="card-title">ComfyUI via Home Assistant</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="ha_url">Home Assistant URL:</label>
+                                <input type="url" id="ha_url" name="ha_url" value="{{ config.get('comfyui', {}).get('ha_url', '') }}" placeholder="http://homeassistant.local:8123">
+                                <p class="small-text">Token: set <span style="font-family:var(--font-mono)">ha_api_token</span> in the add-on options {% if runtime_status and runtime_status.get('ha_api_token_set') %}(&#10003; set){% else %}(&mdash; not set){% endif %}.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="comfyui_entity_id">ComfyUI Entity ID:</label>
+                                <input type="text" id="comfyui_entity_id" name="comfyui_entity_id" value="{{ config.get('comfyui', {}).get('entity_id', '') }}" placeholder="camera.comfyui" list="entity-id-suggestions">
+                                <datalist id="entity-id-suggestions">
+                                    <option value="camera.comfyui">
+                                    <option value="image.comfyui">
+                                    <option value="automation.comfyui">
+                                </datalist>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" id="comfyuiDirectConfig">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>
+                            <span class="card-title">ComfyUI direct API</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="comfyui_direct_url">ComfyUI Server URL:</label>
+                                <input type="url" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui.example.com:8188">
+                            </div>
+                            <div class="form-group">
+                                <label for="comfyui_workflow_json">Workflow JSON (optional, overrides the named workflow):</label>
+                                <textarea id="comfyui_workflow_json" name="comfyui_workflow_json" rows="4" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ config.get('comfyui', {}).get('workflow_json', '') }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="comfyuiCommonConfig">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+                            <span class="card-title">ComfyUI &mdash; Common Settings</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="comfyui_prompt">Prompt:</label>
+                                <textarea id="comfyui_prompt" name="comfyui_prompt" rows="3" placeholder="A cozy autumn forest at dusk">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="comfyui_negative_prompt">Negative Prompt:</label>
+                                <textarea id="comfyui_negative_prompt" name="comfyui_negative_prompt" rows="2" placeholder="blurry, low quality, extra limbs">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
+                            </div>
+                            <div class="slot-grid">
+                                <div class="form-group">
+                                    <label for="comfyui_width">Width:</label>
+                                    <input type="number" id="comfyui_width" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}" min="256" max="2048">
+                                </div>
+                                <div class="form-group">
+                                    <label for="comfyui_height">Height:</label>
+                                    <input type="number" id="comfyui_height" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}" min="256" max="2048">
+                                </div>
+                                <div class="form-group">
+                                    <label for="comfyui_seed">Seed (-1 = random):</label>
+                                    <input type="number" id="comfyui_seed" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="comfyui_max_generations">Max generations per day:</label>
+                                    <input type="number" id="comfyui_max_generations" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}" min="1" max="200">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="comfyui_checkpoint">Checkpoint:</label>
+                                <input type="text" id="comfyui_checkpoint" name="comfyui_checkpoint" value="{{ config.get('comfyui', {}).get('checkpoint', '') }}" placeholder="sdxl-turbo-1.0.safetensors">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="active_workflow">Active Workflow:</label>
+                                <select id="active_workflow" name="active_workflow">
+                                    <option value="" {% if not config.get('comfyui', {}).get('active_workflow') %}selected{% endif %}>&#8212; built-in default &#8212;</option>
+                                    {% for w in config.get('comfyui', {}).get('workflows') or [] %}
+                                    <option value="{{ w['name'] }}" {% if config.get('comfyui', {}).get('active_workflow') == w['name'] %}selected{% endif %}>{{ w['name'] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="small-text">A named workflow below overrides the common Prompt/Negative Prompt. The built-in default uses the ComfyUI sample graph.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+                            <span class="card-title">Named Workflows</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="hint-block">Up to {{ max_workflows }} named workflows; the <b>Active Workflow</b> above picks which one runs. Paste the ComfyUI <b>API JSON</b> (from "Save (Export)") — the normal UI save is not accepted. A slot needs a name to be stored.</p>
+                            <div class="wf-slots">
+                                {% for slot in range(1, (max_workflows or 4) + 1) %}
+                                {% set w = (config.get('comfyui', {}).get('workflows') or [])[slot - 1] if (config.get('comfyui', {}).get('workflows') or [])|length > slot - 1 else {} %}
+                                <div class="wf-slot {% if w %}open{% endif %}" id="wfSlot{{ slot }}">
+                                    <div class="wf-slot-header">
+                                        <label for="wf_{{ slot }}_name" style="font-size:var(--text-sm);font-weight:600;color:var(--text-secondary)">Slot {{ slot }} name</label>
+                                        <input type="text" id="wf_{{ slot }}_name" name="wf_{{ slot }}_name" value="{{ w.get('name', '') }}" maxlength="32" placeholder="workflow name">
+                                        <button type="button" class="btn btn-ghost slot-toggle" onclick="toggleWfSlot({{ slot }})">{% if w %}Hide{% else %}Expand{% endif %}</button>
+                                    </div>
+                                    <div class="wf-slot-body">
+                                        <div class="slot-grid">
+                                            <div class="form-group full">
+                                                <label for="wf_{{ slot }}_api_json">Workflow API JSON (optional — overrides the built-in graph):</label>
+                                                <textarea id="wf_{{ slot }}_api_json" name="wf_{{ slot }}_api_json" rows="4">{{ w.get('api_json', '') }}</textarea>
+                                            </div>
+                                            <div class="form-group full">
+                                                <label for="wf_{{ slot }}_prompt">Prompt (overrides the common one):</label>
+                                                <textarea id="wf_{{ slot }}_prompt" name="wf_{{ slot }}_prompt" rows="2">{{ w.get('prompt', '') }}</textarea>
+                                            </div>
+                                            <div class="form-group full">
+                                                <label for="wf_{{ slot }}_negative_prompt">Negative prompt (overrides the common one):</label>
+                                                <textarea id="wf_{{ slot }}_negative_prompt" name="wf_{{ slot }}_negative_prompt" rows="2">{{ w.get('negative_prompt', '') }}</textarea>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_prompt_node">Prompt node id:</label>
+                                                <input type="text" id="wf_{{ slot }}_prompt_node" name="wf_{{ slot }}_prompt_node" value="{{ w.get('prompt_node', '') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_prompt_input">Prompt input field:</label>
+                                                <input type="text" id="wf_{{ slot }}_prompt_input" name="wf_{{ slot }}_prompt_input" value="{{ w.get('prompt_input', 'text') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_negative_node">Negative prompt node id (optional):</label>
+                                                <input type="text" id="wf_{{ slot }}_negative_node" name="wf_{{ slot }}_negative_node" value="{{ w.get('negative_node', '') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_negative_input">Negative input field:</label>
+                                                <input type="text" id="wf_{{ slot }}_negative_input" name="wf_{{ slot }}_negative_input" value="{{ w.get('negative_input', 'text') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_seed_node">Seed node id (optional):</label>
+                                                <input type="text" id="wf_{{ slot }}_seed_node" name="wf_{{ slot }}_seed_node" value="{{ w.get('seed_node', '') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_sampler">Sampler:</label>
+                                                <input type="text" id="wf_{{ slot }}_sampler" name="wf_{{ slot }}_sampler" value="{{ w.get('sampler', '') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_scheduler">Scheduler:</label>
+                                                <input type="text" id="wf_{{ slot }}_scheduler" name="wf_{{ slot }}_scheduler" value="{{ w.get('scheduler', '') }}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_steps">Steps (1–200):</label>
+                                                <input type="number" id="wf_{{ slot }}_steps" name="wf_{{ slot }}_steps" value="{{ w.get('steps', '') }}" min="1" max="200">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="wf_{{ slot }}_cfg">CFG (0–30):</label>
+                                                <input type="number" id="wf_{{ slot }}_cfg" name="wf_{{ slot }}_cfg" step="0.1" value="{{ w.get('cfg', '') }}" min="0" max="30">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- ============ View: Display ============ -->
+                <section id="tab-display" class="view">
+                    <h2 class="view-title">Display</h2>
+                    <p class="view-subtitle">How the picture is framed, rotated and toned for the e-ink panel.</p>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+                            <span class="card-title">Frame &amp; Rotation</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="frame_orientation">Frame Orientation:</label>
+                                <select id="frame_orientation" name="frame_orientation">
+                                    <option value="landscape" {% if config.get('frame_orientation', 'landscape') == 'landscape' %}selected{% endif %}>Landscape (frame hangs horizontal)</option>
+                                    <option value="portrait" {% if config.get('frame_orientation', 'landscape') == 'portrait' %}selected{% endif %}>Portrait (frame hangs vertical)</option>
+                                </select>
+                                <p class="small-text">How the frame is hung. <b>Portrait</b> turns the frame content by 90&deg; relative to the rotation below so the picture stands upright on the wall — and the previews on this page show the pictures in that same wall orientation.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="rotation_angle">Rotation:</label>
+                                <select id="rotation_angle" name="rotation_angle">
+                                    <option value="0" {% if config['immich']['rotation'] == 0 %}selected{% endif %}>0&deg;</option>
+                                    <option value="90" {% if config['immich']['rotation'] == 90 %}selected{% endif %}>90&deg; (counter-clockwise)</option>
+                                    <option value="180" {% if config['immich']['rotation'] == 180 %}selected{% endif %}>180&deg;</option>
+                                    <option value="270" {% if config['immich']['rotation'] == 270 %}selected{% endif %}>270&deg; (counter-clockwise)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="display_mode">Display Mode:</label>
+                                <select id="display_mode" name="display_mode">
+                                    <option value="fill" {% if config['immich']['display_mode'] == 'fill' %}selected{% endif %}>Fill (crop to frame)</option>
+                                    <option value="fit" {% if config['immich']['display_mode'] == 'fit' %}selected{% endif %}>Fit (letterbox)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="image_order">Image Order:</label>
+                                <select id="image_order" name="image_order">
+                                    <option value="random" {% if config['immich'].get('image_order', 'random') == 'random' %}selected{% endif %}>Random</option>
+                                    <option value="newest" {% if config['immich'].get('image_order', 'random') == 'newest' %}selected{% endif %}>Newest first</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                            <span class="card-title">Overlay &amp; Dithering</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="date_overlay">Date Overlay:</label>
+                                <select id="date_overlay" name="date_overlay">
+                                    <option value="enabled" {% if config.get('date_overlay', True) %}selected{% endif %}>Enabled (stamp the photo date into the frame)</option>
+                                    <option value="disabled" {% if not config.get('date_overlay', True) %}selected{% endif %}>Disabled</option>
+                                </select>
+                                <p class="small-text">Global setting — applies to every image source.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="dithering_method">Dithering Method:</label>
+                                <select id="dithering_method" name="dithering_method">
+                                    <option value="atkinson" {% if config['immich'].get('dithering_method', 'atkinson') == 'atkinson' %}selected{% endif %}>Atkinson (smooth)</option>
+                                    <option value="floyd-steinberg" {% if config['immich'].get('dithering_method', 'atkinson') == 'floyd-steinberg' %}selected{% endif %}>Floyd-Steinberg (detailed)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span>
+                            <span class="card-title">Color &amp; Contrast</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label for="color_enhance">Color Enhancement</label>
+                                    <span id="color_enhanceValue" class="slider-value">{{ config['immich']['enhanced'] }}</span>
+                                </div>
+                                <input type="range" id="color_enhance" name="color_enhance" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="document.getElementById('color_enhanceValue').textContent=this.value;">
+                                <div class="slider-range"><span>0.0</span><span>3.0</span></div>
+                            </div>
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label for="contrast">Contrast</label>
+                                    <span id="contrastValue" class="slider-value">{{ config['immich']['contrast'] }}</span>
+                                </div>
+                                <input type="range" id="contrast" name="contrast" min="0" max="2" step="0.05" value="{{ config['immich']['contrast'] }}" oninput="document.getElementById('contrastValue').textContent=this.value;">
+                                <div class="slider-range"><span>0.0</span><span>2.0</span></div>
+                            </div>
+                            <div class="slider-container">
+                                <div class="slider-header">
+                                    <label for="dithering_strength">Dithering Strength</label>
+                                    <span id="dithering_strengthValue" class="slider-value">{{ config['immich']['strength'] }}</span>
+                                </div>
+                                <input type="range" id="dithering_strength" name="dithering_strength" min="0" max="1" step="0.05" value="{{ config['immich']['strength'] }}" oninput="document.getElementById('dithering_strengthValue').textContent=this.value;">
+                                <div class="slider-range"><span>0.0</span><span>1.0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- ============ View: Schedule ============ -->
+                <section id="tab-schedule" class="view">
+                    <h2 class="view-title">Schedule</h2>
+                    <p class="view-subtitle">When the frame sleeps, wakes up and refreshes.</p>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+                            <span class="card-title">Sleep Window &amp; Wake-up</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="wakeup_interval">Wake-up interval (minutes):</label>
+                                <input type="number" id="wakeup_interval" name="wakeup_interval" value="{{ config['immich']['wakeup_interval'] }}" min="30" max="1440">
+                                <p class="small-text">How often the frame wakes to update while inside the sleep window (30–1440 min).</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Sleep window:</label>
+                                <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap">
+                                    <span>from</span>
+                                    <input type="number" id="sleep_start_hour" name="sleep_start_hour" value="{{ config['immich']['sleep_start_hour'] }}" min="0" max="23" style="width:5rem">
+                                    <span>:</span>
+                                    <input type="number" id="sleep_start_minute" name="sleep_start_minute" value="{{ config['immich']['sleep_start_minute'] }}" min="0" max="59" style="width:5rem">
+                                    <span>until</span>
+                                    <input type="number" id="sleep_end_hour" name="sleep_end_hour" value="{{ config['immich']['sleep_end_hour'] }}" min="0" max="23" style="width:5rem">
+                                    <span>:</span>
+                                    <input type="number" id="sleep_end_minute" name="sleep_end_minute" value="{{ config['immich']['sleep_end_minute'] }}" min="0" max="59" style="width:5rem">
+                                </div>
+                                <p class="small-text">Inside this window the frame may sleep between updates; outside it updates happen on request.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- ============ View: Gallery ============ -->
+                <section id="tab-gallery" class="view">
+                    <h2 class="view-title">Gallery</h2>
+                    <p class="view-subtitle">Every shot the add-on has handled — original, processed and what the frame actually shows. The archive is capped by the options below.</p>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+                            <span class="card-title">Archive</span>
+                            <span class="channel-badge">runtime YAML</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="slot-grid">
+                                <div class="form-group">
+                                    <label for="gallery_max_count">Max stored shots:</label>
+                                    <input type="number" id="gallery_max_count" name="gallery_max_count" value="{{ config.get('gallery', {}).get('max_count', 50) }}" min="1" max="500">
+                                </div>
+                                <div class="form-group">
+                                    <label for="gallery_retention_days">Retention (days):</label>
+                                    <input type="number" id="gallery_retention_days" name="gallery_retention_days" value="{{ config.get('gallery', {}).get('retention_days', 7) }}" min="1" max="365">
+                                </div>
+                            </div>
+                            <p class="small-text">A <b>shot</b> = the whole original + processed pair; the oldest shots beyond the cap or the retention window are pruned automatically.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+                            <span class="card-title">History</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="gallery-controls">
+                                <button type="button" class="btn btn-secondary" onclick="loadGallery()">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+                                    Refresh
+                                </button>
+                                <span id="galleryCount" class="gallery-count">Loading…</span>
+                            </div>
+                            <div id="galleryBody" class="gallery-grid" style="min-height:4rem"></div>
+                        </div>
+                    </div>
+                </section>
+            </form>
+
+            <footer class="footer">
+                <span id="copyrightYear">&copy; <span id="copyrightYearValue"></span> Tobias K. (Zippo2000)</span>
+                <span>E-Paper Photo Frame Add-on &middot; v{{ addon_version }} &middot; Built: {{ build_timestamp }}</span>
+            </footer>
+        </div>
+    </div>
+
     <div id="notification"></div>
 
-    <!-- Header -->
-    <header>
-        <div class="header-content">
-            <div class="header-title">
-                <div class="header-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-                <h1>E-Paper Photo Frame</h1>
-            </div>
-            <div class="header-right">
-                <div class="health-status" id="healthStatus" title="Reachability of the configured image source">
-                    <span class="health-dot"></span>
-                    <span id="healthText">Image source: …</span>
-                </div>
-                <div class="battery-status-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg>
-                    <div class="battery-text">
-                        <span class="battery-percentage" id="batteryPercentageHeader">{{ "%.1f"|format(battery_percentage) }}%</span>
-                        <span class="battery-voltage" id="batteryVoltageHeader">{{ "%.2f"|format(battery_voltage / 1000) if battery_voltage > 0 else "0.00" }} V</span>
-                        {% if battery_last_read %}
-                        <span class="battery-timestamp" id="batteryTimestampHeader">{{ battery_last_read }}</span>
-                        {% else %}
-                        <span class="battery-timestamp" id="batteryTimestampHeader">No reading yet</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
-                    <span id="themeIcon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
-                </button>
-            </div>
-        </div>
-        <!-- Tab Bar -->
-        <nav class="tab-bar" role="tablist">
-            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')" role="tab">Dashboard</button>
-            <button class="tab" data-tab="configuration" onclick="switchTab('configuration')" role="tab">Configuration</button>
-            <button class="tab" data-tab="gallery" onclick="switchTab('gallery')" role="tab">Gallery</button>
-        </nav>
-    </header>
-
-    <main class="container">
-        <section id="tab-dashboard" class="tab-panel active">
-        {% if error %}
-        <div class="card" style="border-left: 3px solid var(--error); background: rgba(255,59,48,0.04);">
-            <strong style="display:flex;align-items:center;gap:0.5rem;color:var(--error)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ error }}</strong>
-        </div>
-        {% endif %}
-
-        <!-- Photo Preview & Management -->
-        <div class="card" style="padding: 1.25rem;">
-            <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span> Photo Preview &amp; Management</div>
-
-            <!-- Generation Status (ComfyUI only) -->
-            <div class="generation-status-bar hidden" id="generationInfo"></div>
-
-            <div class="photo-preview-section">
-                <!-- Current Photo -->
-                <div class="photo-panel current">
-                    <div class="panel-title current-title">Current Photo</div>
-                    <div class="delivered-at" id="deliveredAtInfo">
-                        Delivered at: <strong id="deliveredAtTime">--</strong>
-                    </div>
-                    <div class="preview-img-container">
-                        <img id="previewDelivered" src="./preview-delivered" alt="Delivered photo"
-                             title="Click to zoom"
-                             onclick="openLightbox('dashboard', this)"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="preview-placeholder" style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                            <p>No delivered photo yet</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Next Photo -->
-                <div class="photo-panel next">
-                    <div class="panel-title next-title">Next Photo</div>
-                    <div class="next-photo-grid">
-                        <div>
-                            <div class="next-photo-label">Original</div>
-                            <div class="preview-img-container" style="aspect-ratio: 5/3;">
-                                <img id="previewOriginal" src="./preview-original" alt="Original photo"
-                                     title="Click to zoom"
-                                     onclick="openLightbox('dashboard', this)"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="preview-placeholder" style="display: none;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                                    <p>No original yet</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="next-photo-label">Processed for e-ink frame</div>
-                            <div class="preview-img-container" style="aspect-ratio: 5/3;">
-                                <img id="previewProcessed" src="./preview-processed" alt="Processed photo"
-                                     title="Click to zoom"
-                                     onclick="openLightbox('dashboard', this)"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="preview-placeholder" style="display: none;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="opacity:0.3;margin-bottom:0.5rem"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                                    <p>No processed photo yet</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="photo-actions-bar">
-                <button class="btn btn-prepare" onclick="prepareNewPhoto()" id="prepareBtn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Prepare New Photo
-                </button>
-                <button class="btn btn-cleanup btn-sm" onclick="cleanupPreviews()">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Cleanup Old Previews
-                </button>
-                <button class="btn btn-gallery btn-sm" onclick="switchTab('gallery')">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> View Old Previews
-                </button>
-            </div>
-            </div>
-
-            <div class="prepare-status hidden" id="prepareStatus"></div>
-        </div>
-        </section>
-
-        <section id="tab-configuration" class="tab-panel">
-        <form id="settingsForm" method="POST" onsubmit="handleSubmit(event)">
-                    <!-- Image Source Selection -->
-                    <div class="card" style="margin-bottom: 1rem;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Image Source<span class="channel-badge">runtime YAML</span></div>
-                        <p class="small-text" style="margin-top: 0; margin-bottom: var(--space-md);">Fields marked <span class="channel-badge">runtime YAML</span> are saved by this page and hot-reload. Fields marked <span class="channel-badge">HA option</span> are seeded from the add-on configuration on first start &mdash; afterwards this page wins, and a change in the add-on configuration needs an add-on restart. Secrets are never stored in this file. Log level: {{ runtime_status.log_level if runtime_status else 'info' }} (HA option).</p>
-                        <div class="form-group">
-                            <label for="image_source">Source:</label>
-                            <select id="image_source" name="image_source" onchange="updateSourceVisibility()">
-                                <option value="immich" {% if config.get('image_source', 'immich')=='immich' %}selected{% endif %}>Immich (Photo Server)</option>
-                                <option value="comfyui_ha" {% if config.get('image_source')=='comfyui_ha' %}selected{% endif %}>ComfyUI via Home Assistant</option>
-                                <option value="comfyui_direct" {% if config.get('image_source')=='comfyui_direct' %}selected{% endif %}>ComfyUI Direct (Expert)</option>
-                            </select>
-                            <small class="small-text">Choose where to fetch or generate images from</small>
-                        </div>
-                    </div>
-
-                    <!-- Immich Config -->
-                    <div class="card" id="immichConfig">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span> Immich Server</div>
-                        <div class="form-group">
-                            <label for="immich_url">Immich Server URL:</label>
-                            <input type="text" id="immich_url" name="immich_url" value="{{ config['immich']['url'] }}" placeholder="http://localhost" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="album_name">Album Name:</label>
-                            <input type="text" id="album_name" name="album_name" value="{{ config['immich']['album'] }}" placeholder="my-album" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Immich API Key <span class="channel-badge">HA option</span></label>
-                            <div class="field-status">{% if runtime_status and runtime_status.immich_api_key_set %}&#10003; set &mdash; read from the add-on configuration at add-on start{% else %}&mdash; not set &mdash; set it in the add-on configuration (HA) and restart{% endif %}</div>
-                        </div>
-                    </div>
-
-                    <!-- ComfyUI HA Config -->
-                    <div class="card" id="comfyuiHAConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> ComfyUI via Home Assistant<span class="channel-badge">runtime YAML</span></div>
-                        <div class="form-group">
-                            <label for="ha_url">Home Assistant URL:</label>
-                            <input type="text" id="ha_url" name="ha_url" value="{{ config.get('comfyui', {}).get('ha_url', '') }}" placeholder="http://homeassistant:8123">
-                            <small class="small-text">URL to your Home Assistant instance</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_entity_id">ComfyUI Entity ID:</label>
-                            <input type="text" id="comfyui_entity_id" name="comfyui_entity_id" value="{{ config.get('comfyui', {}).get('entity_id', '') }}" placeholder="camera.my_comfyui">
-                            <small class="small-text">Entity ID of the ComfyUI entity exposed by the Home Assistant <code>ai_task</code> integration</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Home Assistant Token <span class="channel-badge">HA option</span></label>
-                            <div class="field-status">{% if runtime_status and runtime_status.ha_api_token_set %}&#10003; set &mdash; read from the add-on configuration at add-on start{% else %}&mdash; not set &mdash; set it in the add-on configuration (HA) and restart{% endif %}</div>
-                        </div>
-                        <div class="form-group">
-                            <small class="small-text">Prompt, negative prompt, dimensions, seed and the daily limit are <strong>shared</strong> by both ComfyUI sources &mdash; edit them once in the &quot;ComfyUI &mdash; Common Settings&quot; card below.</small>
-                        </div>
-                    </div>
-
-                    <!-- ComfyUI Direct Config -->
-                    <div class="card" id="comfyuiDirectConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span> ComfyUI Direct (Expert)<span class="channel-badge">runtime YAML</span></div>
-                        <div class="form-group">
-                            <label for="comfyui_direct_url">ComfyUI Server URL:</label>
-                            <input type="text" id="comfyui_direct_url" name="comfyui_direct_url" value="{{ config.get('comfyui', {}).get('direct_url', '') }}" placeholder="http://comfyui:8188">
-                        </div>
-                        <div class="form-group">
-                            <small class="small-text">Prompt, negative prompt, dimensions, seed and the daily limit are <strong>shared</strong> by both ComfyUI sources &mdash; edit them once in the &quot;ComfyUI &mdash; Common Settings&quot; card below.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_workflow_json">Workflow JSON (Optional, legacy single field):</label>
-                            <textarea id="comfyui_workflow_json" name="comfyui_workflow_json" rows="4" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ config.get('comfyui', {}).get('workflow_json', '') }}</textarea>
-                            <small class="small-text">Used when the active workflow below is <em>(built-in)</em>. Named slots below win over this field.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="active_workflow">Active Workflow:</label>
-                            <select id="active_workflow" name="active_workflow">
-                                <option value="" {% if not config.get('comfyui', {}).get('active_workflow') %}selected{% endif %}>(built-in workflow)</option>
-                                {% for entry in config.get('comfyui', {}).get('workflows', []) %}
-                                <option value="{{ entry.name }}" {% if config.get('comfyui', {}).get('active_workflow') == entry.name %}selected{% endif %}>{{ entry.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <small class="small-text">The list shows the named slots below; a slot becomes selectable as soon as it has a name. Applies immediately &mdash; no add-on restart.</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Named Workflows:</label>
-                            <small class="small-text">Paste the graph in ComfyUI <strong>API format</strong> &mdash; in ComfyUI use <em>&quot;Save (Export)&quot;</em>, that is the format the API takes. An empty slot is dropped on save. Prompt, dimensions and seed from above are injected into the graph; a value set on the slot wins over the global one. Delete the name to remove a workflow.</small>
-                        </div>
-                        {% set workflows = config.get('comfyui', {}).get('workflows', []) %}
-                        {% for slot in range(1, max_workflows + 1) %}
-                        {% set entry = workflows[slot - 1] if slot - 1 < workflows|length else {} %}
-                        <details class="wf-slot" {% if slot <= 2 %}open{% endif %}>
-                            <summary class="wf-summary">Slot {{ slot }}{% if entry.get('name') %} &mdash; {{ entry.get('name') }}{% else %} (empty){% endif %}</summary>
-                            <div class="form-group">
-                                <label for="wf_{{ slot }}_name">Name:</label>
-                                <input type="text" id="wf_{{ slot }}_name" name="wf_{{ slot }}_name" value="{{ entry.get('name', '') }}" placeholder="flux-dev">
-                            </div>
-                            <div class="form-group">
-                                <label for="wf_{{ slot }}_api_json">API JSON:</label>
-                                <textarea id="wf_{{ slot }}_api_json" name="wf_{{ slot }}_api_json" rows="5" placeholder='{"3": {"class_type": "KSampler", ...}}'>{{ entry.get('api_json', '') }}</textarea>
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label for="wf_{{ slot }}_prompt" style="font-size: 0.8rem; color: var(--text-secondary);">Prompt override:</label>
-                                    <textarea id="wf_{{ slot }}_prompt" name="wf_{{ slot }}_prompt" rows="2" placeholder="(global prompt)">{{ entry.get('prompt', '') }}</textarea>
-                                </div>
-                                <div class="form-group" style="margin-bottom: 0;">
-                                    <label for="wf_{{ slot }}_negative_prompt" style="font-size: 0.8rem; color: var(--text-secondary);">Negative prompt override:</label>
-                                    <textarea id="wf_{{ slot }}_negative_prompt" name="wf_{{ slot }}_negative_prompt" rows="2" placeholder="(global negative prompt)">{{ entry.get('negative_prompt', '') }}</textarea>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Node mapping (only needed if the graph has no plain <code>CLIPTextEncode.text</code> prompt node):</label>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                    <div>
-                                        <label for="wf_{{ slot }}_prompt_node" style="font-size: 0.8rem; color: var(--text-secondary);">Prompt node id:</label>
-                                        <input type="text" id="wf_{{ slot }}_prompt_node" name="wf_{{ slot }}_prompt_node" placeholder="e.g. 459:452" value="{{ entry.get('prompt_node', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_prompt_input" style="font-size: 0.8rem; color: var(--text-secondary);">its input name:</label>
-                                        <input type="text" id="wf_{{ slot }}_prompt_input" name="wf_{{ slot }}_prompt_input" placeholder="text" value="{{ entry.get('prompt_input', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_negative_node" style="font-size: 0.8rem; color: var(--text-secondary);">Negative node id:</label>
-                                        <input type="text" id="wf_{{ slot }}_negative_node" name="wf_{{ slot }}_negative_node" placeholder="(none)" value="{{ entry.get('negative_node', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_negative_input" style="font-size: 0.8rem; color: var(--text-secondary);">its input name:</label>
-                                        <input type="text" id="wf_{{ slot }}_negative_input" name="wf_{{ slot }}_negative_input" placeholder="text" value="{{ entry.get('negative_input', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_seed_node" style="font-size: 0.8rem; color: var(--text-secondary);">Seed node id:</label>
-                                        <input type="text" id="wf_{{ slot }}_seed_node" name="wf_{{ slot }}_seed_node" placeholder="(auto)" value="{{ entry.get('seed_node', '') }}">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Sampling (only applied when set here):</label>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                    <div>
-                                        <label for="wf_{{ slot }}_steps" style="font-size: 0.8rem; color: var(--text-secondary);">Steps:</label>
-                                        <input type="text" id="wf_{{ slot }}_steps" name="wf_{{ slot }}_steps" placeholder="(graph value)" value="{{ entry.get('steps', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_cfg" style="font-size: 0.8rem; color: var(--text-secondary);">CFG:</label>
-                                        <input type="text" id="wf_{{ slot }}_cfg" name="wf_{{ slot }}_cfg" placeholder="(graph value)" value="{{ entry.get('cfg', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_sampler" style="font-size: 0.8rem; color: var(--text-secondary);">Sampler:</label>
-                                        <input type="text" id="wf_{{ slot }}_sampler" name="wf_{{ slot }}_sampler" placeholder="(graph value)" value="{{ entry.get('sampler', '') }}">
-                                    </div>
-                                    <div>
-                                        <label for="wf_{{ slot }}_scheduler" style="font-size: 0.8rem; color: var(--text-secondary);">Scheduler:</label>
-                                        <input type="text" id="wf_{{ slot }}_scheduler" name="wf_{{ slot }}_scheduler" placeholder="(graph value)" value="{{ entry.get('scheduler', '') }}">
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
-                        {% endfor %}
-                        <div class="form-group">
-                            <label for="comfyui_checkpoint">Checkpoint (Optional):</label>
-                            <input type="text" id="comfyui_checkpoint" name="comfyui_checkpoint" value="{{ config.get('comfyui', {}).get('checkpoint', '') }}" placeholder="auto-detect - first checkpoint on the server">
-                            <small class="small-text">Leave empty to auto-detect from the server. Only used by the built-in workflow; a custom workflow JSON carries its own model node.</small>
-                        </div>
-                    </div>
-
-                    <!-- ComfyUI Common Settings (shared by both ComfyUI sources; one field == one config key) -->
-                    <div class="card" id="comfyuiCommonConfig" style="display: none;">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> ComfyUI &mdash; Common Settings<span class="channel-badge">runtime YAML</span></div>
-                        <small class="small-text" style="display:block;margin-bottom:0.75rem;">These values apply to <strong>both</strong> ComfyUI sources (via Home Assistant and direct). Each one exists exactly once.</small>
-                        <div class="form-group">
-                            <label for="comfyui_prompt">Prompt:</label>
-                            <textarea id="comfyui_prompt" name="comfyui_prompt" rows="3" placeholder="A beautiful landscape at {time_of_day}...">{{ config.get('comfyui', {}).get('prompt', '') }}</textarea>
-                            <small class="small-text">Variables: {time_of_day}, {weather}, {season}, {day_of_week}, {month}, {random_element}. A named workflow can override it per slot.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_negative_prompt">Negative Prompt:</label>
-                            <textarea id="comfyui_negative_prompt" name="comfyui_negative_prompt" rows="2" placeholder="blurry, text, watermark">{{ config.get('comfyui', {}).get('negative_prompt', '') }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Dimensions:</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                <div>
-                                    <label for="comfyui_width" style="font-size: 0.8rem; color: var(--text-secondary);">Width:</label>
-                                    <input type="text" id="comfyui_width" name="comfyui_width" value="{{ config.get('comfyui', {}).get('width', 800) }}">
-                                </div>
-                                <div>
-                                    <label for="comfyui_height" style="font-size: 0.8rem; color: var(--text-secondary);">Height:</label>
-                                    <input type="text" id="comfyui_height" name="comfyui_height" value="{{ config.get('comfyui', {}).get('height', 480) }}">
-                                </div>
-                            </div>
-                            <small class="small-text">Only applied to nodes the add-on can reach (plain number inputs); a graph that sizes itself through a link keeps its own value.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_seed">Seed (-1 = Random):</label>
-                            <input type="text" id="comfyui_seed" name="comfyui_seed" value="{{ config.get('comfyui', {}).get('seed', -1) }}">
-                            <small class="small-text">A fixed seed plus an unchanged prompt makes every run byte-identical &mdash; ComfyUI then answers from cache and returns the previous file. Use -1 if you want a new picture per run.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="comfyui_max_generations">Max Generations per Day:</label>
-                            <input type="text" id="comfyui_max_generations" name="comfyui_max_generations" value="{{ config.get('comfyui', {}).get('max_generations_per_day', 50) }}">
-                        </div>
-                    </div>
-
-                    <!-- Display Settings -->
-                    <div class="card">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span> Display Settings<span class="channel-badge">runtime YAML</span></div>
-                        <div class="form-group">
-                            <label for="rotation_angle">Rotation:</label>
-                            <select id="rotation_angle" name="rotation_angle">
-                                {% for angle in [0, 90, 180, 270] %}
-                                <option value="{{ angle }}" {% if config['immich']['rotation']==angle %}selected{% endif %}>{{ angle }}&deg;</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="display_mode">Display Mode:</label>
-                            <select id="display_mode" name="display_mode">
-                                {% for mode in ['fill', 'fit'] %}
-                                <option value="{{ mode }}" {% if config['immich']['display_mode']==mode %}selected{% endif %}>{{ mode|title }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="image_order">Image Order (Immich):</label>
-                            <select id="image_order" name="image_order">
-                                {% for order in ['random', 'newest'] %}
-                                <option value="{{ order }}" {% if config['immich']['image_order']==order %}selected{% endif %}>{{ order|title }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="dithering_method">Dithering Method:</label>
-                            <select id="dithering_method" name="dithering_method">
-                                {% for method in ['atkinson', 'floyd-steinberg'] %}
-                                <option value="{{ method }}" {% if config['immich'].get('dithering_method','atkinson')==method %}selected{% endif %}>{{ method|title }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="date_overlay">Date Stamp:</label>
-                            <select id="date_overlay" name="date_overlay">
-                                <option value="enabled" {% if config.get('date_overlay', True) %}selected{% endif %}>Enabled</option>
-                                <option value="disabled" {% if not config.get('date_overlay', True) %}selected{% endif %}>Disabled</option>
-                            </select>
-                            <small class="small-text">Draws the photo's EXIF date on the processed image, bottom-right corner. Applies to <strong>every</strong> image source - it is a global setting, not an Immich/HA/ComfyUI one. It needs an EXIF date in the file: photos without one (ComfyUI generations, RAW-converted files) stay as they are.</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Color Enhancement:</label>
-                            <div class="slider-container">
-                                <input type="range" id="color_enhance" name="color_enhance" min="0" max="3" step="0.1" value="{{ config['immich']['enhanced'] }}" oninput="updateSliderValue(this)">
-                                <span class="slider-value" id="color_enhanceValue">{{ config['immich']['enhanced'] }}</span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Contrast:</label>
-                            <div class="slider-container">
-                                <input type="range" id="contrast" name="contrast" min="0" max="2" step="0.05" value="{{ config['immich']['contrast'] }}" oninput="updateSliderValue(this)">
-                                <span class="slider-value" id="contrastValue">{{ config['immich']['contrast'] }}</span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Dithering Strength:</label>
-                            <div class="slider-container">
-                                <input type="range" id="dithering_strength" name="dithering_strength" min="0" max="1" step="0.05" value="{{ config['immich']['strength'] }}" oninput="updateSliderValue(this)">
-                                <span class="slider-value" id="dithering_strengthValue">{{ config['immich']['strength'] }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Power Management -->
-                    <div class="card">
-                        <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="6" y="7" width="12" height="10" rx="2"/><line x1="18" y1="11" x2="18" y2="13"/></svg></span> Power Management<span class="channel-badge">runtime YAML</span></div>
-                        <div class="form-group">
-                            <label for="wakeup_interval">Wake-up Interval (minutes):</label>
-                            <input type="text" id="wakeup_interval" name="wakeup_interval" value="{{ config['immich']['wakeup_interval'] }}">
-                            <small class="small-text">Range: 30 - 1440 (24h)</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Sleep Time Range:</label>
-                            <div class="time-input">
-                                <span>From:</span>
-                                <select id="sleep_start_hour" name="sleep_start_hour">
-                                    {% for h in range(24) %}
-                                    <option value="{{ h }}" {% if config['immich']['sleep_start_hour']==h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
-                                    {% endfor %}
-                                </select>
-                                <select id="sleep_start_minute" name="sleep_start_minute">
-                                    {% for m in [0, 15, 30, 45] %}
-                                    <option value="{{ m }}" {% if config['immich']['sleep_start_minute']==m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
-                                    {% endfor %}
-                                </select>
-                                <span>to:</span>
-                                <select id="sleep_end_hour" name="sleep_end_hour">
-                                    {% for h in range(24) %}
-                                    <option value="{{ h }}" {% if config['immich']['sleep_end_hour']==h %}selected{% endif %}>{{ '%02d'|format(h) }}</option>
-                                    {% endfor %}
-                                </select>
-                                <select id="sleep_end_minute" name="sleep_end_minute">
-                                    {% for m in [0, 15, 30, 45] %}
-                                    <option value="{{ m }}" {% if config['immich']['sleep_end_minute']==m %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-title">Photo Gallery<span class="channel-badge">runtime YAML</span></div>
-                        <div class="form-group">
-                            <label for="gallery_max_count">Max shots:</label>
-                            <input type="text" id="gallery_max_count" name="gallery_max_count" value="{{ config.get('gallery', {}).get('max_count', 50) }}">
-                            <small class="small-text">Range: 1 - 500. How many archived shots the Gallery keeps before cleanup prunes. The unit is the shot: a shot is pruned whole (original + processed together).</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="gallery_retention_days">Retention (days):</label>
-                            <input type="text" id="gallery_retention_days" name="gallery_retention_days" value="{{ config.get('gallery', {}).get('retention_days', 7) }}">
-                            <small class="small-text">Range: 1 - 365. Shots older than this are deleted — whole — on the next cleanup.</small>
-                        </div>
-                    </div>
-
-                    <!-- Buttons -->
-                    <div class="button-group">
-                        <input type="submit" value="Save Settings" style="font-weight:500">
-                        <button type="button" class="reset-btn" onclick="showResetConfirmation()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:0.3rem"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Reset to Default</button>
-                    </div>
-                </form>
-        </section>
-
-        <section id="tab-gallery" class="tab-panel">
-            <div class="card">
-                <div class="card-title"><span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span> Preview Gallery</div>
-                <div id="galleryBody">
-                    <div class="gallery-empty">Load previews</div>
-                </div>
-            </div>
-        </section>
-
-        <footer>
-            <div>&copy; <span id="copyrightYear"></span> E-Paper Photo Frame</div>
-            <div class="footer-version">v{{ addon_version }} | Built: {{ build_timestamp }}</div>
-        </footer>
-    </main>
-
-    <!-- Reset Confirmation Modal -->
-    <div class="confirm-modal" id="confirmModal">
-        <div class="confirm-content">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;margin-right:0.4rem;display:inline-block"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reset Settings?</h2>
-            <p>This will reset all settings to their default values. You will need to click Save to apply them.</p>
-            <div class="confirm-buttons">
-                <button onclick="confirmReset()" style="background:var(--accent);color:white;border:none;padding:0.6rem 1.2rem;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--fs-body);font-weight:500">Yes, Reset</button>
-                <button class="reset-btn" onclick="cancelReset()" style="padding:0.6rem 1.2rem;font-size:var(--fs-body)">Cancel</button>
+    <!-- ============ Confirm modals (2.4.3b) ============ -->
+    <div id="confirmModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <h3 id="confirmTitle">Reset settings?</h3>
+            <p>This resets every setting on this page to its default value. The image source stays selected. This cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="cancelReset()">Cancel</button>
+                <button type="button" class="btn btn-primary" style="background:var(--error);box-shadow:none" onclick="confirmReset()">Reset</button>
             </div>
         </div>
     </div>
 
-    <div class="confirm-modal" id="clearConfirmModal">
-        <div class="confirm-content">
-            <h2><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" style="vertical-align:middle;margin-right:0.4rem;display:inline-block"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Clear stored values?</h2>
-            <p>These fields had a stored value and would be saved empty: <strong id="clearConfirmList"></strong>. Saving empty overwrites — it is not "keep what is stored".</p>
-            <div class="confirm-buttons">
-                <button onclick="confirmClearAndSave()" style="background:var(--accent);color:white;border:none;padding:0.6rem 1.2rem;border-radius:var(--radius-md);cursor:pointer;font-family:inherit;font-size:var(--fs-body);font-weight:500">Save anyway</button>
-                <button class="reset-btn" onclick="cancelClearSave()" style="padding:0.6rem 1.2rem;font-size:var(--fs-body)">Cancel</button>
+    <div id="clearConfirmModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
+            <h3 id="clearTitle">Clear stored value?</h3>
+            <p>These fields had a stored value and would be saved empty: <strong id="clearConfirmList"></strong>. Saving empty overwrites &mdash; it is not "keep what is stored".</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="cancelClearSave()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmClearAndSave()">Save anyway</button>
             </div>
         </div>
     </div>
 
-    <!-- Lightbox: shared by the dashboard previews and the gallery. Static markup, no
-         form field in it, so it must stay outside #settingsForm (one field name per key). -->
-    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer"
-         onclick="lightboxBackdropClick(event)">
-        <button type="button" class="lightbox-btn lightbox-prev hidden" id="lightboxPrev"
-                aria-label="Previous image" onclick="lightboxNav(-1)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
-        <button type="button" class="lightbox-btn lightbox-next hidden" id="lightboxNext"
-                aria-label="Next image" onclick="lightboxNav(1)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button type="button" class="lightbox-btn lightbox-close" id="lightboxClose"
-                aria-label="Close" onclick="closeLightbox()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-        <figure class="lightbox-figure">
+    <!-- ============ Lightbox (2.5.0): one overlay for dashboard previews and gallery shots ============ -->
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" onclick="lightboxBackdropClick(event)">
+        <button type="button" class="lightbox-btn lightbox-prev hidden" id="lightboxPrev" onclick="lightboxNav(-1)" aria-label="Previous image">&lsaquo;</button>
+        <div class="lightbox-stage">
             <img class="lightbox-img" id="lightboxImg" alt="">
-            <figcaption class="lightbox-caption" id="lightboxCaption"></figcaption>
-        </figure>
+            <div id="lightboxCaption" class="lightbox-caption"></div>
+        </div>
+        <button type="button" class="lightbox-btn lightbox-next hidden" id="lightboxNext" onclick="lightboxNav(1)" aria-label="Next image">&rsaquo;</button>
+        <button type="button" class="lightbox-btn lightbox-close" id="lightboxClose" onclick="closeLightbox()" aria-label="Close">&times;</button>
     </div>
 
     <script>
+        // ============ Polling & timing constants ============
         const POLL_INTERVALS = { HEALTH: 60000, PHOTO_STATUS: 10000, BATTERY: 30000 };
         const NOTIFICATION_DURATION = 4000;
-        const SLIDER_DEFAULTS = { enhanced: '1.8', contrast: '0.9', strength: '1.0' };
+        const SLIDER_DEFAULTS = { color_enhance: '1.8', contrast: '0.9', dithering_strength: '1.0' };
 
         // SVG icon constants
         const ICONS = {
-            moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
-            sun: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
-            camera: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+            moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+            sun: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
         };
-        const PREPARE_BTN_HTML = ICONS.camera + ' Prepare New Photo';
 
         function safeGet(id) {
             var el = document.getElementById(id);
@@ -1255,15 +1079,13 @@ footer {
             return el;
         }
 
-        // Tab Switching
+        // View switching (sidebar navigation)
         function switchTab(tabName) {
-            var panels = document.querySelectorAll('.tab-panel');
-            var tabs = document.querySelectorAll('.tab');
-            panels.forEach(function(p) { p.classList.remove('active'); });
-            tabs.forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (t) { t.classList.remove('active'); });
             var target = safeGet('tab-' + tabName);
             if (target) target.classList.add('active');
-            var btn = document.querySelector('[data-tab="' + tabName + '"]');
+            var btn = document.querySelector('.sidebar-nav [data-tab="' + tabName + '"]');
             if (btn) btn.classList.add('active');
             // Lazy-load gallery on first open
             if (tabName === 'gallery') loadGallery();
@@ -1283,19 +1105,18 @@ footer {
             if (comfyuiCommonConfig) comfyuiCommonConfig.style.display = (source.value === 'comfyui_ha' || source.value === 'comfyui_direct') ? 'block' : 'none';
         }
 
-        // Theme Toggle
+        // Theme Toggle (persisted; dark is the default look)
         function toggleTheme() {
             var body = document.body;
             var themeIcon = safeGet('themeIcon');
             if (!themeIcon) return;
-            var currentTheme = body.getAttribute('data-theme');
-            var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            var newTheme = body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
             body.setAttribute('data-theme', newTheme);
             themeIcon.innerHTML = newTheme === 'light' ? ICONS.moon : ICONS.sun;
-            localStorage.setItem('theme', newTheme);
+            try { localStorage.setItem('theme', newTheme); } catch (e) { /* private mode */ }
         }
 
-        // Dynamic accent from photo
+        // Dynamic accent from the delivered photo
         var _accentTimer = null;
         function extractAccentFromPhoto() {
             var img = safeGet('previewDelivered');
@@ -1306,75 +1127,66 @@ footer {
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, 16, 16);
                 var data = ctx.getImageData(0, 0, 16, 16).data;
-                // Average colour
                 var r = 0, g = 0, b = 0, n = data.length / 4;
-                for (var i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; }
-                r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
-                // Convert to HSL, boost saturation + adjust lightness for a pleasant accent
-                var max = Math.max(r,g,b)/255, min = Math.min(r,g,b)/255;
-                var h = 0, s = 0, l = (max+min)/2;
+                for (var i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; }
+                r = Math.round(r / n); g = Math.round(g / n); b = Math.round(b / n);
+                var max = Math.max(r, g, b) / 255, min = Math.min(r, g, b) / 255;
+                var h = 0, s = 0, l = (max + min) / 2;
                 if (max !== min) {
                     var d = max - min;
-                    s = l > 0.5 ? d/(2-max) : d/(2*min);
-                    switch(max) {
-                        case r/255: h = ((g/255-b/255)/d + (g/255<b/255?6:0))/6; break;
-                        case g/255: h = ((b/255-r/255)/d + 2)/6; break;
-                        default:     h = ((r/255-g/255)/d + 4)/6;
+                    s = l > 0.5 ? d / (2 - max) : d / (2 * min);
+                    switch (max) {
+                        case r / 255: h = ((g / 255 - b / 255) / d + (g / 255 < b / 255 ? 6 : 0)) / 6; break;
+                        case g / 255: h = ((b / 255 - r / 255) / d + 2) / 6; break;
+                        default: h = ((r / 255 - g / 255) / d + 4) / 6;
                     }
                 }
-                // Clamp: hue free, sat 0.4-0.7, light 0.45-0.55 → muted, pleasant
                 s = Math.min(0.7, Math.max(0.4, s * 0.6 + 0.35));
                 l = Math.min(0.55, Math.max(0.45, l * 0.5 + 0.25));
                 var hDeg = Math.round(h * 360);
-                var accent = 'hsl(' + hDeg + ',' + Math.round(s*100) + '%,' + Math.round(l*100) + '%)';
+                var accent = 'hsl(' + hDeg + ',' + Math.round(s * 100) + '%,' + Math.round(l * 100) + '%)';
                 document.documentElement.style.setProperty('--accent', accent);
-                // Derived soft + glow
                 document.documentElement.style.setProperty('--accent-soft', accent.replace(')', ', 0.12)').replace('hsl', 'hsla'));
                 document.documentElement.style.setProperty('--accent-glow', accent.replace(')', ', 0.25)').replace('hsl', 'hsla'));
-            } catch(e) { /* CORS / decode error – ignore */ }
+            } catch (e) { /* CORS / decode error – ignore */ }
         }
-
-        // Health Check
-        // /health reflects the configured IMAGE SOURCE (Immich / ComfyUI via HA /
-        // ComfyUI direct), NOT the add-on or the frame itself. The JSON body carries
-        // the source name ("source") — so we use GET; a HEAD request would drop it.
+        // Health Check — /health reflects the configured IMAGE SOURCE, not the add-on or the frame.
         function checkHealth() {
             var healthStatus = safeGet('healthStatus');
             var healthText = safeGet('healthText');
             if (!healthStatus || !healthText) return;
 
             function render(healthy, source) {
-                var label, title;
+                var label;
                 if (source) {
                     label = healthy ? source + ' online' : source + ' unreachable';
-                    title = 'Reachability of the configured image source (' + source + ')';
                 } else {
                     label = healthy ? 'Connected' : 'Disconnected';
-                    title = healthy ? 'Image source reachable' : 'Image source unreachable';
                 }
-                healthStatus.className = 'health-status ' + (healthy ? 'healthy' : 'degraded');
-                healthStatus.title = title;
+                healthStatus.classList.remove('pill-success', 'pill-error', 'pill-muted');
+                healthStatus.classList.add(healthy ? 'pill-success' : 'pill-error');
+                healthStatus.title = 'Reachability of the configured image source' + (source ? ' (' + source + ')' : '');
                 healthText.textContent = label;
             }
 
             fetch('./health', { method: 'GET' })
-                .then(function(response) {
+                .then(function (response) {
                     var healthy = !!response.ok;
                     return response.json()
-                        .then(function(data) {
+                        .then(function (data) {
                             var source = (data && typeof data.source === 'string') ? data.source : '';
                             render(healthy, source);
                         })
-                        .catch(function() { render(healthy, ''); });
+                        .catch(function () { render(healthy, ''); });
                 })
-                .catch(function() { render(false, ''); });
+                .catch(function () { render(false, ''); });
         }
 
-        // Generation Status
+        // Generation Status (ComfyUI only)
         function updateGenerationStatus() {
             fetch('./api/generation-status')
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     var genInfo = safeGet('generationInfo');
                     if (genInfo && data.source && data.source !== 'Immich') {
                         genInfo.classList.remove('hidden');
@@ -1385,51 +1197,51 @@ footer {
                         genInfo.classList.add('hidden');
                     }
                 })
-                .catch(function() {});
+                .catch(function () {});
         }
 
         // Battery Status
         function updateBatteryInfo() {
             fetch('./api/battery-status')
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     var pct = safeGet('batteryPercentageHeader');
                     var volt = safeGet('batteryVoltageHeader');
                     var ts = safeGet('batteryTimestampHeader');
-                    if (pct) pct.textContent = data.percentage.toFixed(1) + '%';
-                    if (volt) volt.textContent = data.voltage_v.toFixed(2) + ' V';
-                    if (ts) ts.textContent = data.formatted_timestamp || 'No reading yet';
+                    var pill = safeGet('batteryStatus');
+                    if (data && data.voltage_v) {
+                        if (pill) { pill.style.display = ''; pill.classList.remove('pill-muted'); pill.classList.add('pill-success'); }
+                        if (pct) pct.textContent = (data.percentage || 0).toFixed(1) + '%';
+                        if (volt) volt.textContent = data.voltage_v.toFixed(2) + ' V';
+                        if (ts) ts.textContent = data.formatted_timestamp || 'No reading yet';
+                    } else if (pill) {
+                        pill.style.display = '';
+                        pill.classList.add('pill-muted');
+                        pill.classList.remove('pill-success');
+                    }
                 })
-                .catch(function() {});
+                .catch(function () {});
         }
 
-        // Photo Status (delivered time)
-        var lastPhotoStatus = null;
+        // Photo Status (delivered time + live preview refresh)
         function updatePhotoStatus() {
             fetch('./preview-status')
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    lastPhotoStatus = data;
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     var deliveredAt = safeGet('deliveredAtTime');
                     if (deliveredAt) {
-                        if (data.exists && data.timestamp) {
-                            deliveredAt.textContent = data.formatted_time;
-                        } else {
-                            deliveredAt.textContent = '--';
-                        }
+                        deliveredAt.textContent = (data.exists && data.timestamp) ? data.formatted_time : '--';
                     }
-                    // Update preview images
+                    var ts = data.exists ? '?t=' + data.timestamp : '';
                     var delivered = safeGet('previewDelivered');
                     var original = safeGet('previewOriginal');
                     var processed = safeGet('previewProcessed');
-                    var ts = data.exists ? '?t=' + data.timestamp : '';
                     if (delivered) delivered.src = './preview-delivered' + ts;
                     if (original) original.src = './preview-original' + ts;
                     if (processed) processed.src = './preview-processed' + ts;
-                    // Extract accent colour after image has a chance to load
                     setTimeout(extractAccentFromPhoto, 800);
                 })
-                .catch(function() {});
+                .catch(function () {});
         }
 
         // Prepare New Photo
@@ -1439,99 +1251,95 @@ footer {
             if (!btn || !status) return;
 
             btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Preparing...';
-            status.className = 'prepare-status loading';
-            status.style.display = 'block';
+            btn.innerHTML = '<span class="spinner"></span> Preparing...';
+            status.className = 'status-bar processing active';
             status.textContent = 'Fetching/generating new photo...';
 
             fetch('./prepare-photo', { method: 'POST' })
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     if (data.success) {
-                        status.className = 'prepare-status success';
+                        status.className = 'status-bar success active';
                         status.textContent = 'Photo prepared successfully! (' + data.source + ')';
                         updatePhotoStatus();
                     } else {
-                        status.className = 'prepare-status error';
+                        status.className = 'status-bar error active';
                         status.textContent = 'Error: ' + (data.error || 'Unknown error');
                     }
                     btn.disabled = false;
-                    btn.innerHTML = PREPARE_BTN_HTML;
-                    setTimeout(function() { status.style.display = 'none'; }, 5000);
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg> Prepare new photo';
+                    setTimeout(function () { status.className = 'status-bar hidden'; }, 5000);
                 })
-                .catch(function(err) {
-                    status.className = 'prepare-status error';
+                .catch(function (err) {
+                    status.className = 'status-bar error active';
                     status.textContent = 'Error: ' + err.message;
                     btn.disabled = false;
-                    btn.innerHTML = PREPARE_BTN_HTML;
-                    setTimeout(function() { status.style.display = 'none'; }, 5000);
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg> Prepare new photo';
+                    setTimeout(function () { status.className = 'status-bar hidden'; }, 5000);
                 });
         }
 
         // Cleanup Previews
         function cleanupPreviews() {
             fetch('./cleanup-previews', { method: 'POST' })
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     if (data.success) {
                         showNotification('Cleaned up ' + data.files_removed + ' old preview files', 'success');
                     } else {
                         showNotification('Cleanup failed: ' + data.error, 'error');
                     }
                 })
-                .catch(function() { showNotification('Cleanup request failed', 'error'); });
+                .catch(function () { showNotification('Cleanup request failed', 'error'); });
         }
 
-        // Gallery (inline tab)
+        // Gallery (grouped by shot, newest first)
         var galleryLoaded = false;
         function loadGallery() {
-    if (galleryLoaded) return;
-    var body = safeGet('galleryBody');
-    if (!body) return;
-    body.innerHTML = '<div class="gallery-empty">Loading previews...</div>';
-    fetch('./api/gallery-previews')
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            galleryLoaded = true;
-            if (!data.files || data.files.length === 0) {
-                body.innerHTML = '<div class="gallery-empty">No previews yet &#8212; press &ldquo;Prepare New Photo&rdquo;</div>';
-                return;
-            }
-            var groups = {};
-            data.files.forEach(function(f) {
-                if (!groups[f.id]) { groups[f.id] = []; }
-                groups[f.id].push(f);
-            });
-            var ids = Object.keys(groups).sort(function(a, b) {
-                var la = Math.max.apply(null, groups[a].map(function(x) { return Date.parse(x.modified); }));
-                var lb = Math.max.apply(null, groups[b].map(function(x) { return Date.parse(x.modified); }));
-                return lb - la;
-            });
-            var html = '<div class="gallery-grid">';
-            ids.forEach(function(id) {
-                var items = groups[id].slice().sort(function(a, b) { return a.modified < b.modified ? 1 : -1; });
-                var label = items.length ? items[0].modified : '';
-                html += '<div class="gallery-card">';
-                html += '<div class="gallery-card-label">' + label + ' &#183; ' + id + '</div>';
-                html += '<div class="gallery-card-items">';
-                items.forEach(function(f) {
-                    var tag = (f.kind === 'processed') ? 'E-Paper' : (f.kind === 'delivered' ? 'On frame' : 'Original');
-                    html += '<div class="gallery-item">';
-                    // The href is only the no-JS fallback; the click zooms the shot in the lightbox.
-                    html += '<a href="' + f.url + '" data-caption="' + escapeAttr(label + ' · ' + id + ' · ' + tag) + '" onclick="lightboxClick(event, \'gallery\', this)"><img src="' + f.url + '" alt="' + f.name + '" title="' + tag + '"></a>';
-                    html += '<div class="gallery-item-info">' + tag + '</div>';
-                    html += '</div>';
+            if (galleryLoaded) return;
+            var body = safeGet('galleryBody');
+            if (!body) return;
+            body.innerHTML = '<div class="gallery-empty" style="grid-column:1/-1;color:var(--text-tertiary);font-size:var(--text-sm)">Loading previews...</div>';
+            fetch('./api/gallery-previews')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    galleryLoaded = true;
+                    if (!data.files || data.files.length === 0) {
+                        body.innerHTML = '<div class="gallery-empty" style="grid-column:1/-1;color:var(--text-tertiary);font-size:var(--text-sm)">No previews yet &#8212; press &ldquo;Prepare new photo&rdquo;</div>';
+                        return;
+                    }
+                    var groups = {};
+                    data.files.forEach(function (f) {
+                        if (!groups[f.id]) { groups[f.id] = []; }
+                        groups[f.id].push(f);
+                    });
+                    var ids = Object.keys(groups).sort(function (a, b) {
+                        var la = Math.max.apply(null, groups[a].map(function (x) { return Date.parse(x.modified); }));
+                        var lb = Math.max.apply(null, groups[b].map(function (x) { return Date.parse(x.modified); }));
+                        return lb - la;
+                    });
+                    var html = '';
+                    ids.forEach(function (id) {
+                        var items = groups[id].slice().sort(function (a, b) { return a.modified < b.modified ? 1 : -1; });
+                        var label = items.length ? items[0].modified : '';
+                        items.forEach(function (f) {
+                            var tag = (f.kind === 'processed') ? 'E-Paper' : (f.kind === 'delivered' ? 'On frame' : 'Original');
+                            var wall = (f.kind === 'processed' || f.kind === 'delivered') ? ' is-wall' : '';
+                            html += '<div class="gallery-item">';
+                            // The href is only the no-JS fallback; the click zooms the shot in the lightbox.
+                            html += '<a href="' + f.url + '" class="shot' + wall + '" data-caption="' + escapeAttr(label + ' · ' + id + ' · ' + tag) + '" onclick="lightboxClick(event, \'gallery\', this)"><img src="' + f.url + '" alt="' + f.name + '" title="' + tag + '"></a>';
+                            html += '<div class="gallery-item-info"><span class="kind-badge kind-' + f.kind + '">' + tag + '</span><div class="gallery-item-date">' + escapeAttr(label + ' · ' + id) + '</div></div>';
+                            html += '</div>';
+                        });
+                    });
+                    body.innerHTML = html;
+                    var count = safeGet('galleryCount');
+                    if (count) count.textContent = ids.length + ' shot' + (ids.length === 1 ? '' : 's');
+                })
+                .catch(function () {
+                    body.innerHTML = '<div class="gallery-empty" style="grid-column:1/-1;color:var(--text-tertiary);font-size:var(--text-sm)">Failed to load previews</div>';
                 });
-                html += '</div></div>';
-            });
-            html += '</div>';
-            body.innerHTML = html;
-        })
-        .catch(function() {
-            body.innerHTML = '<div class="gallery-empty">Failed to load previews</div>';
-        });
-}
-
+        }
         // Lightbox – click an image, it zooms to nearly fullscreen in place.
         const LIGHTBOX_DURATION = 400;   // ms, matches --dur-slow used by .lightbox-img
         // Dashboard group is resolved from the live DOM (a missing preview has no slot there).
@@ -1597,7 +1405,6 @@ footer {
             void el.offsetWidth;   // reflow, so re-adding the class starts the animation again
             el.classList.add(className);
         }
-
         function showLightboxItem(name, index) {
             var items = lightboxGroup(name);
             if (!items.length) return;
@@ -1675,16 +1482,21 @@ footer {
         function lightboxBackdropClick(event) {
             if (event && event.target && event.target.id === 'lightbox') closeLightbox();
         }
-
         // Slider
         function updateSliderValue(slider) {
             var valueEl = safeGet(slider.id + 'Value');
             if (valueEl) valueEl.textContent = slider.value;
         }
 
-        // Form Submit
+        // Form Submit — called from the Save button in the sidebar (no <form submit> needed)
+        function handleSubmitSave() {
+            var form = safeGet('settingsForm');
+            if (!form) return;
+            handleSubmit({ preventDefault: function () {} });
+        }
+
         function handleSubmit(event) {
-            event.preventDefault();
+            if (event && event.preventDefault) event.preventDefault();
             var form = safeGet('settingsForm');
             if (!form) return;
 
@@ -1753,19 +1565,19 @@ footer {
         function submitForm(form) {
             var formData = new FormData(form);
             fetch('./', { method: 'POST', body: formData })
-                .then(function(response) {
+                .then(function (response) {
                     if (response.ok || response.redirected) {
                         showNotification('Settings saved successfully!', 'success');
                         updateSourceVisibility();
+                        location.reload();
                     } else {
-                        return response.text().then(function(text) { throw new Error(text); });
+                        return response.text().then(function (text) { throw new Error(text); });
                     }
                 })
-                .catch(function(error) {
+                .catch(function (error) {
                     showNotification('Error saving settings: ' + error.message, 'error');
                 });
         }
-
         // Reset
         function showResetConfirmation() {
             var modal = safeGet('confirmModal');
@@ -1794,6 +1606,7 @@ footer {
             var displayMode = safeGet('display_mode');
             var imageOrder = safeGet('image_order');
             var dithering = safeGet('dithering_method');
+            var frameOrientation = safeGet('frame_orientation');
 
             if (imageSource) imageSource.value = 'immich';
             if (url) url.value = 'http://localhost';
@@ -1811,9 +1624,10 @@ footer {
             if (displayMode) displayMode.value = 'fill';
             if (imageOrder) imageOrder.value = 'random';
             if (dithering) dithering.value = 'atkinson';
+            if (frameOrientation) frameOrientation.value = 'landscape';
 
-            var sliderIds = ['enhanced', 'contrast', 'strength'];
-            sliderIds.forEach(function(id) {
+            var sliderIds = ['color_enhance', 'contrast', 'dithering_strength'];
+            sliderIds.forEach(function (id) {
                 var sliderEl = safeGet(id);
                 if (sliderEl) {
                     sliderEl.value = SLIDER_DEFAULTS[id];
@@ -1845,17 +1659,15 @@ footer {
             var notification = safeGet('notification');
             if (!notification) return;
             notification.textContent = message;
-            notification.style.background = type === 'error' ? 'var(--error)' : 'var(--success)';
-            notification.style.display = 'block';
-            setTimeout(function() { notification.classList.add('show'); }, 10);
-            setTimeout(function() {
-                notification.classList.remove('show');
-                setTimeout(function() { notification.style.display = 'none'; }, 300);
+            notification.className = 'show ' + (type || 'success');
+            setTimeout(function () {
+                notification.className = '';
+                notification.style.display = 'none';
             }, NOTIFICATION_DURATION);
         }
 
         // Close on escape – the lightbox has priority, then the confirm modals
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             var box = safeGet('lightbox');
             if (box && box.classList.contains('open')) {
                 if (e.key === 'Escape') { closeLightbox(); return; }
@@ -1865,22 +1677,34 @@ footer {
             if (e.key === 'Escape') {
                 var m = safeGet('confirmModal');
                 if (m) m.style.display = 'none';
+                var c = safeGet('clearConfirmModal');
+                if (c) c.style.display = 'none';
             }
         });
+        // Named workflow slots (2.4.0): expand/collapse a slot to paste its API JSON.
+        function toggleWfSlot(slot) {
+            var el = safeGet('wfSlot' + slot);
+            if (el) el.classList.toggle('open');
+        }
 
         // Init
-        document.addEventListener('DOMContentLoaded', function() {
-            var savedTheme = localStorage.getItem('theme') || 'light';
+        document.addEventListener('DOMContentLoaded', function () {
+            var savedTheme = 'dark';   // dark navy is the default look; the user's choice wins
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'light' || t === 'dark') savedTheme = t;
+            } catch (e) { /* private mode */ }
             document.body.setAttribute('data-theme', savedTheme);
             var themeIcon = safeGet('themeIcon');
             if (themeIcon) themeIcon.innerHTML = savedTheme === 'light' ? ICONS.moon : ICONS.sun;
 
-            var yearEl = safeGet('copyrightYear');
+            var yearEl = safeGet('copyrightYearValue');
             if (yearEl) yearEl.textContent = new Date().getFullYear();
 
             checkHealth();
             updatePhotoStatus();
             updateBatteryInfo();
+            updateGenerationStatus();
             updateSourceVisibility();
             snapshotStoredValues();
 
