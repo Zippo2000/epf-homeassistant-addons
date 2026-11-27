@@ -233,13 +233,15 @@
         /*
          * Wall orientation (FR-034): when the frame hangs portrait, the
          * frame-shaped previews (processed/delivered) show the picture the way it stands
-         * on the wall — rotated 90deg inside a 3:5 box. Width 277.78% = (800/480)*(5/3).
+         * on the wall — rotated 90deg inside a 3:5 box. The 800x480 element is sized to
+         * 166.67% of the box width (= box height), so after the 90deg rotation it fills the
+         * box exactly (visual width 0.6*1.6667 = 1, visual height 1.6667 = box height).
          * The original panel intentionally stays untouched (it is the source, not the wall).
          */
         body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; position: relative; }
         body[data-orientation="portrait"] .preview-img-container.portrait-box img {
             position: absolute; top: 50%; left: 50%;
-            width: 277.78%; height: auto;
+            width: 166.67%; height: auto;
             transform: translate(-50%, -50%) rotate(90deg);
             object-fit: cover;
         }
@@ -250,7 +252,7 @@
         body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; position: relative; }
         body[data-orientation="portrait"] .gallery-item a.is-wall img {
             position: absolute; top: 50%; left: 50%;
-            width: 277.78%; height: auto; aspect-ratio: auto;
+            width: 166.67%; height: auto; aspect-ratio: auto;
             transform: translate(-50%, -50%) rotate(90deg);
         }
         body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(90deg) scale(1.03); }
