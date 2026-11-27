@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.5.0  
-**Date:** 2026-11-22  
-**Baseline:** Repository commit (main branch, working basis for **v2.5.0**; previous baseline v2.4.3 / 2.4.3b)  
-**Status:** Issued — TC-FR-026 extended with the in-page image zoom (step 9); L0, L1 and the L3 production smoke all re-ran green on this baseline on 2026-11-22 (EPF-RPT-001 §6.10)
+**Version:** 2.6.0  
+**Date:** 2026-11-27  
+**Baseline:** Repository commit (main branch, working basis for **v2.6.0**; previous baseline v2.5.0)  
+**Status:** Issued — **TC-FR-034** added for **FR-034 (Frame Orientation)**; L0 re-ran green on this baseline (EPF-RPT-001)
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
 > against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
@@ -823,6 +823,24 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 
 ---
 
+#### TC-FR-034: Frame Orientation (Landscape / Portrait)
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-034 |
+| **Requirement** | FR-034 |
+| **Title** | Verify the orientation setting, its pipeline effect and its settings-page round trip |
+| **Priority** | Medium |
+| **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path` |
+| **Test Input** | 6 automated cases in `tests/test_functional.py` (`TestFR034FrameOrientation`) — offline tier L0 |
+| **Test Steps** | 1. Verify the default is `landscape` and the page carries the orientation attribute and the select<br>2. Verify the page shows the stored value (portrait) and the matching `<option ... selected>`<br>3. Verify the form round-trips `portrait` → runtime YAML → effective config (and back to `landscape`)<br>4. Verify a POST without the field keeps the stored orientation<br>5. Verify a value other than landscape/portrait is refused with HTTP 400 and nothing is stored<br>6. Verify the pipeline differential: at the same stored rotation, portrait rotates the processed image relative to landscape |
+| **Expected Result** | `frame_orientation` is a top-level runtime key like `date_overlay`; invalid values are refused like `rotation`; the portrait value reaches the pipeline without a restart |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | 6/6 passed (offline tier L0, 2026-11-27) |
+| **Status** | Executed — Passed |
+
+---
+
 ### 3.2 Non-Functional Requirements Test Cases
 
 #### TC-NFR-001: Multi-Architecture Support
@@ -1253,7 +1271,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | Interface | 5 | 5 | 5 — 100% |
 | Security | 4 | 4 | 4 — 100% |
 | Performance | 3 | 3 | 3 — 100% |
-| **Total** | **55** | **60** | **55 — 100%** |
+| **Total** | **56** | **61** | **56 — 100%** |
 
 > Counted from the §4 matrix on 2026-11-20 (v2.4.3b); it replaces the v2.0.0 numbers (45 / 53) that
 > had drifted since. **Every requirement now has a documented test case** — FR-027 … FR-031 got
@@ -1272,7 +1290,7 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 | Inspection | 8 |
 | Inspection + Test | 1 |
 | Analysis | 1 |
-| **Total** | **60** |
+| **Total** | **61** |
 
 > Counted from the §4 matrix on 2026-11-20 (v2.4.3b): the five new provider cases are automated, so
 > Test goes 45 → 50.
@@ -1281,6 +1299,12 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 > Dashboard previews and the Gallery — and its status is set to Executed — Passed (**9 cases**). No new
 > test case ID; the catalogue keeps **33 FR / 10 NFR / 5 IFR / 4 SEC / 3 PER** and **60** cases. Results
 > in EPF-RPT-001 (re-baselined for 2.5.0).
+>
+> **Revision 2.6.0 (2026-11-27):** adds **TC-FR-034** for **FR-034 (Frame Orientation)**: 6 automated
+> cases in `tests/test_functional.py` (`TestFR034FrameOrientation`) — default, stored-state rendering,
+> round trip, partial POST, the 400 guard and the pipeline differential. The catalogue now has
+> **34 FR / 10 NFR / 5 IFR / 4 SEC / 3 PER** and **61** cases. Results in EPF-RPT-001 (re-baselined for
+> 2.6.0).
 
 ---
 

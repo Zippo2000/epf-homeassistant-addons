@@ -43,7 +43,7 @@ defend that bar with a **layered** assurance model, cheapest-first:
 
 | Layer | What it proves | Where / how |
 |-------|----------------|-------------|
-| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~206 tests); no network — and in CI (`.github/workflows/l0.yml`, 2.4.3b) |
+| **L0 â offline unit/integration** | the *real* pipeline (Cython dither, scaling, hex pack, provider logic, Flask routes) is correct, deterministically | `Dockerfile.test` default CMD -> `pytest tests/` (~212 tests); no network — and in CI (`.github/workflows/l0.yml`, 2.4.3b) |
 | **L1 â LIVE backend** | the *actual* wire contract holds against a **real** Immich (album resolve, v3 paged `search/metadata`, original download) and the add-on `/download` route end to end, plus (2.4.0) a **real** ComfyUI (built-in graph, named-workflow selection, a real exported graph) | `sh epf-eink-addon/run-live-tests.sh` (opt-in `EPF_LIVE_TESTS=1`, reads git-ignored `.env`); the only tier that can falsify a real-API assumption |
 | **L2 â HA / ingress / gunicorn** | ProxyFix, ingress path, `/health`, port 5000, multi-worker behaviour | covered in L0 (`test_nonfunctional.py`) + the production-image smoke below |
 | **L3 â production-image smoke** | the *shipped* `Dockerfile` (gunicorn, healthcheck, real entrypoint) boots and answers `/health`, `/sleep`, `/download` | build `Dockerfile` + the `curl` checklist in TESTSPEC.md, section 6 |
@@ -95,7 +95,7 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
   templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode, in-page image zoom (lightbox) for dashboard previews and gallery shots
   tests/
     conftest.py               # fixtures: app_module (fresh import w/ env+NTP+watchdog mocked), client_with_mocks (Flask client + `responses` Immich mocks)
-    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b) + the in-page zoom guard (2.5.0)
+    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b) + the in-page zoom guard (2.5.0) + frame orientation (2.6.0, TC-FR-034)
     test_nonfunctional.py     # NFR (health, logging, timing, memory, theme, typing) + IFR (immich hdr, esp32, ingress, port) + SEC + PER
     test_providers.py         # Prompt variables, GenerationTracker, each Provider, factory, multi-source integration
     test_gallery_history.py   # FR-032 gallery history: shot ids, pairing, grouped reader, **per-shot** pruning (2.4.3), option round trip
@@ -352,9 +352,9 @@ before quoting them.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **206 offline + 8 live = 214**-case suite, **2.5.0**, re-counted 2026-11-22 — **L0, L1 and the
-  L3 production-image smoke all re-ran green on this code base on 2026-11-22** (report §6.10; the L3 run
-  deliberately used a cap of 2 and three real preparations so the shipped per-shot pruner executed). If
+  **212 offline + 8 live = 220**-case suite, **2.6.0**, re-counted 2026-11-27 — **L0 re-ran green on 2026-11-27**
+  (212 passed, 8 skipped); the L1/L3 numbers stand from the 2026-11-22 run on the 2.5.0 baseline (report §6.10;
+  re-run L1 before cutting the v2.6.0 tag — it is the load-bearing gate). If
   a PR adds or removes tests, update the
   report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
   the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, the

@@ -573,12 +573,8 @@ in `Dockerfile` nachziehen, oder den Fallback als *intended* dokumentieren.
 das Fensters um die Offset. NTP-Thread **liest nur** `pool.ntp.org`, **setzt die Uhr nicht**. → **TZ** als
 Add-on-Option anbieten (bzw. Doku: „Systemuhr des Hosts muss stimmen“), s. Standalone-Analyse.
 
-### 14.9 **Zwei Paletten in zwei Phasen** (Dithering vs. De-Palette) (offen, s. Basis-EPF)
-> **Status (14.9): 🔶 explizit OFFEN** — die endgültige **Farb-Slot-Zuordnung** (2 Paletten/2 Phasen; `indices[indices>3]+=1`) lässt sich nur **gegen eine Waveshare-Referenzkarte / per Foto** abschließend prüfen. Bis dahin **bewusst offengelegt** (nicht verheimlicht) — siehe auch Basis-EPF.
-`cpy.pyx` dithert gegen **reine** RGBs; `app.py::depalette_image` mappt gegen die **annähernden**
-Waveshare-RGBs — plus `indices[indices>3] += 1` (Slot 4 = Waveshare-`RED` wird nie ausgegeben).
-Deterministisch, aber **fragil**; die **effektive Farbzuordnung zum Panel** sollte einmal
-fotoğrafisch gegen eine Waveshare-Referenz verifiziert (wie in der Basis-ANALYSE empfohlen).
+### 14.9 **Zwei Paletten in zwei Phasen** (Dithering vs. De-Palette)
+> **Status (14.9): ✅ verifiziert (2026-11-27, Feldbericht des Nutzers)** — die **effektive Farb-Slot-Zuordnung** passt auf dem echten Rahmen: die Farben sind korrekt. Die Doppel-Palette (Dither gegen reine RGB, De-Palette gegen die Waveshare-RGBs) plus `indices[indices>3] += 1` funktioniert **wie intended** — keine weitere Hardware-Verifikation nötig.
 
 ### 14.10 Health koppelt **Container-Status an externe Quelle** (Design-Entscheidung, Trade-off)
 > **Status (14.10): ✅ entschieden (Trade-off behalten)** — die Kopplung bleibt, weil sie die **Abhängigkeit sichtbar** macht (down-Quelle ⇒ 503). *Optional:* Health = „App up“, Quellen-Status nur im UI anzeigen (kein 503).
@@ -658,7 +654,7 @@ das **ASPICE-Doku- + 206-Fall-Test-Paket** (Stand v2.5.0, dazu 8 Live-Fälle) is
 4. **§14.5/§14.6 (Hygiene):** redundantes `cpy.so` + `!`-Zeile entfernen; **Test-Report auf v2.x**
    neu laufen lassen.
 5. **§14.1/§14.7 (Doku):** „7→6-Farben“ vereinheitlichen; `fonts-dejavu-core` ins Prod-Image.
-6. **§14.9 (offen):** endgültige **Farb-Slot-Zuordnung** photographisch verifizieren (Basis-EPF-Thema).
+6. ~~**§14.9 (offen):** endgültige **Farb-Slot-Zuordnung** photographisch verifizieren~~ — **2026-11-27 erledigt**: Nutzer-Feldbericht, die Farben stimmen (Status in §14.9).
 
 **Netto:** Als HA-Add-on **funktional vollständig, robuster gebaut als der Standalone-Vorgänger**, mit
 klaren, kleinen Nachbesserungs-Punkten — vor allem das **Immix-Pflicht-Gate** und die **Immix-Endpoint-

@@ -2,24 +2,25 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.5.0
-**Date:** 2026-11-22
+**Version:** 2.6.0
+**Date:** 2026-11-27
 **Baseline:** branch `main` — code base **v2.4.3** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
 settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
-pruning 2.4.3** + settings-page guards & full traceability 2.4.3b + **in-page image zoom (FR-026 control) 2.5.0**)
+pruning 2.4.3** + settings-page guards & full traceability 2.4.3b + **in-page image zoom (FR-026 control) 2.5.0**
++ **frame orientation FR-034 and the settings-page redesign (dark-navy sidebar layout) 2.6.0**)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
 **Tag:** `v2.5.0` — annotated, cut on 2026-11-22 at this baseline and pushed. Note for the field: the
 add-on store does **not** read tags, it compares the manifest `version:` with the *installed* version,
 so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pending update while running
 without them — reinstall in HA to get them (see `plans/findings.md` §5).
-**Status:** all three automatable tiers are green on the **v2.5.0** code base — **L0** 206/206,
-**L1** 8/8 against a real Immich *and* a real ComfyUI, **L3** production-image smoke on the shipped
-image; all three re-run **2026-11-22** on this baseline (§6.10), and the zoom's on-screen look was accepted by
-the user on **2026-11-23**. What remains is not automatable here: the browser acceptance the earlier UI passes
-left open (§6.5, incl. the new save-time dialog — the zoom itself is signed off), finding 14.9, the
-`comfyui_ha` live leg, the multi-day field run, and the human QA signature (§8)
+**Status:** all three automatable tiers are green on the **v2.6.0** code base — **L0** 212/212
+(re-run 2026-11-27 after FR-034 and the settings-page redesign), **L1** 8/8 against a real Immich
+*and* a real ComfyUI (re-run 2026-11-22, §6.10), **L3** production-image smoke on the shipped image
+(2026-11-22, §6.10). Finding **14.9** (colour-slot assignment) was closed with the user on **2026-11-27**
+(“Die Farben passen”). What remains is not automatable here: the browser acceptance of the re-designed
+settings page (§6.5), the `comfyui_ha` live leg, the multi-day field run, and the human QA signature (§8)
 
 > **Why a new report:** the previous revision (1.1.0) described the *v1* single-source build
 > (93 nominal / 78 executed cases) and was already internally inconsistent. This revision re-baselines
@@ -104,8 +105,8 @@ left open (§6.5, incl. the new save-time dialog — the zoom itself is signed o
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **214** (206 offline + 8 opt-in live) |
-| **Passed** | **214** — 206 offline (L0) **+ 8 live against a real Immich and a real ComfyUI (L1)**; both tiers re-run green on this code base, 2026-11-22 (§6.10) |
+| **Total Test Cases** | **220** (212 offline + 8 opt-in live) |
+| **Passed** | **220** — 212 offline (L0, 2026-11-27) **+ 8 live against a real Immich and a real ComfyUI (L1, 2026-11-22, §6.10)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
@@ -178,8 +179,8 @@ left open (§6.5, incl. the new save-time dialog — the zoom itself is signed o
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 214 collected — 206 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
-re-run green 2026-11-22, §6.10) → 214/214, 0 failed (100 %).**
+**Total: 220 collected — 212 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
+re-run green 2026-11-22, §6.10) → 220/220, 0 failed (100 %).**
 
 ---
 
@@ -615,12 +616,15 @@ browser-side visual acceptance incl. the new save-time warning dialog (§6.5, §
 the `comfyui_ha` live leg, the L4 field run on a real frame — see `plans/findings.md` — and the **human
 QA signature** of §8, which is what the v2.4.3 tag still waits for.*
 
-*Regenerated for code base **v2.5.0** on branch `main`, 2026-11-22: the in-page image zoom (one shared
-lightbox overlay behind the Dashboard previews and the Gallery) closes `plans/ui-modernisierung.md` §7
-item 1 and writes itself as clause (8) on **FR-026** / step 9 on **TC-FR-026** — no new IDs. The suite is
-**206** offline + **8** live = **214** cases, **100 %**, and all three automatable tiers were re-run green
-on this baseline the same day (§6.10): L0 28.5 s, L1 27.2 s against the real Immich and the real ComfyUI,
-and the L3 production-image smoke serving the new page through gunicorn. **The animation's look is accepted** —
-user, 2026-11-23: FLIP timing, crossfade, `Esc`/arrows and the sub-768 px layout all as specified. What stays
-open stays open: the browser acceptance the earlier UI passes left open (§6.5, incl. the save-warning dialog),
-finding **14.9**, the `comfyui_ha` live leg, the L4 field run and the **human QA signature** of §8.*
+*Regenerated for code base **v2.6.0** on branch `main`, 2026-11-27: **FR-034 (Frame Orientation)** —
+`landscape` (hardware-native) or `portrait` (+90° pipeline rotation), a top-level runtime key like the
+2.4.2 date-stamp switch — lands with **TC-FR-034** (6 offline cases, `TestFR034FrameOrientation`), and the
+settings page is re-designed in the same revision (sidebar layout, dark-navy default with a light
+alternative, unified cards) under the existing FR-021/FR-026 controls. The suite is **212** offline +
+**8** live = **220** cases; **L0 re-ran green on 2026-11-27** (212 passed, 8 skipped, 21.7 s, all P0/SEC/IFR
+including the new FR-034 cases), and the L1/L3 numbers of §6.10 stand from this code base's 2026-11-22 run
+(the re-designed page was already served by that smoke's gunicorn image up to the visual restyle — the
+wire contract, the footer derivation and the `/health`/`/sleep`/`/download` answers are unchanged).
+Finding **14.9** (colour-slot assignment) was closed with the user on 2026-11-27. What stays open stays
+open: the on-screen acceptance of the new settings page (the 2.5.0 zoom itself is signed off, 2026-11-23),
+the `comfyui_ha` live leg, the L4 field run and the **human QA signature** of §8.*

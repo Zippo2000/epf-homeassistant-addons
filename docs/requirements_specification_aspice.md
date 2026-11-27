@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.5.0  
-**Date:** 2026-11-22  
-**Baseline:** Repository commit (main branch, working basis for **v2.5.0**; previous baseline v2.4.3 / 2.4.3b)  
-**Status:** Issued — FR-026 gains the in-page image zoom (clause 8); L0, L1 and the L3 production smoke all re-ran green on this baseline on 2026-11-22 (EPF-RPT-001 §6.10)
+**Version:** 2.6.0  
+**Date:** 2026-11-27  
+**Baseline:** Repository commit (main branch, working basis for **v2.6.0**; previous baseline v2.5.0)  
+**Status:** Issued — FR-034 (frame orientation) added; the settings page is re-designed (sidebar layout, dark-navy default theme) under the existing FR-021/FR-026 controls
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
 > 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
@@ -29,6 +29,15 @@
 > **Revision 2.5.0 (2026-11-22):** **FR-026** gains clause (8), the in-page image zoom (one shared
 > lightbox overlay behind the Dashboard previews and the Gallery thumbnails). No new requirement ID —
 > it is a control on an existing requirement. **TC-FR-026** is extended accordingly in EPF-TST-001.
+>
+> **Revision 2.6.0 (2026-11-27):** adds **FR-034 (Frame Orientation)** — a top-level `frame_orientation`
+> runtime setting (landscape = hardware-native, portrait = +90° pipeline rotation) that the settings
+> page owns like the 2.4.2 date-stamp switch; invalid values are refused with HTTP 400, a POST without
+> the field keeps the stored value, and the web previews mirror the wall orientation while the
+> `original` preview stays unrotated. The settings page is re-designed in the same revision (sidebar
+> layout, dark-navy default with a light alternative) under the existing FR-021/FR-026 controls — no
+> other requirement changes. The catalogue now has 34 FRs; the matching test case is **TC-FR-034** in
+> EPF-TST-001.
 
 ---
 
@@ -494,6 +503,19 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **Verification** | Test |
 | **Traceability** | `providers.py:ComfyUIDirectProvider (active_entry/_effective/_inject/_build_workflow)`, `app.py:parse_workflow_slots`, `templates/settings.html` (workflow card), `tests/test_providers.py::TestComfyUIWorkflowSelection`, `tests/test_functional.py::TestFR033WorkflowSelection`, `tests/test_live.py` (TC-L09/L10) |
 
+#### FR-034: Frame Orientation (Landscape / Portrait)
+
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-034 |
+| **Title** | The frame may hang landscape or portrait; the pipeline and the previews follow |
+| **Priority** | Medium |
+| **Description** | The system SHALL support a top-level runtime setting `frame_orientation` with the values `landscape` (default, the hardware-native orientation of the Waveshare 7.3″ Spectra-6 panel) and `portrait`. In portrait mode the image pipeline SHALL rotate the processed frame by an additional 90° (effective angle = `(rotation_angle + 90) mod 360`), so a photo stands upright on a vertically hung frame, while the `original` preview stays unrotated. The settings page SHALL render a select for the orientation (the form always posts it; a POST that omits the field keeps the stored value), SHALL refuse any other value with HTTP 400 (same convention as `rotation`), and SHALL mirror the orientation in the web previews (the `processed`/`delivered` previews are shown rotated to the wall orientation via the document's orientation attribute; the lightbox keeps the raw frame). The value is seeded from the add-on option `frame_orientation` (env `FRAME_ORIENTATION`) on first start and is otherwise owned by the runtime YAML — the same two-channel contract as `date_overlay`. |
+| **Input** | Settings form (`frame_orientation`), runtime YAML `frame_orientation`, seed-only add-on option `frame_orientation` |
+| **Output** | The processed/delivered frame rotated to the wall orientation; the settings page showing the stored value; the body orientation attribute for the preview mirroring |
+| **Verification** | Test |
+| **Traceability** | `app.py` (DEFAULT_CONFIG, `scale_img_in_memory`, POST handler), `run.sh`, `config.yaml`, `templates/settings.html` (orientation select + `data-orientation` previews), `tests/test_functional.py::TestFR034FrameOrientation` |
+
 ---
 
 ### 3.2 Non-Functional Requirements (NFR)
@@ -779,6 +801,7 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | FR-031 | app.py:generation_status, providers.py:GenerationTracker | Test | Implemented |
 | FR-032 | app.py, templates/settings.html, tests/test_gallery_history.py | Test | Implemented |
 | FR-033 | providers.py, app.py, templates/settings.html, tests/test_providers.py, tests/test_functional.py | Test | Implemented |
+| FR-034 | app.py, run.sh, config.yaml, templates/settings.html, tests/test_functional.py | Test | Implemented |
 | NFR-001 | config.yaml, build.yaml, Dockerfile | Inspection | Implemented |
 | NFR-002 | config.yaml | Inspection | Implemented |
 | NFR-003 | Dockerfile | Test | Implemented |

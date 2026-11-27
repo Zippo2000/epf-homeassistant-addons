@@ -2,7 +2,7 @@
 
 **Repo:** [`Zippo2000/epf-homeassistant-addons`](https://github.com/Zippo2000/epf-homeassistant-addons) · Add-on `epf-eink-addon` (v2.0.0)
 **Bezogen auf:** [`../ANALYSE.md`](../ANALYSE.md) §14 (14.1 – 14.13) · **Verwandt:** [`ARCHITECTURE.md`](../ARCHITECTURE.md), [`docs/`](../docs/)
-**Status:** `CLOSED` (14.1-14.13 erledigt; **14.9** bewusst offen) · **Autor/Stand:** _(ausgefüllt beim Start)_ · **Sprache:** Deutsch
+**Status:** `CLOSED` (14.1-14.13 erledigt; **14.9 am 2026-11-27 verifiziert** — Nutzer-Feldbericht: die Farben stimmen) · **Autor/Stand:** _(ausgefüllt beim Start)_ · **Sprache:** Deutsch
 
 > **Verwendung:** Dies ist der Arbeits-Plan zur Behebung der Findings aus `ANALYSE.md` §14.
 > Jedes Finding unten hat ein Checkbox-Set — **haken im Verlauf ab** und trag die
@@ -30,7 +30,7 @@
 | 14.11 | kein Auth auf POST-/Download-Endpoints | **Entscheidung** | mittel *(nur wenn LAN-exponiert)* | S–M | P2 (opt.) |
 | 14.10 | `HEALTHCHECK` koppelt Container-Status an Quelle | **Entscheidung** | niedrig | S (opt.) | P2 (opt.) |
 | 14.8 | TZ/Drift (Schlafzeit = Container-Uhr; NTP liest nur) | Doku + opt. Option | niedrig | S | P2 |
-| 14.9 | Farb-Slot-Zuordnung (2 Paletten / 2 Phasen) | **Untersuchung** | mittel (Optik) | M | P2 (offen) |
+| 14.9 | Farb-Slot-Zuordnung (2 Paletten / 2 Phasen) | **Erledigt** | — | — | P2 ✅ (2026-11-27 verifiziert) |
 | 14.12 | keine Datei-Sperre (`tracking.txt` / `generations.json`) | **Entscheidung** | niedrig *(nur Multi-Frame)* | S (opt.) | P3 |
 | 14.2 | zwei `config.yaml`-Bedeutungen (Manifest vs. Laufzeit) | Doku (existiert) | – | – | P3 (nichts zu tun) |
 
@@ -44,11 +44,11 @@
 |-------|-----------------------|------------------|
 | **A – Korrektheit (P0)** | **14.3** → **14.4** | Immich-v3-konform + alle Quellen startbar; **Suite grün** |
 | **B – Hygiene & Doku (P1)** | 14.1 → 14.5 → 14.7 → **14.6 (letzte)** | Doku konsistent, Artefakt-Entlastung, **Report auf v2.x** |
-| **C – Entscheidungen/Optional (P2–P3)** | 14.13 → (14.11 / 14.10 / 14.8 / 14.12 als Doku+mini-Code) → **14.9** (offener Verif.-Task) | bewusste Kanten dokumentiert |
+| **C – Entscheidungen/Optional (P2–P3)** | 14.13 → (14.11 / 14.10 / 14.8 / 14.12 als Doku+mini-Code) → **14.9** (2026-11-27 verifiziert) | bewusste Kanten dokumentiert |
 
 **Ampel:** `A: 14.3 → 14.4` ⇒ *Suite-Check* ⇒ `B: 14.1/14.5/14.7 → 14.6` ⇒ `C: triage`.
 > `14.3` und `14.4` sind unabhängig voneinander; `14.6` ist bewusst das **letzte** Code-beeinflussende
-> Artefakt der Phase B, `14.9` bleibt (falls unentschieden) ein **explizit offener** Punkt.
+> Artefakt der Phase B; `14.9` wurde **2026-11-27 verifiziert** (Nutzer-Feldbericht: die Farben stimmen).
 
 ---
 
@@ -193,10 +193,9 @@ fi
 
 **14.8 (TZ/Drift, S)** — *Empfehlung:* **Doku** („Systemuhr des Hosts muss stimmen; NTP-Thread liest nur, setzt nicht — s. auch Basis-EPF“). *Optional:* `TZ` als **Add-on-Option** (env) durchreichen, damit die Schlaf-/Wakeup-Fenster lokal sind.
 
-**14.9 (Paletten, M / Untersuchung)** — *offener Task:*
-- [ ] **Foto-Verifizierung** der effektiven Farb-Slot-Zuordnung gegen eine Waveshare-Referenzkarte (welche Slots werden wie belegt; `indices[indices>3]+=1` → Slot 4/`EPD_7IN3E_RED` wird nie ausgegeben).
-- [ ] Ergebnis in `ANALYSE.md` §14.9 abschließen (entwirren **oder** explizit als „so intended“ dokumentieren). Falls unentschieden → als **explizit offener Verifikations-Punkt** belassen (nicht verheimlichen).
-- [ ] _2026-11-15: bewusst **aufgeschoben** (Nutzerentscheid). Prüfaufwand ist rein handwerklich: Foto am echten Rahmen bzw. die Waveshare-Referenzkarte — im Labor nicht automatisierbar (L4)._ 
+**14.9 (Paletten, M / Untersuchung)** — *erledigt 2026-11-27:*
+- [x] **Verifizierung** der effektiven Farb-Slot-Zuordnung am **echten Rahmen** (Nutzer-Feldbericht 2026-11-27: **die Farben stimmen** — Doppel-Palette + `indices[indices>3] += 1` ist so intended).
+- [x] `ANALYSE.md` §14.9 auf ✅ geschlossen; kein offener Punkt mehr (nicht verheimlicht, sondern **geschlossen**). 
 
 **14.12 (Locking, S/opt. **Entscheidung**)** — *Empfehlung:* als **bekannte Einschränkung** vermerken (relevant **nur** bei mehreren Frames gegen eine Instanz); *optional* leichte Lock-Datei/`fcntl` auf `tracking.txt`/`generations.json`. *(Kein Pflicht-Code.)*
 
@@ -220,7 +219,7 @@ fi
 - **14.3** ist das einzige Finding, bei dem **drei Dateien atomisch** zusammenpassen (`providers.py` + `conftest.py` + `test_functional.py`) — nicht zerhacken.
 - **14.5 + 14.7** betreffen beide das **Docker-Image** → idealerweise **ein** Build/Smoke-Check danach (spart Zyklen).
 - **14.6** *muss* nach allen Code-änderungen von A (und den 14.5/14.7-Build-Effects) laufen, sonst ist der Report wieder falsch.
-- **14.9** kann unentschieden **offen** bleiben, wenn keine Hardware/Referenzkarte greifbar ist — dann aber **klar als offener Punkt** markieren.
+- **14.9** wurde **2026-11-27** am echten Rahmen verifiziert (Nutzer-Feldbericht: die Farben stimmen) — es gibt keinen offenen Punkt mehr.
 - `run.sh` (14.4) hat **keinen** Unit-Test → manuelle/`bash -n`-Prüfung; Vorsicht bei Shell-Syntax (Quoting).
 
 ---
@@ -248,6 +247,6 @@ läuft und (d) der Punkt in **§7** mit Commit/PR-Ref eingetragen ist.
 | 2026-09-16 | C | 14.10 | Entscheidung: **Health-Kopplung behalten** (zeigt Abhängigkeit); optional Health=“App up” | ✅ Doku |
 | 2026-09-16 | C | 14.8 | Entscheidung: **Doku** (Host-Uhr; NTP liest nur); optional TZ-Option | ✅ Doku |
 | 2026-09-16 | C | 14.12 | Entscheidung: **bekannte Einschränkung** (nur Multi-Frame/Instanz); optional leichtes Locking | ✅ Doku |
-| – | C | 14.9 | **explizit OFFEN**: Farb-Slot-Zuordnung nur gegen Referenzkarte/Foto abschließbar (nicht verheimlicht) | 🔶 offen |
+| 2026-11-27 | C | 14.9 | **verifiziert**: Nutzer-Feldbericht — die Farben stimmen auf dem echten Rahmen; `ANALYSE.md` §14.9 + §6 geschlossen | ✅ erledigt |
 | – | – | **Release** | A+B fertig (14.3/14.4/14.1/14.5/14.7/14.6). **Tag `v2.0.1`** empfohlen **nach Merge** nach `main` | ⏳ nach Merge |
 | 2026-09-17 | - | **Abnahme** | S3-Verifizierungs-Boxen gesetzt (14.9 ausgenommen), Status -> `CLOSED` | OK |
