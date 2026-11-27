@@ -758,7 +758,6 @@
                             </div>
                         </div>
                     </div>
-                </section>
                     <div class="card">
                         <div class="card-header">
                             <span class="card-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
@@ -833,6 +832,7 @@
                             </div>
                         </div>
                     </div>
+                </section>
 
                 <!-- ============ View: Display ============ -->
                 <section id="tab-display" class="view">
@@ -1079,8 +1079,12 @@
             return el;
         }
 
-        // View switching (sidebar navigation)
-        function switchTab(tabName) {
+        // View switching (sidebar navigation) – accepts a tab name or the button element.
+        function switchTab(tab) {
+            var tabName = (typeof tab === 'string') ? tab
+                : (tab && tab.dataset) ? tab.dataset.tab
+                : (tab && tab.id) ? tab.id : null;
+            if (!tabName) return;
             document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
             document.querySelectorAll('.sidebar-nav .nav-item').forEach(function (t) { t.classList.remove('active'); });
             var target = safeGet('tab-' + tabName);
