@@ -1,6 +1,6 @@
 # Plan: Rahmen-Orientierung (Quer/Hoch) — FR-034
 
-> **Status:** ✅ **IMPLEMENTIERT** — **2.6.0** (UI-Umbau + Feature in einem Pass, Template-Rewrite `templates/settings.html`); L0 grün 2026-11-27 (212/212, u. a. TC-FR-034). Rest for the release: L1 re-run gegen reales Immich vor dem Tag, Browser-Optik-Acceptance
+> **Status:** ✅ **CLOSED** — **2.6.0** (UI-Umbau + Feature in einem Pass, Template-Rewrite `templates/settings.html`). Abgenommen: L0 212/212 + L1 8/8 (2026-11-27), reale Immich-Ende-zu-Ende (prepare → download → Orientation-Round-Trip, 400-Guard), Browser-Optik vom User abgenommen (2026-11-27). Tag `v2.6.0` auf 06fb965.
 > **Auftrag (Nutzer, 2026-11-27):** „Es soll in der Konfiguration eingestellt werden können, ob der Bilderrahmen im Querformat oder im Hochformat aufgehängt ist. Danach sollen sich auch die Bilder im Webinterface orientieren und angezeigt werden."
 
 ---
