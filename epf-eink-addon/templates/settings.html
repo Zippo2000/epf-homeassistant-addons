@@ -233,24 +233,26 @@
         /*
          * Wall orientation (FR-034): when the frame hangs portrait, the
          /* frame-shaped previews (processed/delivered) in portrait mode: the 800x480 file
-         * is already content-rotated by the firmware. The viewer at the wall sees a
-         * 480-wide x 800-tall crop. We use object-fit:cover on a 3:5 box — no rotation. */
-        body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; overflow: hidden; }
+         * contains content already rotated by the firmware for the portrait-hung panel.
+         * To show the viewer what they see at the wall, we rotate it back 90° in CSS.
+         * 166.67% width makes the rotated image fill the 3:5 box exactly. */
+        body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; position: relative; overflow: hidden; }
         body[data-orientation="portrait"] .preview-img-container.portrait-box img {
-            width: 100%; height: 100%;
-            object-fit: cover; object-position: center;
+            position: absolute; top: 50%; left: 50%;
+            width: 166.67%; height: auto;
+            transform: translate(-50%, -50%) rotate(90deg);
         }
         /* Gallery items in portrait mode: same treatment for wall-oriented files. */
         .gallery-item a { display: block; overflow: hidden; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--surface-2); }
         .gallery-item a img { width: 100%; aspect-ratio: 5/3; object-fit: cover; transition: transform var(--dur-med) var(--ease); }
         .gallery-item:hover a img { transform: scale(1.03); }
-        body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; overflow: hidden; position: relative; }
+        body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; position: relative; overflow: hidden; }
         body[data-orientation="portrait"] .gallery-item a.is-wall img {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover; object-position: center;
+            position: absolute; top: 50%; left: 50%;
+            width: 166.67%; height: auto;
+            transform: translate(-50%, -50%) rotate(90deg);
         }
-        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: scale(1.03); }
+        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(90deg) scale(1.03); }
         /* ============ Gallery ============ */
         .gallery-controls { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); flex-wrap: wrap; }
         .gallery-count { color: var(--text-tertiary); font-size: var(--text-sm); }
