@@ -1556,14 +1556,16 @@ class TestFR033WorkflowSelection:
         assert saved['comfyui']['workflows'][0]['name'] == 'flux-dev'
 
     def test_duplicate_names_rejected(self, client_with_mocks):
-        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'wf_2_name': 'flux'},
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct',
+                                                  'wf_1_name': 'flux', 'wf_2_name': 'flux'},
                                        follow_redirects=False)
         assert resp.status_code == 400
         assert 'duplicate' in resp.data.decode('utf-8')
 
     def test_ui_format_is_rejected_with_a_hint(self, client_with_mocks):
         """ComfyUI's normal save format is a UI graph; only API JSON can be posted."""
-        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux',
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct',
+                                                 'wf_1_name': 'flux',
                                                  'wf_1_api_json': '{"nodes": [], "links": []}'},
                                        follow_redirects=False)
         assert resp.status_code == 400
@@ -1571,12 +1573,14 @@ class TestFR033WorkflowSelection:
 
     def test_oversized_json_rejected(self, client_with_mocks):
         big = json.dumps({'1': {'class_type': 'Note', 'inputs': {'text': 'x' * 70000}}})
-        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'wf_1_api_json': big},
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct',
+                                                  'wf_1_name': 'flux', 'wf_1_api_json': big},
                                        follow_redirects=False)
         assert resp.status_code == 400
 
     def test_active_name_must_match_a_slot(self, client_with_mocks):
-        resp = client_with_mocks.post('/', data={'wf_1_name': 'flux', 'active_workflow': 'ghost'},
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct',
+                                                  'wf_1_name': 'flux', 'active_workflow': 'ghost'},
                                        follow_redirects=False)
         assert resp.status_code == 400
 
@@ -1585,8 +1589,11 @@ class TestFR033WorkflowSelection:
 
         The user pasted JSON into slot 1, clicked Save, got "Settings saved" and got nothing —
         an unnamed slot was dropped without a word. Saying so is cheaper than a support thread.
+        (The guard speaks for saves targeting a ComfyUI source; a save for any other source
+        keeps the stored list untouched — 2.6.2.)
         """
-        resp = client_with_mocks.post('/', data={'wf_1_api_json': self.API_JSON},
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct',
+                                                 'wf_1_api_json': self.API_JSON},
                                       follow_redirects=False)
         assert resp.status_code == 400
         body = resp.data.decode('utf-8')
@@ -1595,10 +1602,41 @@ class TestFR033WorkflowSelection:
 
     def test_untouched_unnamed_slots_are_still_dropped(self, client_with_mocks, app_module):
         """The guard fires on content, not on an empty slot left on the page (2.4.3)."""
-        resp = client_with_mocks.post('/', data={'image_source': 'immich', 'wf_1_name': ''},
+        resp = client_with_mocks.post('/', data={'image_source': 'comfyui_direct', 'wf_1_name': ''},
                                       follow_redirects=True)
         assert resp.status_code == 200
         assert app_module.current_config['comfyui']['workflows'] == []
+
+    def test_unchanged_nameless_legacy_slot_does_not_veto_a_save(self, client_with_mocks, app_module):
+        """2.6.2 (field report): a nameless legacy slot re-posted verbatim by the form is kept
+        as stored — it must not veto unrelated saves (the lock-out that kept the frame
+        orientation from ever persisting)."""
+        app_module.current_config['comfyui']['workflows'] = [
+            {'api_json': self.API_JSON, 'prompt': 'old paste'}]
+        resp = client_with_mocks.post('/', data={
+            'image_source': 'comfyui_direct',
+            'frame_orientation': 'portrait',
+            'wf_1_name': '',
+            'wf_1_api_json': self.API_JSON,
+            'wf_1_prompt': 'old paste',
+        }, follow_redirects=True)
+        assert resp.status_code == 200
+        assert app_module.current_config['comfyui']['workflows'] == [
+            {'api_json': self.API_JSON, 'prompt': 'old paste'}]
+        assert app_module.current_config['frame_orientation'] == 'portrait'
+
+    def test_changed_nameless_slot_is_still_refused(self, client_with_mocks, app_module):
+        """The 2.4.3b guard stays in force for *new* content without a name."""
+        app_module.current_config['comfyui']['workflows'] = [
+            {'api_json': self.API_JSON, 'prompt': 'old paste'}]
+        resp = client_with_mocks.post('/', data={
+            'image_source': 'comfyui_direct',
+            'wf_1_name': '',
+            'wf_1_api_json': self.API_JSON,
+            'wf_1_prompt': 'something new',
+        }, follow_redirects=False)
+        assert resp.status_code == 400
+        assert 'no name' in resp.data.decode('utf-8')
 
     def test_post_without_slots_keeps_the_stored_list(self, client_with_mocks, app_module):
         """A caller that posts no workflow fields must not wipe an existing list."""

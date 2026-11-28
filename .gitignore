@@ -189,3 +189,6 @@ yarn-error.log
 
 # Downloaded GitHub Actions log bundles (scratch, e.g. the first L0 run)
 .github/Actions_log/
+
+# Local Playwright screenshot workspace (not tracked)
+ui-shots/
