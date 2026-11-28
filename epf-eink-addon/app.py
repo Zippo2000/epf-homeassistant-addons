@@ -172,7 +172,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # How the physical frame hangs (2.6.0): landscape is the hardware-native orientation,
     # portrait adds a 90deg pipeline rotation (see scale_img_in_memory) and shows the web
     # previews in the same wall orientation. Seeded from the add-on option, like date_overlay.
-    'frame_orientation': os.getenv('FRAME_ORIENTATION', 'landscape'),
+    'frame_orientation': os.getenv('FRAME_ORIENTATION', 'portrait'),
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -240,7 +240,7 @@ dithering_method: str = current_config['immich'].get('dithering_method', 'atkins
 # Global pipeline switch (2.4.2): renders the EXIF date on the processed image when on.
 date_overlay: bool = current_config.get('date_overlay', True)
 # Frame orientation (2.6.0): landscape = hardware-native; portrait rotates the pipeline 90deg.
-frame_orientation: str = current_config.get('frame_orientation', 'landscape')
+frame_orientation: str = current_config.get('frame_orientation', 'portrait')
 sleep_start_hour: int = current_config['immich']['sleep_start_hour']
 sleep_start_minute: int = current_config['immich']['sleep_start_minute']
 sleep_end_hour: int = current_config['immich']['sleep_end_hour']
@@ -780,7 +780,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     image_order = new_config['immich']['image_order']
     dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
     date_overlay = bool(new_config.get('date_overlay', True))
-    frame_orientation = str(new_config.get('frame_orientation', 'landscape'))
+    frame_orientation = str(new_config.get('frame_orientation', 'portrait'))
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -1006,7 +1006,7 @@ def settings() -> Any:
             # frame orientation (2.6.0): the form always posts the select; a partial POST keeps
             # the stored value (2.4.3b rule) and invalid values are refused below (FR-034/D5).
             'frame_orientation': (request.form.get('frame_orientation')
-                                  or current_config.get('frame_orientation', 'landscape')),
+                                  or current_config.get('frame_orientation', 'portrait')),
             'immich': {
                 'url': form_field('immich_url', 'url', current_config['immich']['url']),
                 'album': form_field('album_name', 'album', current_config['immich']['album']),

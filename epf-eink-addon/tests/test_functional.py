@@ -1661,11 +1661,11 @@ class TestFR034FrameOrientation:
     settings page, and honoured by the image pipeline (portrait = +90deg).
     """
 
-    def test_default_orientation_is_landscape(self, app_module, client_with_mocks):
-        """Without the env var the add-on runs in the hardware-native orientation."""
-        assert app_module.frame_orientation == 'landscape'
+    def test_default_orientation_is_portrait(self, app_module, client_with_mocks):
+        """Without the env var the add-on defaults to portrait (frame hangs vertical)."""
+        assert app_module.frame_orientation == 'portrait'
         html = client_with_mocks.get('/').data.decode('utf-8')
-        assert 'data-orientation="landscape"' in html
+        assert 'data-orientation="portrait"' in html
         assert 'name="frame_orientation"' in html
 
     def test_page_renders_the_stored_orientation_and_select(self, app_module, client_with_mocks):

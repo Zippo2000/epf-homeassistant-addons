@@ -232,30 +232,25 @@
         .preview-panel-footer b { color: var(--text-secondary); font-weight: 600; }
         /*
          * Wall orientation (FR-034): when the frame hangs portrait, the
-         * frame-shaped previews (processed/delivered) show the picture the way it stands
-         * on the wall — rotated 90deg inside a 3:5 box. The 800x480 element is sized to
-         * 166.67% of the box width (= box height), so after the 90deg rotation it fills the
-         * box exactly (visual width 0.6*1.6667 = 1, visual height 1.6667 = box height).
-         * The original panel intentionally stays untouched (it is the source, not the wall).
-         */
-        body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; position: relative; }
+         /* frame-shaped previews (processed/delivered) in portrait mode: the 800x480 file
+         * is already content-rotated by the firmware. The viewer at the wall sees a
+         * 480-wide x 800-tall crop. We use object-fit:cover on a 3:5 box — no rotation. */
+        body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; overflow: hidden; }
         body[data-orientation="portrait"] .preview-img-container.portrait-box img {
-            position: absolute; top: 50%; left: 50%;
-            width: 166.67%; height: auto;
-            transform: translate(-50%, -50%) rotate(90deg);
-            object-fit: cover;
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
         }
         /* Gallery items in portrait mode: same treatment for wall-oriented files. */
         .gallery-item a { display: block; overflow: hidden; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--surface-2); }
         .gallery-item a img { width: 100%; aspect-ratio: 5/3; object-fit: cover; transition: transform var(--dur-med) var(--ease); }
         .gallery-item:hover a img { transform: scale(1.03); }
-        body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; position: relative; }
+        body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; overflow: hidden; position: relative; }
         body[data-orientation="portrait"] .gallery-item a.is-wall img {
-            position: absolute; top: 50%; left: 50%;
-            width: 166.67%; height: auto; aspect-ratio: auto;
-            transform: translate(-50%, -50%) rotate(90deg);
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; object-position: center;
         }
-        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(90deg) scale(1.03); }
+        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: scale(1.03); }
         /* ============ Gallery ============ */
         .gallery-controls { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); flex-wrap: wrap; }
         .gallery-count { color: var(--text-tertiary); font-size: var(--text-sm); }
@@ -461,7 +456,7 @@
         }
     </style>
 </head>
-<body data-theme="dark" data-orientation="{{ config.get('frame_orientation', 'landscape') }}">
+<body data-theme="dark" data-orientation="{{ config.get('frame_orientation', 'portrait') }}">
     <!-- notification -->
     <div id="notification" class="notification">
         <h4 id="notificationTitle"></h4>
@@ -851,8 +846,8 @@
                             <div class="form-group">
                                 <label for="frame_orientation">Frame Orientation:</label>
                                 <select id="frame_orientation" name="frame_orientation">
-                                    <option value="landscape" {% if config.get('frame_orientation', 'landscape') == 'landscape' %}selected{% endif %}>Landscape (frame hangs horizontal)</option>
-                                    <option value="portrait" {% if config.get('frame_orientation', 'landscape') == 'portrait' %}selected{% endif %}>Portrait (frame hangs vertical)</option>
+                                    <option value="landscape" {% if config.get('frame_orientation', 'portrait') == 'landscape' %}selected{% endif %}>Landscape (frame hangs horizontal)</option>
+                                    <option value="portrait" {% if config.get('frame_orientation', 'portrait') == 'portrait' %}selected{% endif %}>Portrait (frame hangs vertical)</option>
                                 </select>
                                 <p class="small-text">How the frame is hung. <b>Portrait</b> turns the frame content by 90&deg; relative to the rotation below so the picture stands upright on the wall — and the previews on this page show the pictures in that same wall orientation.</p>
                             </div>
@@ -1630,7 +1625,7 @@
             if (displayMode) displayMode.value = 'fill';
             if (imageOrder) imageOrder.value = 'random';
             if (dithering) dithering.value = 'atkinson';
-            if (frameOrientation) frameOrientation.value = 'landscape';
+            if (frameOrientation) frameOrientation.value = 'portrait';
 
             var sliderIds = ['color_enhance', 'contrast', 'dithering_strength'];
             sliderIds.forEach(function (id) {
