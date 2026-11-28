@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.8] - 2026-11-28
+
+### Fixed
+- **Frame picture smeared/stretched on the physical frame (regression from 2.6.6).** The panel is a fixed **800×480** landscape display and the firmware cannot consume a 480×800 buffer – 2.6.6/2.6.7 wrote the picture as 480×800 in portrait mode, which the panel rendered smeared (seen in the field). The frame (BMP / `/download`) now **always** receives the native 800×480 buffer again.
+- In portrait mode the viewer-oriented web picture (480×800) is **pre-rotated 90° for the frame** so it reads upright on the portrait-hung panel; the web preview keeps showing it in wall orientation. Verified against the user's 2.6.5 reference photo (the +90° pre-rotation that looked correct).
+
+### Changed
+- The frame-orientation help text now explains the 800×480 hardware contract.
+
 ## [2.6.7] - 2026-11-28
 
 ### Fixed

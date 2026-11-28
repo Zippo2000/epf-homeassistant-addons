@@ -1,6 +1,6 @@
 # Bugfix: Portrait-Vorschau – Rotationsrichtung
 
-> **Status:** 🔶 2.6.6 + 2.6.7 implementiert (Realtests grün). Offen: User muss in der UI **Display → Rotation = 0°** setzen (gespeicherter Legacy-Wert 270° drehte das Bild), danach ein Frame-Foto zur Abnahme.
+> **Status:** 🔶 2.6.8 implementiert + Realtests (L0 336 passed, echtes E2E gegen Immich: BMP wieder 800×480). Offen: ein Foto vom echten Frame zur endgültigen Abnahme (Drehrichtung CCW ist aus dem 094406-Foto abgeleitet; falls der Fuchs schief/versehrt ist: 90→270, Ein-Zeilen-Fix).
 > **Hindernis:** Aktuelles Modell (`club3090-active`) hat keine Vision – Screenshots müssen analysiert werden.
 
 ---
@@ -174,8 +174,15 @@ Die Einstellung `rotation_angle` bleibt erhalten und addiert sich zur automatisc
    - derselbe Fuchs, `rotation=270` → **seitlich** (Kopf zeigt rechts) – exakt die Pose aus dem User-Screenshot `152906.png` ✓
 2. **Echter End-to-End-Test** (echte `app.py` + echtes Immich + `frame_orientation: portrait`, `rotation: 0`): `POST /prepare-photo` → `latest_processed.jpg` 480×800 **aufrecht** mit Datumsstempel ✓
 3. **L0-Suite:** 334 passed, 8 skipped (L1) ✓
+4. **2.6.8-Feldbefund (163405):** Frame-Foto zeigt **verzerrtes** Bild → die 2.6.6/2.6.7 480×800-BMP-Daten können das 800×480-Panel nicht darstellen (Firmware liest jede Zeile als 800 Pixel). Die 480×800-Ausgabe war der **hardware-fatale** Fehler.
+5. **2.6.8-E2E (rot 0, portrait):** `latest.bmp` = **800×480** (Content 90° CCW vorrotiert, Schloss zeigt links), Web-Vorschau = 480×800 ✓; L0 = **336 passed** ✓
 
-**Schlussfolgerung:** Die Pipeline ist korrekt. Der seitliche Homer im Screenshot kommt aus dem **gespeicherten** `rotation_angle=270` (Legacy-Default aus dem Manifest; wurde in 2.6.4/2.6.5 vom Portrait-`+90` zu 360°=0 ausgeglichen, ist jetzt aber wirksam). Fix 2.6.7: Manifest-/Env-/UI-Reset-Default auf **0°**; bestehende Installationen müssen Rotation einmalig in der UI auf 0° setzen (gespeicherte Werte überschreibt kein Save ohne Feld).
+**Schlussfolgerung:**
+- Pipeline-Logik (2.6.6) ist korrekt; der 480×800-Bufferbruch (2.6.6/2.6.7) ist der eigentliche Fehler – in 2.6.8 gefixt (BMP immer 800×480, portrait: Content 90° CCW vorrotiert; Web-Vorschau bleibt 480×800).
+- Drehrichtung aus **094406** (2.6.5, korrekt) abgeleitet: +90 CCW.
+- 2.6.7-Fix (rotation-Default 270→0) bleibt bestehen (Legacy-Wert hätte das Portrait-Bild weiter verdreht).
+
+**Offen (Abnahme):** ein Frame-Foto vom User; falls das Bild verspiegelt/versehrt ist → `rotate(90)` → `rotate(270)` in `save_three_previews` (eine Zeile).
 
 ---
 
@@ -219,6 +226,6 @@ body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform:
 ```
 
 ### Versionsstand
-- `config.yaml`: `version: "2.6.7"`
-- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.7
+- `config.yaml`: `version: "2.6.8"`
+- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.8
 - Latest commit: TBD

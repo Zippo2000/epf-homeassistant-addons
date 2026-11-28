@@ -1824,3 +1824,43 @@ class TestFR034FrameOrientation:
         assert result.size == (480, 800)
         # effective rotation = auto 90 + user 180 = 270: top-left marker lands top-right
         assert self._is_marker(result.load()[479, 0])
+
+    def test_frame_buffer_stays_800x480_in_portrait_mode(self, app_module, test_dir):
+        """The physical panel is the 800x480 landscape display and the firmware
+        cannot consume a 480x800 buffer (it would smear the picture - seen in the
+        field with 2.6.6/2.6.7). latest.bmp must therefore stay 800x480 even in
+        portrait mode: the viewer-oriented web image is pre-rotated 90° CCW for
+        the frame, and the hung panel's rotation brings it back upright."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.photo_dir = test_dir['photos']
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.display_mode = 'fit'
+        src = _marker_image(480, 800, 'tl')
+        app_module.save_three_previews(src)
+
+        bmp = Image.open(os.path.join(test_dir['photos'], 'latest.bmp'))
+        assert bmp.size == (EPD_W, EPD_H), \
+            "portrait mode must still hand the frame an 800x480 buffer"
+        # web image 480x800 marker (0,0) -> rotate(90, expand) -> buffer (0, 479)
+        assert self._is_marker(bmp.load()[0, 479])
+
+        # the web preview keeps the viewer-oriented portrait image
+        processed = Image.open(os.path.join(test_dir['photos'], 'latest_processed.jpg'))
+        assert processed.size == (EPD_H, EPD_W)
+
+    def test_landscape_mode_bmp_is_the_web_image(self, app_module, test_dir):
+        """In landscape mode the frame buffer is the web image itself (no extra rotation)."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.photo_dir = test_dir['photos']
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'landscape'
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        app_module.save_three_previews(src)
+
+        bmp = Image.open(os.path.join(test_dir['photos'], 'latest.bmp'))
+        assert bmp.size == (EPD_W, EPD_H)
+        assert self._is_marker(bmp.load()[0, 0])

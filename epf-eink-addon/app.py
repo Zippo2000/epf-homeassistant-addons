@@ -626,9 +626,20 @@ def save_three_previews(image_original: PILImage) -> PILImage:
     processed_rotated.save(processed_path, 'JPEG', quality=95)
     logger.info(f"Saved processed preview: {processed_path}")
     
+    # The physical panel is always the 800x480 landscape display; it cannot
+    # consume a 480x800 buffer (the firmware would smear it). In portrait mode
+    # the viewer-oriented image is therefore pre-rotated 90° (CCW) for the
+    # frame: when the frame is hung portrait, the panel's physical rotation
+    # brings the content back upright. The web preview above keeps the
+    # viewer-oriented image, so both show the same upright result.
+    if frame_orientation == 'portrait':
+        frame_buf: PILImage = processed_rotated.rotate(90, expand=True)
+    else:
+        frame_buf = processed_rotated
+    
     bmp_path: str = os.path.join(photo_dir, 'latest.bmp')
     bmp_io = io.BytesIO()
-    processed_rotated.save(bmp_io, 'BMP')
+    frame_buf.save(bmp_io, 'BMP')
     with open(bmp_path, 'wb') as f:
         f.write(bmp_io.getvalue())
     logger.info(f"Saved BMP for ESP32: {bmp_path}")

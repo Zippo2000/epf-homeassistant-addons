@@ -845,7 +845,7 @@
                                     <option value="landscape" {% if config.get('frame_orientation', 'landscape') == 'landscape' %}selected{% endif %}>Landscape (frame hangs horizontal)</option>
                                     <option value="portrait" {% if config.get('frame_orientation', 'landscape') == 'portrait' %}selected{% endif %}>Portrait (frame hangs vertical)</option>
                                 </select>
-                                <p class="small-text">How the frame is hung. <b>Portrait</b> flips the panel content to 480×800; the pipeline only auto-rotates a source by 90° when its orientation doesn't match the frame orientation (square pictures are never auto-rotated). The previews on this page show the pictures in that same wall orientation.</p>
+                                <p class="small-text">How the frame is hung. <b>Portrait</b> means the 800×480 panel is mounted on its side: the pipeline pre-rotates the picture so it reads upright on the wall, and the previews on this page show it in that same wall orientation. The frame itself always receives the native 800×480 buffer (the panel can't display anything else).</p>
                             </div>
                             <div class="form-group">
                                 <label for="rotation_angle">Rotation:</label>
