@@ -169,10 +169,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Global pipeline settings - they belong to no source (2.4.2). The settings page owns
     # them; the add-on option below only seeds the value on first start.
     'date_overlay': _env_bool('DATE_OVERLAY', True),
-    # How the physical frame hangs (2.6.0): landscape is the hardware-native orientation,
-    # portrait adds a 90deg pipeline rotation (see scale_img_in_memory) and shows the web
-    # previews in the same wall orientation. Seeded from the add-on option, like date_overlay.
-    'frame_orientation': os.getenv('FRAME_ORIENTATION', 'portrait'),
+    # How the physical frame hangs (2.6.0+): landscape is the hardware-native orientation.
+    # portrait swaps the output dimensions to 480x800. The pipeline only auto-rotates the
+    # source when its orientation mismatches the physical frame orientation (and the source
+    # is not square). Seeded from the add-on option, like date_overlay.
+    'frame_orientation': os.getenv('FRAME_ORIENTATION', 'landscape'),
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -240,7 +241,7 @@ dithering_method: str = current_config['immich'].get('dithering_method', 'atkins
 # Global pipeline switch (2.4.2): renders the EXIF date on the processed image when on.
 date_overlay: bool = current_config.get('date_overlay', True)
 # Frame orientation (2.6.0): landscape = hardware-native; portrait rotates the pipeline 90deg.
-frame_orientation: str = current_config.get('frame_orientation', 'portrait')
+frame_orientation: str = current_config.get('frame_orientation', 'landscape')
 sleep_start_hour: int = current_config['immich']['sleep_start_hour']
 sleep_start_minute: int = current_config['immich']['sleep_start_minute']
 sleep_end_hour: int = current_config['immich']['sleep_end_hour']
@@ -498,12 +499,43 @@ def convert_to_hex_format(image_data: PILImage) -> io.BytesIO:
     return output_bytes
 
 # =============== IMAGE PROCESSING ===============
+
+def _target_dimensions(frame_orientation: str) -> Tuple[int, int]:
+    """Return (width, height) for the processed frame based on physical orientation."""
+    if frame_orientation == 'portrait':
+        return 480, 800
+    return 800, 480
+
+
+def _source_orientation(width: int, height: int) -> str:
+    """Classify the source image orientation after EXIF auto-transpose."""
+    if height == 0:
+        return 'square'
+    ratio = width / height
+    if ratio > 1.1:
+        return 'landscape'
+    if ratio < 0.9:
+        return 'portrait'
+    return 'square'
+
+
+def _needs_auto_rotation(width: int, height: int, frame_orientation: str) -> bool:
+    """Return True when the source image should be rotated 90° to match the frame."""
+    src_orientation = _source_orientation(width, height)
+    if src_orientation == 'square':
+        return False
+    return src_orientation != frame_orientation
+
+
 def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height: int = 480, bg_color: Tuple[int, int, int] = (255, 255, 255)) -> PILImage:
     global rotation_angle, dithering_method, frame_orientation
-    # Effective rotation: the stored rotation plus 90deg when the frame hangs portrait (2.6.0)
-    # so the picture stands upright on the wall. The web UI mirrors this via body[data-orientation]
-    # on the previews; the 'original' preview stays unrotated (FR-034/D3).
-    rotation: int = (rotation_angle + (90 if frame_orientation == 'portrait' else 0)) % 360
+    # Effective rotation: the stored rotation plus 90° only when the source orientation
+    # does not match the physical frame orientation (and the source is not square).
+    # The output dimensions depend on frame_orientation (800x480 landscape, 480x800 portrait).
+    target_width, target_height = _target_dimensions(frame_orientation)
+    image = ImageOps.exif_transpose(image)
+    extra_rotation: int = 90 if _needs_auto_rotation(image.width, image.height, frame_orientation) else 0
+    rotation: int = (rotation_angle + extra_rotation) % 360
     
     datetime_str: Optional[str] = None
     try:
@@ -514,14 +546,12 @@ def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height:
     except Exception:
         datetime_str = None
     
-    image = ImageOps.exif_transpose(image)
-    
     if not CYTHON_AVAILABLE:
         logger.error("Cython not available - image processing will fail!")
         raise RuntimeError("Cython module 'cpy' is required but not available")
     
-    logger.info(f"Using Cython load_scaled(rotation={rotation}, mode={display_mode}, orientation={frame_orientation})")
-    img: PILImage = load_scaled(image, rotation, display_mode)
+    logger.info(f"Using Cython load_scaled(rotation={rotation}, mode={display_mode}, target={target_width}x{target_height}, orientation={frame_orientation})")
+    img: PILImage = load_scaled(image, rotation, display_mode, target_width, target_height)
     logger.info(f"Image after load_scaled: size={img.size}, mode={img.mode}")
     
     enhanced_img: PILImage = ImageEnhance.Color(img).enhance(img_enhanced)
@@ -780,7 +810,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     image_order = new_config['immich']['image_order']
     dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
     date_overlay = bool(new_config.get('date_overlay', True))
-    frame_orientation = str(new_config.get('frame_orientation', 'portrait'))
+    frame_orientation = str(new_config.get('frame_orientation', 'landscape'))
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -1006,7 +1036,7 @@ def settings() -> Any:
             # frame orientation (2.6.0): the form always posts the select; a partial POST keeps
             # the stored value (2.4.3b rule) and invalid values are refused below (FR-034/D5).
             'frame_orientation': (request.form.get('frame_orientation')
-                                  or current_config.get('frame_orientation', 'portrait')),
+                                  or current_config.get('frame_orientation', 'landscape')),
             'immich': {
                 'url': form_field('immich_url', 'url', current_config['immich']['url']),
                 'album': form_field('album_name', 'album', current_config['immich']['album']),

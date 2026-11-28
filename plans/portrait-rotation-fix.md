@@ -1,6 +1,6 @@
 # Bugfix: Portrait-Vorschau – Rotationsrichtung
 
-> **Status:** 🔶 IN ARBEIT – Fix in `1fcc2b4`, Version wird auf **2.6.5** hochgezählt (HA braucht eine neue Manifest-Version, sonst wird kein Update angeboten). Die letzten Screenshots bestätigen das Problem und das Ziel; die endgültige Abnahme auf einem laufenden 2.6.5-Container steht noch aus.
+> **Status:** 🔶 IN ARBEIT – Implementiert für **2.6.6** (Code + Tests). Noch offen: visuelle Abnahme am echten Frame (Foto vom User).
 > **Hindernis:** Aktuelles Modell (`club3090-active`) hat keine Vision – Screenshots müssen analysiert werden.
 
 ---
@@ -67,22 +67,109 @@ Die beiden jüngsten Screenshots liefern die nötige visuelle Rückmeldung:
 - Das Bild erscheint **aufrecht** (Dach/Haus oben, Bäume seitlich).
 - Das bestätigt: Pipeline + Firmware erzeugen bereits das korrekte Wand-Ergebnis; die Web-Vorschau muss nur noch dieselbe Orientierung darstellen.
 
-### Schlussfolgerung
-Da `1fcc2b4` nun `rotate(-90deg)` verwendet, sollte ein neuer Dashboard-Screenshot unter 2.6.4 ebenfalls das aufrechte Bild zeigen — konsistent mit dem echten Frame.
+### Schlussfolgerung (vorläufig)
+Da `1fcc2b4` nun `rotate(-90deg)` verwendet, sollte ein neuer Dashboard-Screenshot unter 2.6.4/2.6.5 das aufrechte Bild zeigen — konsistent mit dem echten Frame.
+
+---
+
+## Update nach 2.6.5: Screenshots vom 28.11. 10:10
+
+### `ui-shots/Screenshot 2026-11-28 101040.png` — Dashboard (Portrait)
+- Das zentrale Original-Thumbnail zeigt einen Fuchs **aufrecht**.
+- `Current photo` und `Next photo — processed` zeigen denselben Fuchs **um 90° im Uhrzeigersinn gedreht** (liegt auf der Seite).
+- Der Footer zeigt `v2.6.5` — der Fehler ist also **nicht durch `rotate(-90deg)` behoben**.
+
+### `ui-shots/Screenshot 2026-11-28 101119.png` — Echtes Frame-Foto (Portrait)
+- Der Fuchs liegt auf dem Display **ebenfalls um 90° im Uhrzeigersinn gedreht**.
+- Dashboard und reales Frame sind weiterhin konsistent, aber beide zeigen das falsche Ergebnis.
+
+### Neue Erkenntnis
+Das Quellbild ist selbst **hochformatig**. Die Portrait-Orientierung des Frames sollte ein hochformatiges Bild **nicht zusätzlich um 90° drehen** — es müsste aufrecht bleiben. Die bisherige Annahme (`portrait = +90° Pipeline-Drehung`) ist für hochformatige Quellen falsch.
+
+### Entscheidung
+Gewählt wird **Option 2** in verfeinerter Form: Die Pipeline prüft Quellbild-Orientierung und Frame-Orientierung. Es wird nur gedreht, wenn beide nicht zusammenpassen (und das Bild nicht quadratisch ist). Die Ausgabe nimmt die physische Orientierung des Frames an (800×480 vs. 480×800). Damit bleibt das Bild so weit wie möglich erhalten und es wird nur so viel abgeschnitten wie nötig.
+
+---
+
+## Requirements (Neufassung)
+
+**REQ-1: Physische Orientierung als Einstellung**
+Der Benutzer kann in den Settings einstellen, ob der Frame physisch im Hochformat (`portrait`) oder Querformat (`landscape`) hängt. Der Wert ist ein globaler Top-Level-Key `frame_orientation` im Runtime-YAML und wird aus der Add-on-Option `FRAME_ORIENTATION` geseedet.
+
+**REQ-2: Fixe Auflösung, orientierungsabhängiges Seitenverhältnis**
+Die Panel-Auflösung bleibt 800×480 Pixel. Je nach `frame_orientation` liefert die Pipeline:
+- `landscape`: ein 800×480 Bild,
+- `portrait`: ein 480×800 Bild.
+Das Bild füllt das Panel vollständig aus.
+
+**REQ-3: Automatische Drehung nur bei Orientierungskonflikt**
+Das Quellbild wird nach EXIF-Auto-Transpose betrachtet. Eine zusätzliche 90°-Drehung wird nur dann angewendet, wenn:
+- das Seitenverhältnis des Quellbilds nicht annähernd 1:1 ist, UND
+- die Orientierung des Quellbilds nicht zur physischen Frame-Orientierung passt.
+Bei Übereinstimmung oder quadratischem Quellbild findet keine zusätzliche Drehung statt.
+
+**REQ-4: Drehrichtung und manuelle Feinjustierung**
+Die automatische Drehung wird als +90° auf die gespeicherte `rotation_angle` addiert (PIL-Semantik: 90° gegen den Uhrzeigersinn). Der Benutzer kann weiterhin über `rotation_angle` (0/90/180/270) feinjustieren.
+
+**REQ-5: Minimale Beschneidung**
+Nach der eventuellen Drehung wird das Bild mit dem konfigurierten `display_mode` (`fit` oder `fill`) auf die Zielabmessungen skaliert. `fill` beschneidet so wenig wie möglich, um das Zielformat vollständig zu füllen; `fit` zeigt das gesamte Bild mit Letterbox-Balken an.
+
+**REQ-6: Web-Vorschau zeigt physische Wandansicht**
+Dashboard- und Galerie-Vorschauen für `processed`/`delivered` verwenden ein Vorschaufenster, dessen Seitenverhältnis der physischen Orientierung entspricht (3:5 für Portrait, 5:3 für Landscape). Es findet keine CSS-Drehung statt; das ausgelieferte Bild wird direkt angezeigt.
+
+**REQ-7: Lightbox zeigt das rohe Frame-Bild**
+Die Lightbox zeigt das verarbeitete Bild in seinen tatsächlichen Abmessungen (480×800 oder 800×480), ohne zusätzliche CSS-Drehung.
+
+**REQ-8: Rückwärtskompatibilität**
+Die Einstellung `rotation_angle` bleibt erhalten und addiert sich zur automatischen Drehung. `frame_orientation` kann fehlen; der Default ist `landscape`.
+
+---
+
+## Plan
+
+1. **Cython-Modul (`cpy.pyx`)**
+   - [x] `load_scaled` akzeptiert `target_width`/`target_height` (Default 800/480).
+   - [x] `convert_image` und `convert_image_atkinson` verwenden die Dimensionen des Eingabebilds statt hartcodierter Konstanten.
+
+2. **Backend (`app.py`)**
+   - [x] `_target_dimensions(frame_orientation)` → (800,480) oder (480,800).
+   - [x] `_source_orientation(width, height)` klassifiziert Quellbild nach EXIF.
+   - [x] `_needs_auto_rotation(...)` entscheidet, ob +90° nötig sind.
+   - [x] `scale_img_in_memory` wendet Zielabmessungen und automatische Drehung an.
+   - [x] Default `frame_orientation` zurück auf `landscape`.
+
+3. **Frontend (`templates/settings.html`)**
+   - [x] CSS-`transform: rotate(...)` für Portrait entfernt.
+   - [x] Portrait-Boxen behalten `aspect-ratio: 3/5`, Landscape `5/3`.
+   - [x] Galerie `.is-wall` analog ohne Rotation.
+
+4. **Tests**
+   - [x] TC-FR-034 auf neue Semantik angepasst (Default `landscape`).
+   - [x] Neue Fälle mit Marker-Bild: Portrait/Portrait, Landscape/Landscape, Mismatch-Quer/Hoch, quadratische Quelle, additive `rotation_angle`.
+
+5. **Doku & Version**
+   - [x] `CHANGELOG.md` Eintrag für 2.6.6.
+   - [x] `config.yaml`: Version 2.6.6.
+   - [x] Plan aktualisiert.
+
+6. **Build & Push**
+   - [ ] Docker-Testimage bauen und pytest laufen lassen.
+   - [ ] Commit & Push.
+   - [ ] Visuelle Abnahme am echten Frame durch User.
 
 ---
 
 ## Offene Fragen
 
-1. **Sitzt die Rotation jetzt?** → Teilweise beantwortet: Das echte Frame-Foto (094406) zeigt ein aufrechtes Bild, also ist das Hardware/Pipeline-Ergebnis korrekt. Der Dashboard-Screenshot 094329 stammt noch vom Zustand vor `1fcc2b4` (`rotate(90deg)`). **Noch offen:** Neuer Dashboard-Screenshot auf einem laufenden 2.6.4-Container, um zu prüfen, ob `rotate(-90deg)` das Frame-Foto exakt abbildet.
-2. **Galerie:** `.is-wall`-Items verwenden dieselbe CSS-Regel (`rotate(-90deg)`). Theoretisch konsistent; visuell noch nicht dokumentiert.
-3. **Landscape-Modus** bleibt unangetastet (5:3 Box, keine Rotation) – weiterhin korrekt.
+1. **Sitzt die Drehrichtung am echten Frame?** → Die Pipeline dreht mismatched Quellen um 90° gegen den Uhrzeigersinn (PIL). Falls das Frame-Foto weiterhin verdreht ist, kann der Nutzer das über `rotation_angle` korrigieren; alternativ drehen wir den Auto-Betrag auf 270°. **User-Foto erforderlich.**
+2. **Unterstützt die ESP32-Firmware 480×800?** → Der Code liefert jetzt 480×800 im Portrait-Modus. Falls die Firmware hart auf 800×480 pro Zeile ausgelegt ist, müssen wir entweder im Server wieder auf 800×480 ausgeben oder die Firmware anpassen. **Feldtest erforderlich.**
+3. **Galerie:** CSS ohne Rotation umgestellt; visuell noch nicht am Frame geprüft.
 
 ---
 
 ## Wie man weitermacht
 
-> **Wichtig:** Der Screenshot `094329.png` zeigt noch den Zustand vor `1fcc2b4` (`rotate(90deg)`). Nach dem Neustart mit der neuen Version **2.6.5** muss ein **neuer** Dashboard-Screenshot im Portrait-Modus erstellt und mit `094406.png` (echtes Frame) verglichen werden.
+> **Wichtig:** Nach dem Update auf **2.6.6** muss ein **neuer** Dashboard-Screenshot im Portrait-Modus erstellt und mit dem echten Frame-Foto verglichen werden.
 
 ```bash
 # Container mit neuestem Code starten:
@@ -96,47 +183,30 @@ docker run -d --name epf-ui -p 5000:5000 --env-file .env epf-eink-tests:fix \
 curl -s -X POST http://localhost:5000/prepare-photo
 
 # Browser: http://localhost:5000
-# Oder: Playwright-Screenshot:
-cd ../ui-shots && node -e "
-const { chromium } = require('playwright');
-(async () => {
-    const b = await chromium.launch({ headless: true });
-    const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
-    await p.goto('http://localhost:5000/', { waitUntil: 'networkidle' });
-    await p.waitForTimeout(2500);
-    await p.screenshot({ path: 'verify-portrait.png' });
-    console.log('✓ verify-portrait.png');
-    await b.close();
-})().catch(e => { console.error(e); process.exit(1); });
-"
 ```
 
 ### Vergleichs-Material (lokal, git-ignored)
 - `ui-shots/frame_photo.jpg` – echtes Foto des Frames (portrait, Referenz für aufrechtes Bild)
 - `ui-shots/Screenshot 2026-11-28 093657.png` – Dashboard (Landscape, korrekt)
 - `ui-shots/Screenshot 2026-11-28 094329.png` – Dashboard (Portrait, **falsch**, Zustand vor `1fcc2b4`)
-- `ui-shots/Screenshot 2026-11-28 094406.png` – Foto des physischen Frames (Portrait, **Zielvorgabe**)
+- `ui-shots/Screenshot 2026-11-28 094406.png` – Foto des physischen Frames (Portrait, **Zielvorgabe**, Landschaftsmotiv)
+- `ui-shots/Screenshot 2026-11-28 101040.png` – Dashboard (Portrait, **falsch**, Fuchs-Hochformatmotiv unter 2.6.5)
+- `ui-shots/Screenshot 2026-11-28 101119.png` – Foto des physischen Frames (Portrait, **falsch**, Fuchs-Hochformatmotiv unter 2.6.5)
 
-### CSS-Stand (Commit `1fcc2b4`)
+### CSS-Stand (2.6.6)
 ```css
-/* Portrait: 800×480 → rotate(-90deg) in 3:5 Box */
-body[data-orientation="portrait"] .preview-img-container.portrait-box {
-    aspect-ratio: 3/5; position: relative; overflow: hidden;
-}
+body[data-orientation="portrait"] .preview-img-container.portrait-box { aspect-ratio: 3/5; }
 body[data-orientation="portrait"] .preview-img-container.portrait-box img {
-    position: absolute; top: 50%; left: 50%;
-    width: 166.67%; height: auto;
-    transform: translate(-50%, -50%) rotate(-90deg);
+    width: 100%; height: 100%; object-fit: contain;
 }
-/* Galerie: gleicher Effekt für .is-wall */
+body[data-orientation="portrait"] .gallery-item a.is-wall { aspect-ratio: 3/5; }
 body[data-orientation="portrait"] .gallery-item a.is-wall img {
-    position: absolute; top: 50%; left: 50%;
-    width: 166.67%; height: auto;
-    transform: translate(-50%, -50%) rotate(-90deg);
+    width: 100%; height: 100%; object-fit: cover; aspect-ratio: 3/5; transform: none;
 }
+body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: scale(1.03); }
 ```
 
 ### Versionsstand
-- `config.yaml`: `version: "2.6.5"`
-- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.5
-- Latest commit: `1fcc2b4` (plus Version-Bump zu 2.6.5)
+- `config.yaml`: `version: "2.6.6"`
+- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.6
+- Latest commit: TBD

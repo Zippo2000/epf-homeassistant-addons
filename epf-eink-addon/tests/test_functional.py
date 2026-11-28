@@ -1649,6 +1649,28 @@ class TestFR033WorkflowSelection:
         assert comfyui['workflows'][0]['name'] == 'flux-dev'
 
 
+def _marker_image(width: int, height: int, corner: str = 'tl') -> Image.Image:
+    """Return a white image with a red marker in the requested corner."""
+    img = Image.new('RGB', (width, height), (255, 255, 255))
+    pixels = img.load()
+    w = min(20, width // 4)
+    h = min(20, height // 4)
+    if corner == 'tl':
+        region = (0, 0, w, h)
+    elif corner == 'tr':
+        region = (width - w, 0, width, h)
+    elif corner == 'bl':
+        region = (0, height - h, w, height)
+    elif corner == 'br':
+        region = (width - w, height - h, width, height)
+    else:
+        raise ValueError(corner)
+    for x in range(region[0], region[2]):
+        for y in range(region[1], region[3]):
+            pixels[x, y] = (255, 0, 0)
+    return img
+
+
 # ============================================================
 # TC-FR-034: Frame Orientation (2.6.0)
 # ============================================================
@@ -1658,14 +1680,21 @@ class TestFR034FrameOrientation:
 
     'frame_orientation' is a top-level runtime-YAML key like date_overlay: seeded
     from the FRAME_ORIENTATION env (add-on option) on first start, edited on the
-    settings page, and honoured by the image pipeline (portrait = +90deg).
+    settings page, and honoured by the image pipeline. The pipeline only auto-rotates
+    the source when its orientation mismatches the physical frame orientation and
+    the source is not square; square sources are never auto-rotated.
     """
 
-    def test_default_orientation_is_portrait(self, app_module, client_with_mocks):
-        """Without the env var the add-on defaults to portrait (frame hangs vertical)."""
-        assert app_module.frame_orientation == 'portrait'
+    def _is_marker(self, pixel):
+        """The red corner marker dithers to palette red (~190,0,0), not pure (255,0,0)."""
+        r, g, b = pixel
+        return r >= 180 and g == 0 and b == 0
+
+    def test_default_orientation_is_landscape(self, app_module, client_with_mocks):
+        """Without the env var the add-on defaults to landscape (hardware-native)."""
+        assert app_module.frame_orientation == 'landscape'
         html = client_with_mocks.get('/').data.decode('utf-8')
-        assert 'data-orientation="portrait"' in html
+        assert 'data-orientation="landscape"' in html
         assert 'name="frame_orientation"' in html
 
     def test_page_renders_the_stored_orientation_and_select(self, app_module, client_with_mocks):
@@ -1709,7 +1738,7 @@ class TestFR034FrameOrientation:
         assert app_module.current_config.get('frame_orientation', 'landscape') == 'landscape'
 
     def test_pipeline_rotation_depends_on_orientation(self, app_module, test_dir):
-        """Portrait adds 90deg: the processed pixels differ from landscape at the same rotation."""
+        """A landscape source on a portrait frame is auto-rotated and produces different output."""
         if not app_module.CYTHON_AVAILABLE:
             pytest.skip("Cython not available")
 
@@ -1719,5 +1748,79 @@ class TestFR034FrameOrientation:
         app_module.frame_orientation = 'portrait'
         portrait = app_module.scale_img_in_memory(create_test_image(EPD_W, EPD_H))
 
+        assert landscape.size == (EPD_W, EPD_H)
+        assert portrait.size == (EPD_H, EPD_W)
         assert list(landscape.getdata()) != list(portrait.getdata()), \
             "the orientation switch changed nothing in the pipeline"
+
+    def test_portrait_source_on_portrait_frame_stays_upright(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.display_mode = 'fit'
+        src = _marker_image(480, 800, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        assert self._is_marker(result.load()[0, 0])
+
+    def test_landscape_source_on_landscape_frame_stays_upright(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'landscape'
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (800, 480)
+        assert self._is_marker(result.load()[0, 0])
+
+    def test_landscape_source_on_portrait_frame_auto_rotates(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        # rotate(90) is counter-clockwise: top-left marker lands at bottom-left
+        assert self._is_marker(result.load()[0, 799])
+
+    def test_portrait_source_on_landscape_frame_auto_rotates(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'landscape'
+        app_module.display_mode = 'fit'
+        src = _marker_image(480, 800, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (800, 480)
+        # rotate(90) is counter-clockwise: top-left marker lands at bottom-left
+        assert self._is_marker(result.load()[0, 479])
+
+    def test_square_source_never_auto_rotates(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.display_mode = 'fit'
+        src = _marker_image(480, 480, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        # Upright, centered with white bars top/bottom; top-left is white (bar)
+        assert result.load()[0, 0] == (255, 255, 255)
+        # Red marker should be in the top-left of the centered square
+        assert self._is_marker(result.load()[0, 160])
+
+    def test_auto_rotation_adds_to_user_rotation(self, app_module):
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 180
+        app_module.frame_orientation = 'portrait'
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        # effective rotation = auto 90 + user 180 = 270: top-left marker lands top-right
+        assert self._is_marker(result.load()[479, 0])

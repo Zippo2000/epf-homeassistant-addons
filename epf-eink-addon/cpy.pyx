@@ -45,7 +45,7 @@ cdef double gamma_linear(double inp) nogil:
         return pow((inp + 0.055) / (1.0 + 0.055), 2.4)
     return inp / 12.92
 
-def load_scaled(image, angle, display_mode='fit'):
+def load_scaled(image, angle, display_mode='fit', target_width=EPD_W, target_height=EPD_H):
     if isinstance(image, str):
         img = Image.open(image)
     else:
@@ -54,36 +54,39 @@ def load_scaled(image, angle, display_mode='fit'):
     img = img.convert('RGB')
     img = img.rotate(angle, expand=True)
     
+    cdef int tw = target_width
+    cdef int th = target_height
+    
     if display_mode == 'fill':
         orig_ratio = img.width / img.height
-        epd_ratio = EPD_W / EPD_H
+        target_ratio = tw / th
         
-        if orig_ratio > epd_ratio:
-            new_height = EPD_H
+        if orig_ratio > target_ratio:
+            new_height = th
             new_width = int(new_height * orig_ratio)
             img = img.resize((new_width, new_height), Image.LANCZOS)
-            left = (new_width - EPD_W) // 2
-            img = img.crop((left, 0, left + EPD_W, EPD_H))
+            left = (new_width - tw) // 2
+            img = img.crop((left, 0, left + tw, th))
         else:
-            new_width = EPD_W
+            new_width = tw
             new_height = int(new_width / orig_ratio)
             img = img.resize((new_width, new_height), Image.LANCZOS)
-            top = (new_height - EPD_H) // 2
-            img = img.crop((0, top, EPD_W, top + EPD_H))
+            top = (new_height - th) // 2
+            img = img.crop((0, top, tw, top + th))
     else:
         orig_ratio = img.width / img.height
-        epd_ratio = EPD_W / EPD_H
+        target_ratio = tw / th
         
-        if orig_ratio > epd_ratio:
-            new_width = EPD_W
+        if orig_ratio > target_ratio:
+            new_width = tw
             new_height = int(new_width / orig_ratio)
         else:
-            new_height = EPD_H
+            new_height = th
             new_width = int(new_height * orig_ratio)
         
         img = img.resize((new_width, new_height), Image.LANCZOS)
-        bg = Image.new('RGB', (EPD_W, EPD_H), (255, 255, 255))
-        offset = ((EPD_W - new_width) // 2, (EPD_H - new_height) // 2)
+        bg = Image.new('RGB', (tw, th), (255, 255, 255))
+        offset = ((tw - new_width) // 2, (th - new_height) // 2)
         bg.paste(img, offset)
         return bg
     
@@ -92,19 +95,21 @@ def load_scaled(image, angle, display_mode='fit'):
 def convert_image(input_image, preview_path=None, dithering_strength=1.0):
     cdef np.ndarray[np.uint8_t, ndim=3] img_array = np.array(input_image, dtype=np.uint8)
     cdef double[:, :] epd_colors = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.953, 0.220], [0.749, 0.0, 0.0], [0.392, 0.251, 1.0], [0.263, 0.541, 0.110]], dtype=np.float64)
-    cdef np.ndarray[np.uint8_t, ndim=3] pixels = np.zeros((EPD_H, EPD_W, 3), dtype=np.uint8)
-    cdef np.ndarray[np.uint8_t, ndim=3] output_img = np.zeros((EPD_H, EPD_W, 3), dtype=np.uint8)
+    cdef int height = img_array.shape[0]
+    cdef int width = img_array.shape[1]
+    cdef np.ndarray[np.uint8_t, ndim=3] pixels = np.zeros((height, width, 3), dtype=np.uint8)
+    cdef np.ndarray[np.uint8_t, ndim=3] output_img = np.zeros((height, width, 3), dtype=np.uint8)
     
     cdef int x, y, c, best, i
     cdef double diff, min_diff, scaled_diff, new_val
     
-    for y in range(EPD_H):
-        for x in range(EPD_W):
+    for y in range(height):
+        for x in range(width):
             for c in range(3):
                 pixels[y, x, c] = img_array[y, x, c]
     
-    for y in range(EPD_H):
-        for x in range(EPD_W):
+    for y in range(height):
+        for x in range(width):
             min_diff = 1e10
             best = 0
             
@@ -121,19 +126,19 @@ def convert_image(input_image, preview_path=None, dithering_strength=1.0):
                 diff = (pixels[y, x, c] / 255.0 - epd_colors[best, c])
                 scaled_diff = diff * dithering_strength
                 
-                if x+1 < EPD_W:
+                if x+1 < width:
                     new_val = pixels[y, x+1, c] + (scaled_diff * 7.0/16.0 * 255.0)
                     pixels[y, x+1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if x-1 >= 0 and y+1 < EPD_H:
+                if x-1 >= 0 and y+1 < height:
                     new_val = pixels[y+1, x-1, c] + (scaled_diff * 3.0/16.0 * 255.0)
                     pixels[y+1, x-1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if y+1 < EPD_H:
+                if y+1 < height:
                     new_val = pixels[y+1, x, c] + (scaled_diff * 5.0/16.0 * 255.0)
                     pixels[y+1, x, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if x+1 < EPD_W and y+1 < EPD_H:
+                if x+1 < width and y+1 < height:
                     new_val = pixels[y+1, x+1, c] + (scaled_diff * 1.0/16.0 * 255.0)
                     pixels[y+1, x+1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
             
@@ -170,19 +175,21 @@ cdef double sqDiff_Atkinson(double a, double b) nogil:
 def convert_image_atkinson(input_image, preview_path=None, dithering_strength=1.0):
     cdef np.ndarray[np.uint8_t, ndim=3] img_array = np.array(input_image, dtype=np.uint8)
     cdef double[:, :] epd_colors = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.953, 0.220], [0.749, 0.0, 0.0], [0.392, 0.251, 1.0], [0.263, 0.541, 0.110]], dtype=np.float64)
-    cdef np.ndarray[np.uint8_t, ndim=3] pixels = np.zeros((EPD_H, EPD_W, 3), dtype=np.uint8)
-    cdef np.ndarray[np.uint8_t, ndim=3] output_img = np.zeros((EPD_H, EPD_W, 3), dtype=np.uint8)
+    cdef int height = img_array.shape[0]
+    cdef int width = img_array.shape[1]
+    cdef np.ndarray[np.uint8_t, ndim=3] pixels = np.zeros((height, width, 3), dtype=np.uint8)
+    cdef np.ndarray[np.uint8_t, ndim=3] output_img = np.zeros((height, width, 3), dtype=np.uint8)
     
     cdef int x, y, c, best, i
     cdef double diff, min_diff, scaled_diff, error_value, new_val
     
-    for y in range(EPD_H):
-        for x in range(EPD_W):
+    for y in range(height):
+        for x in range(width):
             for c in range(3):
                 pixels[y, x, c] = img_array[y, x, c]
     
-    for y in range(EPD_H):
-        for x in range(EPD_W):
+    for y in range(height):
+        for x in range(width):
             min_diff = 1e10
             best = 0
             
@@ -199,32 +206,32 @@ def convert_image_atkinson(input_image, preview_path=None, dithering_strength=1.
                 diff = (pixels[y, x, c] / 255.0 - epd_colors[best, c])
                 scaled_diff = diff * dithering_strength * 0.75
                 
-                if x+1 < EPD_W:
+                if x+1 < width:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y, x+1, c] + error_value
                     pixels[y, x+1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if x+2 < EPD_W:
+                if x+2 < width:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y, x+2, c] + error_value
                     pixels[y, x+2, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if x-1 >= 0 and y+1 < EPD_H:
+                if x-1 >= 0 and y+1 < height:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y+1, x-1, c] + error_value
                     pixels[y+1, x-1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if y+1 < EPD_H:
+                if y+1 < height:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y+1, x, c] + error_value
                     pixels[y+1, x, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if x+1 < EPD_W and y+1 < EPD_H:
+                if x+1 < width and y+1 < height:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y+1, x+1, c] + error_value
                     pixels[y+1, x+1, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)
                 
-                if y+2 < EPD_H:
+                if y+2 < height:
                     error_value = scaled_diff * (1.0/8.0) * 255.0
                     new_val = pixels[y+2, x, c] + error_value
                     pixels[y+2, x, c] = <np.uint8_t>min(max(new_val, 0.0), 255.0)

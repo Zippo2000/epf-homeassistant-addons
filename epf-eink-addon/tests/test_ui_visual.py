@@ -233,7 +233,9 @@ class TestDashboardPreviews:
         assert 'src="./preview-processed"' in html
         assert 'data-caption="Next photo (processed for the e-ink frame)"' in html
 
-    def test_portrait_box_class_on_delivered_and_processed(self, client_with_mocks):
+    def test_portrait_box_class_on_delivered_and_processed(self, client_with_mocks, app_module):
+        app_module.current_config['frame_orientation'] = 'portrait'
+        app_module.frame_orientation = 'portrait'
         html = _html_of(client_with_mocks)
         # Both portrait-orientation panels get the CSS class
         assert 'id="previewDeliveredBox" ' in html and 'portrait-box' in html.split('id="previewDeliveredBox"')[0].rsplit('class=', 1)[1]

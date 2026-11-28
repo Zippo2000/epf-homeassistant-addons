@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.6] - 2026-11-28
+
+### Changed
+- **Reworked frame orientation handling.** The physical frame orientation (`landscape` or `portrait`) now determines the output dimensions (800×480 vs. 480×800) instead of unconditionally rotating every image. The pipeline auto-rotates a source by 90° only when the source orientation does not match the frame orientation and the source is not square. Square sources are never auto-rotated. The `rotation_angle` setting remains additive for manual fine-tuning.
+
+### Fixed
+- **Portrait sources on portrait frames are no longer rotated sideways.** The previous logic always added 90° in portrait mode, which turned portrait-format source images (e.g. the fox test shot) on their side. Now they stay upright.
+- **Web previews follow the physical frame shape without CSS rotation.** Dashboard and gallery wall-items use 3:5 boxes for portrait and 5:3 boxes for landscape, displaying the actual frame output directly.
+
+### Technical
+- `cpy.pyx`: `load_scaled` accepts `target_width`/`target_height`; `convert_image` and `convert_image_atkinson` use the input image dimensions instead of hard-coded 800×480.
+- `app.py`: new helpers `_target_dimensions`, `_source_orientation`, `_needs_auto_rotation`; default `frame_orientation` returned to `landscape`.
+- `templates/settings.html`: removed `transform: rotate(...)` for portrait previews/gallery; orientation now only changes the aspect-ratio box.
+- Tests: updated TC-FR-034 for orientation-aware auto-rotation and added marker-image cases for portrait/portrait, landscape/landscape, mismatched orientations, square source, and additive user rotation.
+
 ## [2.6.5] - 2026-11-28
 
 ### Fixed
