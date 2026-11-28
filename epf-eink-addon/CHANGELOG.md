@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.10] - 2026-11-28
+
+### Changed
+- **`frame_flipped` now rotates only the frame picture, not the web preview.** Field data showed the 2.6.9 behaviour (rotating both) can never make the dashboard and the physical frame agree – a 180°-mounted panel only lets the content move together. The 180° pre-rotation is now applied to the frame buffer (`latest.bmp`) alone; the dashboard previews keep their normal orientation. With “Panel Mounted Upside Down: Yes” the frame reads upright on a 180°-mounted panel **and** matches the dashboard.
+
 ## [2.6.9] - 2026-11-28
 
 ### Added

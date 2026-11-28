@@ -853,7 +853,7 @@
                                     <option value="disabled" {% if not config.get('frame_flipped', False) %}selected{% endif %}>No</option>
                                     <option value="enabled" {% if config.get('frame_flipped', False) %}selected{% endif %}>Yes – rotate the picture 180°</option>
                                 </select>
-                                <p class="small-text">For frames whose panel was installed rotated 180°: turns both the previews on this page and the frame picture upside down so the image reads upright on the wall.</p>
+                                <p class="small-text">For frames whose panel was installed rotated 180°: pre-rotates only the <b>frame picture</b> by 180° so it reads upright on the wall, while the previews on this page keep their normal orientation. With this on, the dashboard and the physical frame show the same orientation.</p>
                             </div>
                             <div class="form-group">
                                 <label for="rotation_angle">Rotation:</label>

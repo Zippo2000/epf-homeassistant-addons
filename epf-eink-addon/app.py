@@ -534,16 +534,17 @@ def _needs_auto_rotation(width: int, height: int, frame_orientation: str) -> boo
 
 
 def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height: int = 480, bg_color: Tuple[int, int, int] = (255, 255, 255)) -> PILImage:
-    global rotation_angle, dithering_method, frame_orientation, frame_flipped
+    global rotation_angle, dithering_method, frame_orientation
     # Effective rotation: the stored rotation plus 90° only when the source orientation
-    # does not match the physical frame orientation (and the source is not square),
-    # plus 180° when the panel is mounted upside down (frame_flipped, 2.6.9).
+    # does not match the physical frame orientation (and the source is not square).
     # The output dimensions depend on frame_orientation (800x480 landscape, 480x800 portrait).
+    # NOTE (2.6.10): the 180° "panel mounted upside down" correction (frame_flipped) is
+    # deliberately NOT applied here. It must rotate the frame buffer only, not the web
+    # preview, so the dashboard and the physical frame can be made to match (a panel
+    # mounted 180° is compensated by pre-rotating the BMP alone).
     target_width, target_height = _target_dimensions(frame_orientation)
     image = ImageOps.exif_transpose(image)
     extra_rotation: int = 90 if _needs_auto_rotation(image.width, image.height, frame_orientation) else 0
-    if frame_flipped:
-        extra_rotation += 180
     rotation: int = (rotation_angle + extra_rotation) % 360
     
     datetime_str: Optional[str] = None
@@ -645,6 +646,12 @@ def save_three_previews(image_original: PILImage) -> PILImage:
         frame_buf: PILImage = processed_rotated.rotate(90, expand=True)
     else:
         frame_buf = processed_rotated
+    # "Panel mounted upside down" (2.6.10): pre-rotate the FRAME BUFFER alone by 180° so a
+    # 180°-mounted panel shows the picture upright. The web preview (processed_rotated, saved
+    # as latest_processed.jpg) is left untouched, so the dashboard keeps its normal orientation
+    # and the two end up matching. In portrait mode this stacks on the 90° pre-rotation.
+    if frame_flipped:
+        frame_buf = frame_buf.rotate(180)
     
     bmp_path: str = os.path.join(photo_dir, 'latest.bmp')
     bmp_io = io.BytesIO()

@@ -188,6 +188,20 @@ Die Einstellung `rotation_angle` bleibt erhalten und addiert sich zur automatisc
 
 **Nachbefund des Users:** 2.6.8 funktioniert, aber das Panel ist physikalisch 180° verdreht verbaut → Bild kopfüber. Lösung: neue top-level-YAML-Einstellung `frame_flipped` (Add-on-Option `frame_flipped`, env `FRAME_FLIPPED`, Default `false`), die in `scale_img_in_memory` 180° zur Rotation addiert – Web-Preview UND Frame-BMP drehen zusammen (die BMP-Vorrotation erbt den Effekt automatisch, es gibt keine zweite Stelle). UI: Select im Frame-&-Rotation-Kartuschen („No / Yes – rotate the picture 180°“), Reset setzt auf `disabled`, POST-ohne-Feld behält den Wert (2.4.3b-Regel). Tests: TC-FR-035 (Default, Round-Trip, Silent-POST, Pipeline 180°, Additivität mit Auto-Rotation 90+180=270).
 
+## 2.6.10: `frame_flipped` nur auf das Frame-Bild (28.11.2026)
+
+**Feld-Daten des Users** (Landscape-Setup, Panel 180° verbaut):
+
+| Settings | Dashboard | Echter Frame |
+|---|---|---|
+| rotation 0°, flipped No | passt | 180° verdreht |
+| rotation 0°, flipped Yes | 180° verdreht | passt |
+| rotation 180°, flipped Yes | passt | 180° verdreht |
+
+**Analyse:** In 2.6.9 drehte `frame_flipped` die **geteilte Pipeline** → Dashboard und Frame bewegen sich immer *zusammen* → sie können **nie** zueinander passen. Die physische 180°-Montage ist ein fester Hardware-Offset; er lässt sich nur ausgleichen, indem **nur das Frame-Bild** (BMP) vorrotiert wird.
+
+**Fix:** `frame_flipped` wird in `scale_img_in_memory` NICHT mehr angewendet; stattdessen in `save_three_previews` nur auf `frame_buf` (nach der 90°-Portrait-Vorrotation, d.h. gestapelt). Damit: flipped=Yes → Frame aufrecht an der Wand, Dashboard unverändert → **beide passen zusammen**. UI-Text entsprechend angepasst. Tests TC-FR-035 neu: Pipeline ignoriert Flip (Marker bleibt tl), Landscape: BMP-Marker tl→br bei unveränderter Web-Preview, Portrait: Flip stapelt auf die 90°-Vorrotation ((0,0)→(0,479)→(799,0)).
+
 ---
 
 ## Wie man weitermacht
@@ -230,6 +244,6 @@ body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform:
 ```
 
 ### Versionsstand
-- `config.yaml`: `version: "2.6.9"`
-- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.9
+- `config.yaml`: `version: "2.6.10"`
+- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.10
 - Latest commit: TBD

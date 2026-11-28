@@ -1867,17 +1867,19 @@ class TestFR034FrameOrientation:
 
 
 # ============================================================
-# TC-FR-035: Frame Flipped (2.6.9)
+# TC-FR-035: Frame Flipped (2.6.10)
 # ============================================================
 
 class TestFR035FrameFlipped:
-    """TC-FR-035: the panel can be physically mounted upside down.
+    """TC-FR-035: the panel can be physically mounted upside down (180°).
 
     'frame_flipped' is a top-level runtime-YAML key (like date_overlay /
     frame_orientation): seeded from the FRAME_FLIPPED add-on option on first
-    start, edited on the settings page, and honoured by the pipeline. When
-    enabled it adds 180° to the rotation of BOTH the web preview and the frame
-    buffer, so the picture reads upright on a 180°-mounted panel.
+    start, edited on the settings page. When enabled it pre-rotates ONLY the
+    frame buffer (latest.bmp) by 180°, so a 180°-mounted panel shows the
+    picture upright. The shared pipeline and the web preview
+    (latest_processed.jpg, the dashboard) are left untouched, so the dashboard
+    keeps its normal orientation and the two end up matching.
     """
 
     def _is_marker(self, pixel):
@@ -1908,8 +1910,8 @@ class TestFR035FrameFlipped:
                                           'album_name': 'some-album'}, follow_redirects=True)
         assert app_module.frame_flipped is True
 
-    def test_pipeline_rotates_180_when_flipped(self, app_module):
-        """A portrait source on a portrait frame with the panel flipped ends up 180° turned."""
+    def test_pipeline_ignores_frame_flipped(self, app_module):
+        """frame_flipped must not touch the shared pipeline: the web preview stays put."""
         if not app_module.CYTHON_AVAILABLE:
             pytest.skip("Cython not available")
         app_module.rotation_angle = 0
@@ -1919,19 +1921,51 @@ class TestFR035FrameFlipped:
         src = _marker_image(480, 800, 'tl')
         result = app_module.scale_img_in_memory(src)
         assert result.size == (480, 800)
-        # 180°: the top-left marker lands at bottom-right
-        assert self._is_marker(result.load()[479, 799])
+        # no rotation applied in the pipeline: top-left marker stays top-left
+        assert self._is_marker(result.load()[0, 0])
 
-    def test_flipped_is_additive_with_auto_rotation(self, app_module):
-        """A landscape source on a portrait frame: auto 90° + flip 180° = 270°."""
+    def test_frame_buffer_rotated_but_web_preview_not(self, app_module, test_dir):
+        """Landscape frame with a 180°-mounted panel: the 800x480 BMP gets the
+        extra 180°, latest_processed.jpg (the dashboard image) stays upright, so
+        the dashboard and the physical frame show the same orientation."""
         if not app_module.CYTHON_AVAILABLE:
             pytest.skip("Cython not available")
+        app_module.photo_dir = test_dir['photos']
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'landscape'
+        app_module.frame_flipped = True
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        app_module.save_three_previews(src)
+
+        # dashboard image unchanged: marker stays top-left
+        processed = Image.open(os.path.join(test_dir['photos'], 'latest_processed.jpg'))
+        assert self._is_marker(processed.load()[0, 0])
+
+        # frame buffer pre-rotated 180°: marker moves to bottom-right
+        bmp = Image.open(os.path.join(test_dir['photos'], 'latest.bmp'))
+        assert bmp.size == (EPD_W, EPD_H)
+        assert self._is_marker(bmp.load()[EPD_W - 1, EPD_H - 1])
+
+    def test_portrait_flip_stacks_on_pre_rotation(self, app_module, test_dir):
+        """In portrait mode the 180° stacks on the 90° pre-rotation for the frame
+        buffer only; the web preview keeps the viewer-oriented image."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.photo_dir = test_dir['photos']
         app_module.rotation_angle = 0
         app_module.frame_orientation = 'portrait'
         app_module.frame_flipped = True
         app_module.display_mode = 'fit'
-        src = _marker_image(800, 480, 'tl')
-        result = app_module.scale_img_in_memory(src)
-        assert result.size == (480, 800)
-        # 90+180=270: top-left marker lands at top-right
-        assert self._is_marker(result.load()[479, 0])
+        src = _marker_image(480, 800, 'tl')
+        app_module.save_three_previews(src)
+
+        # web preview keeps the viewer-oriented portrait image (marker top-left)
+        processed = Image.open(os.path.join(test_dir['photos'], 'latest_processed.jpg'))
+        assert processed.size == (EPD_H, EPD_W)
+        assert self._is_marker(processed.load()[0, 0])
+
+        # buffer: web tl(0,0) -> rotate(90 CCW) -> (0,479) -> rotate(180) -> (799,0)
+        bmp = Image.open(os.path.join(test_dir['photos'], 'latest.bmp'))
+        assert bmp.size == (EPD_W, EPD_H)
+        assert self._is_marker(bmp.load()[EPD_W - 1, 0])
