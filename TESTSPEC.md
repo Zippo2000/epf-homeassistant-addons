@@ -1,6 +1,6 @@
 # Testspezifikation & -Modell – EPF E-Ink Add-on
 
-**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.5.0 (2026-11-23)
+**Projekt:** `epf-homeassistant-addons` / Add-on `epf-eink-addon` · **Stand:** v2.6.10 (2026-11-28)
 **Sprache:** Deutsch (analytisch) · **Verwandt:** [`ANALYSE.md`](ANALYSE.md),
 [`docs/test_specification_aspice.md`](docs/test_specification_aspice.md) (EPF-TST-001, formale ASPICE-
 Spezifikation), [`docs/test_report_aspice.md`](docs/test_report_aspice.md) (EPF-RPT-001).
@@ -103,6 +103,8 @@ Sechs Dateien; jede Test-Klasse trägt die ASPICE-IDs im Namen. (Stand 2.4.0: `t
 | `TestFR015PreviewServing` | FR-015 | `/preview-photo`/`/preview-original`/… 200 |
 | `TestFR021SettingsVocabulary` (2.3.2) | FR-021 | Formularnamen == Add-on-Optionen, Legacy-Kurzname als Alias,Secrets als Read-only-Status,Kanal-Badges, **keine Doppel-Namen im Formular + Geteiltes-ComfyUI-Block-Roundtrip (2.4.1)**, **leeres Feld überschreibt gespeicherten Wert + die Seite fragt vorher (2.4.3b)** |
 | `TestFR033WorkflowSelection` (2.4.0) | FR-033 | Workflow-Dropdown + Slots, Save-Roundtrip ins Runtime-YAML, Validierung (Duplikat/UI-Format/Größe/Auswahl), „POST ohne Felder behält die Liste", **Slot mit Inhalt aber ohne Name wird beim Speichern verweigert (2.4.3b — Guard ausgemacht, Test wird rot)** |
+| `TestFR034FrameOrientation` (2.6.6/2.6.8) | FR-034 | **Orientierungs-bewusste Auto-Rotation** (Marker-Bilder: Porträt/Porträt bleibt aufrecht, quer/Porträt wird 90° gegen den Uhrzeigersinn gedreht, quadratisch wird nie gedreht, `rotation_angle` additiv), **Puffer bleibt immer 800×480** (Porträt: Vordrehung 90° CCW in den Landschaftspuffer — die Firmware kann keine andere Geometrie), Roundtrip/400-Post/Settings-Seite |
+| `TestFR035FrameFlipped` (2.6.10) | FR-035 | Default false, Roundtrip, **stille POST behält den Wert**, **Pipeline ignoriert den Flip** (Web-Vorschau unangetastet), **Puffer wird 180° gedreht, nicht die Web-Vorschau** (Quer), Porträt-Flip stapelt auf die 90°-Vordrehung (Marker Web (0,0) → Puffer (799,0)) |
 
 ### `tests/test_nonfunctional.py` → **NFR + IFR + SEC + PER**
 | Klasse | ID | Prüft |
@@ -144,10 +146,10 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 | `TestProviderFactory` | `create_immich`/`comfyui_ha`/`comfyui_direct`; **unknown → ValueError** |
 | `TestMultiSourceIntegration` | `/health` zeigt Quelle; `/api/generation-status` (Immich = Nullwerte); Settings zeigt `image_source` |
 
-> **Coverage-Grob (Stand 2.5.0):** **206** automatisierte Offline-Fälle über die Katalog-Requirements
-> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **214**,
+> **Coverage-Grob (Stand 2.6.10):** **342** automatisierte Offline-Fälle über die Katalog-Requirements
+> in `docs/test_specification_aspice.md` (EPF-TST-001) + **8** Live-Fälle im opt-in-Tier (§ 5b) = **350**,
 > 100 %. Die meisten FR/IFR/SEC/PER haben **mind. einen** automatisierten Fall — und seit 2.4.3b gilt das
-> wörtlich für **alle 55**: die Provider-Requirements FR-027 … FR-031 haben jetzt eigene Testfälle
+> wörtlich für **alle 57**: die Provider-Requirements FR-027 … FR-031 haben jetzt eigene Testfälle
 > **TC-FR-027 … TC-FR-031** (die Fälle liefen längst in `test_providers.py`, es fehlte nur die
 > Dokumentation). Was **nicht**
 > automatisiert ist, steht in der ASPICE-Spezifikation als *manuell* (z. B. echte HA-/ComfyUI-Integration,
@@ -159,13 +161,13 @@ sie spalten), Pruner/Reader-Einigkeit über den Cap, und Name ohne Shot-id bleib
 
 ## 4. Bekannte Grenzen der Suite (honest read)
 
-1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.5.0 / 214 Tests / 100 %** —
+1. **Report-Stand:** `docs/test_report_aspice.md` = **v2.6.10 / 350 Tests / 100 %** —
    L0 (**28,5 s**), **L1** (echter Immich **+** echtes ComfyUI, 27,2 s) und
    der **L3-Produktions-Smoke** (Cap 2, drei echte Immich-Generierungen → der Per-Shot-Pruner lief auf
    dem ausgelieferten Image; beide 2.4.3b-Regeln zusätzlich über HTTP auf dem ausgelieferten Image
    bestätigt) sind **am 2026-11-22 auf diesem Code-Stand grün gefahren** (Report §6.9). Code, Specs und
-   Report sind auf demselben Stand (33 FR, volles Provider-Modul, sechs Test-Dateien, Traceability
-   55/55; CI läuft für L0). Vor jedem Release neu fahren und neu zählen —
+   Report sind auf demselben Stand (35 FR, volles Provider-Modul, sechs Test-Dateien, Traceability
+   57/57; CI läuft für L0). Vor jedem Release neu fahren und neu zählen —
    sonst rostet die "100 %"-Behauptung (s. [`ANALYSE.md`](ANALYSE.md) §14.6).
 2. **Echte Netzwerk-Backends sind nicht abgedeckt** (by design): Ein echter Immich-/HA-/ComfyUI-Lauf
    (z. B. gegen eine Live-Immich mit *v3-API*) ist ein separates Manuell-/Integrationstier. Genau *dort*

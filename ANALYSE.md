@@ -55,8 +55,8 @@ Der zentrale Designgedanke bleibt identisch zum Ursprung — **Trennung von Bere
 
 Dazu: **`/health`** (quellen-unabhängig), **Prepare/Deliver-Entkopplung** (Foto vorher vorbereiten,
 später liefern), **Preview-Galerie**, **Dark Mode**, **CSP-Härtung** und ein **ASPICE-Doku- &
-Test-Paket** (33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER; **206** vollständig gemoockte Pytest-Fälle,
-Stand v2.5.0, dazu 8 Live-Fälle im opt-in-Tier).
+Test-Paket** (35 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER; **342** vollständig gemoockte Pytest-Fälle,
+Stand v2.6.10, dazu 8 Live-Fälle im opt-in-Tier).
 
 **Ergebnis:** Frame-Refresh im Sekundenbereich, minimale Geräte-Leistung, und — neu — die Möglichkeit,
 den Rahmen mit **KI-generierten Bildern** zu betreiben, die sich per Prompt-Vorlage an
@@ -451,7 +451,9 @@ den rohen Port 5000 offen) — s. §14.11.
 | `comfyui_max_generations` | `COMFYUI_MAX_GENERATIONS` | `int(1,200)?` | 50 |
 | `comfyui_entity_id` | `COMFYUI_ENTITY_ID` | `str?` | — |
 | `comfyui_direct_url` / `comfyui_workflow_json` | … | `str?` | — |
-| `rotation_angle` | `ROTATION_ANGLE` | `list(0\|90\|180\|270)` | 270 |
+| `rotation_angle` | `ROTATION_ANGLE` | `list(0\|90\|180\|270)` | 0 |
+| `frame_orientation` | `FRAME_ORIENTATION` | `list(landscape\|portrait)` | landscape |
+| `frame_flipped` | `FRAME_FLIPPED` | `bool?` | false (nur Frame-Bild 180° vorrotiert, Preview bleibt) |
 | `color_enhance` | `COLOR_ENHANCE` | `float(0,3)` | 1.8 |
 | `contrast` | `CONTRAST` | `float(0,2)` | 0.9 |
 | `dithering_strength` | `DITHERING_STRENGTH` | `float(0,1)` | 1.0 |

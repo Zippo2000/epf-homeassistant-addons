@@ -2,10 +2,19 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-ARC-001  
-**Version:** 2.5.0  
-**Date:** 2026-11-23  
-**Baseline:** Repository commit (main branch) — code base **v2.5.0**: the v1.1.0 §14 remediation, the UI track (2.1.0–2.1.2), gallery history (2.2.0/2.2.1), gallery options (2.3.0), checkpoint resolution (2.3.1), settings vocabulary (2.3.2), named workflows (2.4.0), duplicate-field fix (2.4.1), date-stamp switch (2.4.2), per-shot gallery pruning (2.4.3), settings guards + CI (2.4.3b), in-page image zoom (2.5.0)  
-**Status:** Released — re-baselined in this pass
+**Version:** 2.6.10  
+**Date:** 2026-11-28  
+**Baseline:** Repository commit (main branch) — code base **v2.6.10**: … per-shot gallery pruning (2.4.3), settings guards + CI (2.4.3b), in-page image zoom (2.5.0), settings-page redesign + **frame orientation FR-034 (2.6.0)**, orientation-aware auto-rotation + the always-800×480 frame buffer (2.6.6/2.6.8), **frame flipped FR-035 (2.6.9/2.6.10)**  
+**Status:** Released — re-baselined for 2.6.10
+
+> **Revision 2.6.10 (2026-11-28):** documents the 2.6.x frame-orientation track: **FR-034** now
+> covers the orientation-aware auto-rotation (rotate only on a source/frame orientation mismatch,
+> never for square sources), the viewer-oriented web dimensions, and the **800×480 hardware buffer
+> contract** (portrait pre-rotation into the landscape buffer — the firmware cannot display any other
+> geometry); **FR-035 (frame flipped)** compensates a 180°-mounted panel by pre-rotating the frame
+> buffer **alone**, so the dashboard and the physical frame show the same orientation. New design
+> decisions **D-017** (the 800×480 buffer contract) and **D-018** (the flipped setting acts on the
+> buffer only). §12 traceability now reaches FR-034/FR-035.
 
 > **Revision 2.5.0 (2026-11-23):** this pass brings EPF-ARC-001 up to the code it documents — it
 > had frozen at v2.0.0 (2026-04-03). **IFC-001** now shows the Immich calls the provider actually
@@ -854,7 +863,7 @@ Background Threads:
 | Architecture Component | Requirements Satisfied |
 |----------------------|----------------------|
 | Flask Application Core | FR-013, FR-014, FR-015, FR-016, FR-017, FR-018, FR-019, FR-021, IFR-002, IFR-003, IFR-005 |
-| Image Processing Pipeline | FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-011, FR-012, NFR-006, NFR-007, PER-001 |
+| Image Processing Pipeline | FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-011, FR-012, FR-034, FR-035, NFR-006, NFR-007, PER-001 |
 | Cython Module | FR-006, FR-008, FR-009, NFR-006, NFR-007, PER-001 |
 | Immich Client Service | FR-001, FR-002, FR-003, FR-004, FR-017, IFR-001 |
 | Configuration Management | FR-020, FR-021, FR-027, IFR-003, IFR-004, NFR-004, PER-003 |
@@ -863,7 +872,7 @@ Background Threads:
 | Power Management Service | FR-019 |
 | Battery Monitor | FR-018 |
 | NTP Synchronizer | FR-023 |
-| Web Settings UI | FR-021, FR-025, FR-026 (incl. clause 8, the in-page lightbox), FR-032, FR-033, NFR-008, NFR-010 |
+| Web Settings UI | FR-021, FR-025, FR-026 (incl. clause 8, the in-page lightbox), FR-032, FR-033, FR-034, FR-035, NFR-008, NFR-010 |
 | Gunicorn WSGI Server | NFR-002, NFR-003, NFR-005, PER-002 |
 | Preview Cleanup Service | FR-024, NFR-009 |
 | Provider Layer — C-013 … C-018 | FR-027, FR-028, FR-029, FR-030, FR-031, FR-033 |
@@ -929,6 +938,16 @@ Background Threads:
 - **Solution:** One `#lightbox` overlay shared by both surfaces. The image is rendered at its final size, positioned back onto the clicked thumbnail and animated out with the existing tokens (`--dur-slow`, `--ease-out-soft`); navigation inside the overlay cross-fades; `Esc` closes, `←`/`→` step through the group; `prefers-reduced-motion` and a `<768px` layout are honoured. Gallery anchors keep `href` as the no-JS fallback (`preventDefault()` in JS), and the overlay markup stays outside `#settingsForm` so the one-field-name-per-key guard stays green.
 - **Impact:** Same gesture on both surfaces, no extra windows, no backend change; covered by the FR-026 clause 8 / TC-FR-026 step 9 guard test.
 
+### D-017: The Frame Buffer Stays 800×480 — Orientation Is a Content Question (v2.6.0, hardened 2.6.6/2.6.8)
+- **Problem:** The 2.6.6 pass first let the pipeline emit a 480×800 buffer in portrait mode. The firmware reads every row as 800 pixels — any other geometry smears the picture on the wall (seen in the field with 2.6.7).
+- **Solution:** `save_three_previews` always hands the frame an **800×480** buffer: in portrait mode the viewer-oriented 480×800 image is pre-rotated 90° CCW into it, which the portrait-hung panel's physical rotation brings back upright. The web preview keeps the viewer-oriented image, so both surfaces show the same upright result. The pipeline itself only auto-rotates a source 90° when its orientation mismatches the frame orientation and it is not square (never for square sources); `rotation_angle` (default 0°) stays a manual knob on top.
+- **Impact:** The 800×480 buffer geometry is a **hardware contract** with the firmware (see the data-format invariant in `ARCHITECTURE.md`). Marker-pixel tests fix the geometry offline; the wall direction is proven by the real-frame photo each release (2.6.8 accepted by the user; 2.6.10 re-proven for the flip).
+
+### D-018: `frame_flipped` Rotates the Frame Buffer Only, Not the Web Preview (v2.6.9/2.6.10)
+- **Problem:** A panel installed rotated 180° shows every picture upside down. The 2.6.9 first cut added 180° to the *shared pipeline rotation*, so dashboard and frame always moved together and could never agree (field data: 0°/No → frame wrong, 0°/Yes → dashboard wrong).
+- **Solution:** the 180° pre-rotation is applied in `save_three_previews` to the **frame buffer alone** (stacking on the portrait 90° pre-rotation); the shared pipeline and `latest_processed.jpg` are untouched, so the dashboard keeps its normal orientation and both surfaces show the same orientation on a 180°-mounted panel. The setting follows the usual two-channel contract (add-on option `frame_flipped` / env `FRAME_FLIPPED` seeds the runtime YAML on first start; the settings page owns it; a silent POST keeps the value; reset-to-default sets No).
+- **Impact:** One No/Yes control in the Frame & Rotation card makes a 180°-mounted frame read upright and match the dashboard; the guard tests assert the buffer is rotated while the preview is not.
+
 ---
 
 ## 15. Approval
@@ -943,4 +962,11 @@ Background Threads:
 
 *Document generated from codebase analysis of repository state at commit 52 on main branch + v1.0.4 enhancements. All architectural descriptions reflect implemented design decisions, not planned features.*
 
-*Re-baselined for code base **v2.5.0** on branch `main`, 2026-11-23 (this pass): what the code has done since the v2.0.0 snapshot is now described — the Immich v3 calls, the gallery archive and its per-shot pruning, the workflow selection, the settings-form rules and the in-page image zoom. Test side at the same baseline: EPF-TST-001 / EPF-RPT-001, **206 offline + 8 live = 214, 100 %**. Browser acceptance of the animation itself stays manual (TESTSPEC §3).*
+*Re-baselined for code base **v2.6.10** on branch `main`, 2026-11-28: the 2.6.x frame-orientation
+track lands on top of the v2.5.0 baseline — the settings-page redesign and **FR-034 (frame
+orientation, 2.6.0)** with its orientation-aware auto-rotation and the always-800×480 frame buffer
+(2.6.6/2.6.8), plus **FR-035 (frame flipped)** — the 180° mounting compensation applied to the frame
+buffer alone, so the dashboard and the physical frame show the same orientation (2.6.10). New design
+decisions D-017/D-018; §12 traceability reaches FR-034/FR-035. Test side at the same baseline:
+EPF-TST-001 / EPF-RPT-001, **342 offline + 8 live = 350, 100 %**. Browser acceptance of the re-designed
+settings page stays manual (TESTSPEC §3).*

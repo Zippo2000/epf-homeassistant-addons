@@ -211,6 +211,36 @@ Size ≈ **576 KB** of text per refresh.
 
 ---
 
+## Frame orientation and the 800×480 hardware contract (2.6.0–2.6.10)
+
+The panel is a **fixed 800×480 landscape display**: the firmware reads every row as 800 pixels and
+cannot consume any other buffer geometry (a 480×800 buffer is smearing on the wall — seen in the
+field with 2.6.6/2.6.7). Everything below protects that contract.
+
+* **`frame_orientation`** (top-level runtime key, default `landscape`; seeded from the add-on
+  option) describes how the frame hangs. The *web preview* dimensions follow it: `800×480` for
+  landscape, `480×800` for portrait. The **frame buffer (`latest.bmp`) is always 800×480**; in
+  portrait mode its content is the viewer-oriented image pre-rotated 90° (CCW), which the hung
+  panel's physical rotation brings back upright.
+* **Orientation-aware auto-rotation:** the pipeline adds 90° (CCW, PIL semantics) to the stored
+  `rotation_angle` **only** when the source's orientation (after EXIF transpose) does not match the
+  frame orientation and the source is not square. A portrait photo on a portrait frame stays
+  upright; a landscape photo on a portrait frame is turned to stand upright. `rotation_angle`
+  (default 0°) remains a manual fine-tuning knob on top.
+* **`frame_flipped`** (default `false`): for a panel installed rotated 180°, the *frame buffer
+  alone* is pre-rotated 180° (stacking on the portrait pre-rotation where applicable). The web
+  preview is **not** touched, so the dashboard keeps its normal orientation and both — dashboard
+  and physical frame — show the same orientation. (2.6.9 first rotated the shared pipeline, which
+  moved both together and could never make them agree; 2.6.10 moved the rotation to the buffer.)
+
+> **Keep-in-sync invariant:** the 800×480 buffer geometry is a **hardware contract** with the
+> firmware (see the data-format note above). Any change to how the buffer is derived (pre-rotation
+> direction, `frame_flipped` placement) must be re-proven against the real frame with a photo —
+> the offline marker-pixel tests (`tests/test_functional.py::TestFR034FrameOrientation` /
+> `TestFR035FrameFlipped`) fix the geometry, not the wall.
+
+---
+
 ## Deployment invariants (the coupling points)
 
 1. **Config is two-channel** (env-seeded defaults + runtime YAML). Secrets ⇒ env only; photo/display

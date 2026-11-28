@@ -1,6 +1,6 @@
 # Bugfix: Portrait-Vorschau – Rotationsrichtung
 
-> **Status:** ✅ 2.6.8 abgenommen vom User („es funktioniert nun“). Nachbefund: Display physikalisch 180° verdreht verbaut → **2.6.9** `frame_flipped` (180°-Drehung von Web-Preview UND Frame-Bild). Offen: L0-Ablauf + ein Verifikationsfoto mit `frame_flipped: enabled`.
+> **Status:** ✅ Abgeschlossen (2026-11-28). 2.6.8 abgenommen („es funktioniert nun"). Nachbefund: Display physikalisch 180° verdreht verbaut → **2.6.9** `frame_flipped` (drehte die gemeinsame Pipeline — Dashboard und Frame bewegten sich immer zusammen, konnten nie zusammenpassen). **2.6.10**: `frame_flipped` rotiert nur das **Frame-Bild (BMP)** um 180° (stapelnd auf die 90°-Vordrehung im Portrait-Modus), die Web-Vorschau bleibt unangetastet — Dashboard und echter Frame zeigen jetzt dieselbe Orientierung. Vom User abgenommen: „Perfekt, funktioniert!“. Doku-Update (REQ/ARC/TST/RPT) in diesem Release.
 > **Hindernis:** Aktuelles Modell (`club3090-active`) hat keine Vision – Screenshots müssen analysiert werden.
 
 ---

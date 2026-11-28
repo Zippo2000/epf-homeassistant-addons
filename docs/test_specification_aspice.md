@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-TST-001  
-**Version:** 2.6.0  
-**Date:** 2026-11-27  
-**Baseline:** Repository commit (main branch, working basis for **v2.6.0**; previous baseline v2.5.0)  
-**Status:** Issued — **TC-FR-034** added for **FR-034 (Frame Orientation)**; L0 re-ran green on this baseline (EPF-RPT-001)
+**Version:** 2.6.10  
+**Date:** 2026-11-28  
+**Baseline:** Repository commit (main branch, working basis for **v2.6.10**; previous baseline v2.6.0)  
+**Status:** Issued — **TC-FR-034** re-worded for the 2.6.6/2.6.8 semantics (orientation-aware auto-rotation, marker-pixel cases, the always-800×480 buffer guard) and **TC-FR-035** added for **FR-035 (Frame Flipped)**; the suite is **342 offline + 8 live = 350** cases
 
 > **Revision 2.3.0 (2026-11-15):** adds **TC-FR-032** (21 automated cases, `tests/test_gallery_history.py`)
 > against the new **FR-032**. The pre-existing "Not Executed" statuses in the matrix are the v2.0.0
@@ -829,14 +829,30 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 |-----------|-------|
 | **Test Case ID** | TC-FR-034 |
 | **Requirement** | FR-034 |
-| **Title** | Verify the orientation setting, its pipeline effect and its settings-page round trip |
+| **Title** | Verify the orientation setting, the orientation-aware auto-rotation, the 800×480 buffer contract and the settings-page round trip |
 | **Priority** | Medium |
-| **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path` |
-| **Test Input** | 6 automated cases in `tests/test_functional.py` (`TestFR034FrameOrientation`) — offline tier L0 |
-| **Test Steps** | 1. Verify the default is `landscape` and the page carries the orientation attribute and the select<br>2. Verify the page shows the stored value (portrait) and the matching `<option ... selected>`<br>3. Verify the form round-trips `portrait` → runtime YAML → effective config (and back to `landscape`)<br>4. Verify a POST without the field keeps the stored orientation<br>5. Verify a value other than landscape/portrait is refused with HTTP 400 and nothing is stored<br>6. Verify the pipeline differential: at the same stored rotation, portrait rotates the processed image relative to landscape |
-| **Expected Result** | `frame_orientation` is a top-level runtime key like `date_overlay`; invalid values are refused like `rotation`; the portrait value reaches the pipeline without a restart |
+| **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path`; marker images (white with one red corner pixel) make the rotation direction observable through the real Cython pipeline |
+| **Test Input** | 14 automated cases in `tests/test_functional.py` (`TestFR034FrameOrientation`) — offline tier L0 |
+| **Test Steps** | 1. Verify the default is `landscape` and the page carries the orientation attribute and the select<br>2. Verify the page shows the stored value (portrait) and the matching `<option ... selected>`<br>3. Verify the form round-trips `portrait` → runtime YAML → effective config (and back to `landscape`)<br>4. Verify a POST without the field keeps the stored orientation<br>5. Verify a value other than landscape/portrait is refused with HTTP 400 and nothing is stored<br>6. Verify a portrait source on a portrait frame is **not** auto-rotated (marker stays put; output 480×800)<br>7. Verify a landscape source on a portrait frame **is** auto-rotated 90° CCW (marker top-left → bottom-left; output 480×800)<br>8. Verify a portrait source on a landscape frame is auto-rotated (output 800×480)<br>9. Verify a square source is never auto-rotated<br>10. Verify `rotation_angle` adds to the auto-rotation (auto 90° + user 180° = 270°)<br>11. **Buffer guard:** portrait mode still hands the frame an 800×480 `latest.bmp` (content pre-rotated 90° CCW, marker at the expected corner) while the web preview stays 480×800<br>12. **Buffer guard:** in landscape mode the BMP is the web image itself (no extra rotation) |
+| **Expected Result** | `frame_orientation` is a top-level runtime key like `date_overlay`; invalid values are refused like `rotation`; the auto-rotation fires only on a real orientation mismatch; the frame buffer is 800×480 in both modes (the hardware contract) |
 | **Verification Method** | Test (Automated) |
-| **Actual Result** | 6/6 passed (offline tier L0, 2026-11-27) |
+| **Actual Result** | 14/14 passed (offline tier L0, 2026-11-28; 2.6.6/2.6.8 re-proven against a real Immich with the real `app.py`: `latest.bmp` 800×480, `latest_processed.jpg` 480×800, content upright) |
+| **Status** | Executed — Passed |
+
+#### TC-FR-035: Frame Flipped (180° Mounting Compensation)
+
+| Attribute | Value |
+|-----------|-------|
+| **Test Case ID** | TC-FR-035 |
+| **Requirement** | FR-035 |
+| **Title** | Verify the 180° mounting compensation acts on the frame buffer only, so dashboard and physical frame match |
+| **Priority** | Medium |
+| **Preconditions** | SUT running with the Immich source mocked; filesystem isolated to `tmp_path`; marker images as in TC-FR-034 |
+| **Test Input** | 6 automated cases in `tests/test_functional.py` (`TestFR035FrameFlipped`) — offline tier L0 |
+| **Test Steps** | 1. Verify the default is `false` and the page carries the `frame_flipped` select<br>2. Verify the settings round trip: POST `enabled` → runtime YAML + effective config `true`; POST `disabled` → `false`<br>3. Verify a POST without the field keeps the stored value (the 2.4.3b silence rule)<br>4. Verify the **shared pipeline ignores the flip**: with the flip on, `scale_img_in_memory` leaves the marker top-left (no rotation applied there)<br>5. **Landscape + flip:** `latest_processed.jpg` keeps the marker top-left (dashboard unchanged) while `latest.bmp` moves it to bottom-right (the 180° pre-rotation on the buffer alone)<br>6. **Portrait + flip:** the flip stacks on the 90° pre-rotation for the buffer (marker web (0,0) → buffer (799,0)) while the web preview keeps the viewer-oriented image |
+| **Expected Result** | `frame_flipped` is a top-level runtime key seeded from the add-on option; enabling it rotates the frame buffer 180° **without touching the web preview**, so a 180°-mounted panel shows an upright picture that matches the dashboard |
+| **Verification Method** | Test (Automated) |
+| **Actual Result** | 6/6 passed (offline tier L0, 2026-11-28); real Immich e2e on the 2.6.10 code: the BMP is the 180° version of the unchanged web image (pixel-difference 0.8M vs 19.8M against the unrotated) |
 | **Status** | Executed — Passed |
 
 ---
@@ -1305,6 +1321,19 @@ All tests run in an isolated Docker container without requiring Home Assistant o
 > round trip, partial POST, the 400 guard and the pipeline differential. The catalogue now has
 > **34 FR / 10 NFR / 5 IFR / 4 SEC / 3 PER** and **61** cases. Results in EPF-RPT-001 (re-baselined for
 > 2.6.0).
+>
+> **Revision 2.6.6 / 2.6.8 (2026-11-28):** **TC-FR-034** is re-worded for the orientation-aware
+> pipeline: 14 automated cases with marker images (portrait/portrait, landscape/landscape,
+> mismatched orientation, square sources, `rotation_angle` additivity, the **always-800×480 buffer**
+> guard for portrait mode and the landscape BMP==web-image case). Results in EPF-RPT-001 (re-baselined
+> for 2.6.10).
+>
+> **Revision 2.6.9 / 2.6.10 (2026-11-28):** adds **TC-FR-035** for **FR-035 (Frame Flipped)**: 6
+> automated cases in `tests/test_functional.py` (`TestFR035FrameFlipped`) — default, settings round
+> trip, silent-POST keeps the value, the pipeline ignores the flip (the web preview is unchanged),
+> the **frame buffer is rotated 180° while the web preview is not** (landscape), and in portrait mode
+> the flip stacks on the 90° pre-rotation. The catalogue now has **35 FR / 10 NFR / 5 IFR / 4 SEC /
+> 3 PER** and **62** cases. Results in EPF-RPT-001 (re-baselined for 2.6.10).
 
 ---
 

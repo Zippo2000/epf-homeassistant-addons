@@ -72,7 +72,7 @@ LICENSE                       # MIT
 .github/workflows/l0.yml      # the L0 tier in CI: build Dockerfile.test, run pytest (L1 auto-skips; no secrets), upload the junit artifact
 .gitignore                    # note: whitelists (!) epf-eink-addon/cpy.so and the add-on manifest; ignores the runtime config/ + photos/
 docs/                         # formal ASPICE deliverables (German/English): 
-                                #   requirements_specification_aspice.md  (EPF-REQ-001: 33 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER)
+                                #   requirements_specification_aspice.md  (EPF-REQ-001: 35 FR + 10 NFR + 5 IFR + 4 SEC + 3 PER)
                                 #   architecture_document.md              (EPF-ARC-001: components C-001..C-018, design decisions D-001..)
                                 #   test_specification_aspice.md          (EPF-TST-001: test cases, one per requirement)
                                 #   test_report_aspice.md                 (EPF-RPT-001: last full run — see version-skew note in §Gotchas)
@@ -95,7 +95,7 @@ epf-eink-addon/               # THE ADD-ON (everything you will normally edit li
   templates/settings.html     # the web UI (Jinja + inline JS): health/battery/photo-status panels, source cards, ComfyUI prompt cards, gallery, dark mode, in-page image zoom (lightbox) for dashboard previews and gallery shots
   tests/
     conftest.py               # fixtures: app_module (fresh import w/ env+NTP+watchdog mocked), client_with_mocks (Flask client + `responses` Immich mocks)
-    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b) + the in-page zoom guard (2.5.0) + frame orientation (2.6.0, TC-FR-034)
+    test_functional.py        # FR-001..015 (album/asset/select/download/convert/scale/dither/overlay/preview/delivery/prepare/serve) + the settings vocabulary & save-time guards (2.4.1, 2.4.3b) + the in-page zoom guard (2.5.0) + frame orientation (2.6.6/2.6.8, TC-FR-034) + frame flipped, buffer-only 180° pre-rotation (2.6.10, TC-FR-035)
     test_nonfunctional.py     # NFR (health, logging, timing, memory, theme, typing) + IFR (immich hdr, esp32, ingress, port) + SEC + PER
     test_providers.py         # Prompt variables, GenerationTracker, each Provider, factory, multi-source integration
     test_gallery_history.py   # FR-032 gallery history: shot ids, pairing, grouped reader, **per-shot** pruning (2.4.3), option round trip
@@ -352,16 +352,13 @@ before quoting them.**
   were unified to 6 in the 14.1 pass; if "7-colour" resurfaces anywhere, treat it as a regression.
 - **The ASPICE test report must track the suite.** `docs/test_report_aspice.md` was re-baselined
   to the multi-source v2 suite in the 14.6 pass and is re-counted with each release (currently the
-  **212 offline + 8 live = 220**-case suite, **2.6.0**, re-counted 2026-11-27 — **L0 re-ran green on 2026-11-27**
-  (212 passed, 8 skipped); the L1/L3 numbers stand from the 2026-11-22 run on the 2.5.0 baseline (report §6.10;
-  re-run L1 before cutting the v2.6.0 tag — it is the load-bearing gate). If
-  a PR adds or removes tests, update the
-  report's counts in the same PR — the "100 %" claim silently rots otherwise (that is how 14.6 found
-  the v1.1.0 drift). The gallery-history feature got **FR-032 / TC-FR-032** in the 2.3.0 pass, the
-  named-workflow feature **FR-033 / TC-FR-033** in the 2.4.0 one, the 2.4.3 pass re-worded
-  **FR-032 / TC-FR-032** for the per-shot gallery pruning, and the 2.5.0 in-page image zoom (Dashboard
-  previews + Gallery) is written as a clause on **FR-026** — no new requirement ID, it is a control on
-  an existing one (see the gallery unit note below).
+  **342 offline + 8 live = 350**-case suite, **2.6.10**, re-counted 2026-11-28 — **L0 re-ran green on
+  2026-11-28** (342 passed, 8 skipped); the L1 numbers stand from the 2026-11-27 run on the 2.6.10
+  baseline and the L3 numbers from the 2026-11-22 run (the 2.6.x diff does not touch the wire
+  contract or the provider layer); **re-run L1 before cutting a new tag** — it is the load-bearing
+  gate). The 2.6.x frame-orientation track got **FR-034** (re-worded for the orientation-aware
+  auto-rotation + the always-800×480 buffer, 2.6.6/2.6.8) and **FR-035 (frame flipped, buffer-only,
+  2.6.10)** — the user accepted it in the field.
 - **One unit for the gallery cap (2.4.3).** `gallery_max_count` / `gallery_retention_days` count
   **shots** (whole `original` + `processed` pairs): `cleanup_gallery()` prunes through
   `_cleanup_previews_per_shot()`, which groups by shot id and judges a group by its newest member —

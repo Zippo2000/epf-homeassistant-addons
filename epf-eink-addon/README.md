@@ -152,10 +152,20 @@ built-in workflow and says so in the log.
 
 ### Display Settings
 
+**frame_orientation**
+- How the physical frame is hung: `landscape` (the hardware-native orientation of the 800×480 panel) or `portrait` (hung on its side)
+- Default: `landscape`
+- A **global** setting owned by the settings page (seeded from the add-on option on first start). The pipeline auto-rotates a source image 90° only when its orientation does not match the frame orientation and it is not square; the web previews follow the wall orientation.
+
+**frame_flipped**
+- `true` when the panel was installed rotated 180° (upside down): pre-rotates the **frame picture alone** by 180° so it reads upright on the wall, while the dashboard previews keep their normal orientation — so the dashboard and the physical frame show the same orientation
+- Options: `true`, `false`
+- Default: `false`
+
 **rotation_angle**
-- Image rotation in degrees
+- Extra manual rotation in degrees, applied on top of the automatic orientation handling (90° steps, counter-clockwise)
 - Options: 0, 90, 180, 270
-- Default: 270
+- Default: 0 (keep it at 0 unless a picture needs manual fine-tuning)
 
 **color_enhance**
 - Color enhancement factor

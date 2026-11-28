@@ -2,10 +2,10 @@
 
 **Project:** EPF Home Assistant Add-ons Repository  
 **Document ID:** EPF-REQ-001  
-**Version:** 2.6.0  
-**Date:** 2026-11-27  
-**Baseline:** Repository commit (main branch, working basis for **v2.6.0**; previous baseline v2.5.0)  
-**Status:** Issued — FR-034 (frame orientation) added; the settings page is re-designed (sidebar layout, dark-navy default theme) under the existing FR-021/FR-026 controls
+**Version:** 2.6.10  
+**Date:** 2026-11-28  
+**Baseline:** Repository commit (main branch, working basis for **v2.6.10**; previous baseline v2.6.0)  
+**Status:** Issued — **FR-034** re-worded to the orientation-aware 2.6.6/2.6.8 semantics (auto-rotation only on orientation mismatch; the frame buffer stays 800×480) and **FR-035 (Frame Flipped — 180° mounting compensation, frame buffer only)** added (2.6.9/2.6.10)
 
 > **Revision 2.3.0 (2026-11-15):** adds **FR-032 (Preview Gallery History)** — the feature shipped in
 > 2.2.0/2.2.1 and made configurable in 2.3.0 (`gallery_max_count`, `gallery_retention_days`). It was
@@ -38,6 +38,18 @@
 > layout, dark-navy default with a light alternative) under the existing FR-021/FR-026 controls — no
 > other requirement changes. The catalogue now has 34 FRs; the matching test case is **TC-FR-034** in
 > EPF-TST-001.
+>
+> **Revision 2.6.6 / 2.6.8 (2026-11-28):** **FR-034** is re-worded after field feedback (a portrait fox
+> shown sideways): the pipeline auto-rotates a source **only when its orientation does not match the
+> frame orientation and it is not square**, the output dimensions follow the frame orientation, and —
+> because the firmware cannot display any other geometry — the **frame buffer stays 800×480 always**
+> (portrait mode pre-rotates the content 90° CCW into the landscape buffer).
+>
+> **Revision 2.6.9 / 2.6.10 (2026-11-28):** adds **FR-035 (Frame Flipped)** — the panel can be
+> physically mounted rotated 180°; the setting pre-rotates the **frame buffer alone** by 180° so it
+> reads upright on the wall while the web preview keeps its normal orientation, so the dashboard and
+> the physical frame match. The catalogue now has **35 FRs**; the matching test case is **TC-FR-035**
+> in EPF-TST-001.
 
 ---
 
@@ -510,11 +522,24 @@ The EPF Add-on operates as a Home Assistant supervised Docker container. It comm
 | **ID** | FR-034 |
 | **Title** | The frame may hang landscape or portrait; the pipeline and the previews follow |
 | **Priority** | Medium |
-| **Description** | The system SHALL support a top-level runtime setting `frame_orientation` with the values `landscape` (default, the hardware-native orientation of the Waveshare 7.3″ Spectra-6 panel) and `portrait`. In portrait mode the image pipeline SHALL rotate the processed frame by an additional 90° (effective angle = `(rotation_angle + 90) mod 360`), so a photo stands upright on a vertically hung frame, while the `original` preview stays unrotated. The settings page SHALL render a select for the orientation (the form always posts it; a POST that omits the field keeps the stored value), SHALL refuse any other value with HTTP 400 (same convention as `rotation`), and SHALL mirror the orientation in the web previews (the `processed`/`delivered` previews are shown rotated to the wall orientation via the document's orientation attribute; the lightbox keeps the raw frame). The value is seeded from the add-on option `frame_orientation` (env `FRAME_ORIENTATION`) on first start and is otherwise owned by the runtime YAML — the same two-channel contract as `date_overlay`. |
+| **Description** | The system SHALL support a top-level runtime setting `frame_orientation` with the values `landscape` (default, the hardware-native orientation of the Waveshare 7.3″ Spectra-6 panel) and `portrait`. **Orientation-aware auto-rotation:** the pipeline SHALL add 90° (counter-clockwise, PIL semantics) to the stored `rotation_angle` **only** when the source image's orientation after EXIF auto-transpose does not match the frame orientation and the source is not square — a portrait photo on a portrait frame stays upright, a landscape photo on a portrait frame is turned to stand upright. The processed web image SHALL follow the frame orientation (`800×480` landscape, `480×800` portrait). **The frame buffer (`latest.bmp`) SHALL always be 800×480** — the fixed geometry the firmware can display: in portrait mode its content is the viewer-oriented image pre-rotated 90° (CCW), which the hung panel's physical rotation brings back upright. The settings page SHALL render a select for the orientation (a POST that omits the field keeps the stored value) and SHALL refuse any other value with HTTP 400 (same convention as `rotation`). The value is seeded from the add-on option `frame_orientation` (env `FRAME_ORIENTATION`) on first start and is otherwise owned by the runtime YAML — the same two-channel contract as `date_overlay`. |
 | **Input** | Settings form (`frame_orientation`), runtime YAML `frame_orientation`, seed-only add-on option `frame_orientation` |
-| **Output** | The processed/delivered frame rotated to the wall orientation; the settings page showing the stored value; the body orientation attribute for the preview mirroring |
+| **Output** | The viewer-oriented processed image (dimensions follow the frame orientation); the frame buffer, always 800×480 with the portrait pre-rotation applied; the settings page showing the stored value |
 | **Verification** | Test |
-| **Traceability** | `app.py` (DEFAULT_CONFIG, `scale_img_in_memory`, POST handler), `run.sh`, `config.yaml`, `templates/settings.html` (orientation select + `data-orientation` previews), `tests/test_functional.py::TestFR034FrameOrientation` |
+| **Traceability** | `app.py` (`_target_dimensions`, `_source_orientation`, `_needs_auto_rotation`, `scale_img_in_memory`, `save_three_previews`, POST handler), `cpy.pyx:load_scaled`, `run.sh`, `config.yaml`, `templates/settings.html`, `tests/test_functional.py::TestFR034FrameOrientation` |
+
+#### FR-035: Frame Flipped (180° Mounting Compensation)
+
+| Attribute | Value |
+|-----------|-------|
+| **ID** | FR-035 |
+| **Title** | A panel mounted rotated 180°: compensate the frame picture, keep the preview |
+| **Priority** | Medium |
+| **Description** | The system SHALL support a top-level runtime setting `frame_flipped` (default `false`, seeded from the add-on option `frame_flipped` / env `FRAME_FLIPPED`). When enabled, the **frame buffer alone** SHALL be pre-rotated 180° (stacking on the portrait 90° pre-rotation where applicable) so a panel installed rotated 180° shows the picture upright. The web preview (`latest_processed.jpg`) and the shared image pipeline SHALL **not** be rotated by this setting, so the dashboard keeps its normal orientation and the dashboard and the physical frame show the same orientation. The settings page SHALL render a No/Yes select in the Frame & Rotation card (a POST that omits the field keeps the stored value; the reset-to-default action sets it to No). |
+| **Input** | Settings form (`frame_flipped`), runtime YAML `frame_flipped`, seed-only add-on option `frame_flipped` |
+| **Output** | The 800×480 frame buffer with the extra 180° pre-rotation; the unchanged web preview; the settings page showing the stored value |
+| **Verification** | Test |
+| **Traceability** | `app.py` (`save_three_previews`, DEFAULT_CONFIG, `update_app_config`, POST handler), `run.sh`, `config.yaml`, `templates/settings.html`, `tests/test_functional.py::TestFR035FrameFlipped` |
 
 ---
 

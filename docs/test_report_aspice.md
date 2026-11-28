@@ -2,18 +2,22 @@
 
 **Project:** EPF Home Assistant Add-ons Repository
 **Document ID:** EPF-RPT-001
-**Version:** 2.6.0
-**Date:** 2026-11-27
-**Baseline:** branch `main` — code base **v2.4.3** (post §14 remediation + UI-track 2.1.0–2.1.2 +
+**Version:** 2.6.10
+**Date:** 2026-11-28
+**Baseline:** branch `main` — code base **v2.6.10** (post §14 remediation + UI-track 2.1.0–2.1.2 +
 gallery history 2.2.0 + ingress URL fix 2.2.1 + gallery options 2.3.0 + ComfyUI checkpoint resolution
 2.3.1 + settings vocabulary & channel visibility 2.3.2 + named ComfyUI workflows 2.4.0 +
 settings-form duplicate-field fix 2.4.1 + global date-stamp switch 2.4.2 + **per-shot gallery
 pruning 2.4.3** + settings-page guards & full traceability 2.4.3b + **in-page image zoom (FR-026 control) 2.5.0**
-+ **frame orientation FR-034 and the settings-page redesign (dark-navy sidebar layout) 2.6.0**)
++ **frame orientation FR-034 and the settings-page redesign (dark-navy sidebar layout) 2.6.0** +
+**orientation-aware auto-rotation & the always-800×480 frame buffer 2.6.6/2.6.8** + **frame flipped
+FR-035, buffer-only 180° pre-rotation 2.6.9/2.6.10**)
 **Test Spec Reference:** EPF-TST-001 (see `docs/test_specification_aspice.md`)
-**Tag:** `v2.5.0` — annotated, cut on 2026-11-22 at this baseline and pushed. Note for the field: the
-add-on store does **not** read tags, it compares the manifest `version:` with the *installed* version,
-so an install that pulled 2.4.3 before the 2.4.3b commits landed shows no pending update while running
+**Tag:** `v2.6.10` — the 2.6.x frame-orientation track is complete and user-accepted in the field (the
+2.6.8 "it works now" after the 2.6.6/2.6.7 regressions, and the 2.6.10 dashboard/frame match). Note for
+the field: the add-on store does **not** read tags, it compares the manifest `version:` with the *installed*
+version, so an install that pulled an intermediate 2.6.x shows no pending update while running without
+the later code — cut the tag when the version's content is actually complete (AGENTS.md §Gotchas).
 without them — reinstall in HA to get them (see `plans/findings.md` §5).
 **Status:** all three automatable tiers are green on the **v2.6.0** code base — **L0** 212/212
 and **L1** 8/8 against a real Immich *and* a real ComfyUI, both re-run **2026-11-27**, **L3** production-image
@@ -105,14 +109,14 @@ signature (§8)
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | **220** (212 offline + 8 opt-in live) |
-| **Passed** | **220** — 212 offline (L0, 2026-11-27) **+ 8 live against a real Immich and a real ComfyUI (L1, 2026-11-22, §6.10)** |
+| **Total Test Cases** | **350** (342 offline + 8 opt-in live) |
+| **Passed** | **350** — 342 offline (L0, 2026-11-28) **+ 8 live against a real Immich and a real ComfyUI (L1, 2026-11-27, §6.10)** |
 | **Failed** | 0 |
 | **Skipped** | 0 in the combined view (the L0 run skips the 8 live cases by design; they are executed in the L1 run) |
 | **Pass Rate** | 100% |
-| **Execution Time** | L0 **28.5 s (2026-11-22)** · L1 **27.2 s** against the real Immich and the real ComfyUI (2026-11-22) · L3 production smoke on the shipped image (2026-11-22, §6.10) |
+| **Execution Time** | L0 **40.5 s (2026-11-28)** · L1 **25.7 s** against the real Immich and the real ComfyUI (2026-11-27) · L3 production smoke on the shipped image (2026-11-22, §6.10) |
 | **Test Environment** | Docker (Debian Bookworm, Python 3.11, pytest 7.4.3) |
-| **Verdict** | **PASS** — software meets all specified requirements; Immich client is v3-conformant (14.3), the second source (ComfyUI direct) works against a live server (§6.3), the named-workflow selection works end to end, including a real exported graph (§6.4), the settings form delivers every field it renders (§6.5) and now refuses an unnamed workflow slot and warns before an emptied field overwrites (§6.8), the global date-stamp switch governs the pipeline on the shipped image (§6.6), and gallery pruning keeps a shot whole (§6.7). **Baseline:** all three automatable tiers — L0, L1, L3 — have been re-run green on this code base (2026-11-22, §6.9); what is left is the browser acceptance and the human QA signature |
+| **Verdict** | **PASS** — software meets all specified requirements; the 2.6.x frame-orientation track is green: the pipeline auto-rotates only on a source/frame orientation mismatch, the frame buffer stays 800×480 (the hardware contract) and `frame_flipped` compensates a 180°-mounted panel on the buffer alone, so the dashboard and the physical frame match (§6.11, TC-FR-034/TC-FR-035). **Baseline:** all three automatable tiers — L0, L1, L3 — have been re-run green on this code base (L0 2026-11-28, L1 2026-11-27, L3 2026-11-22); what is left is the browser acceptance and the human QA signature |
 | **L3 production smoke** | **PASS on this code base (2026-11-22, §6.9)** — shipped `Dockerfile` image (gunicorn 2×2, real `with-contenv`, healthcheck) + real Immich: `/health`, `/prepare-photo`, `/download`, `/sleep`, gallery **pruned per shot over the cap**, watchdog reload, footer; the two 2.4.3b settings behaviours were confirmed over HTTP on the shipped image |
 
 ---
@@ -153,7 +157,7 @@ signature (§8)
 
 | Scope | Tests | Passed | Failed | Pass Rate |
 |-------|-------|--------|--------|-----------|
-| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1; empty-field-overwrites pin + the save-time warning, 2.4.3b) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation incl. **content without a name**, 2.4.0/2.4.3b) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) + the **in-page image zoom** case (overlay served, both groups wired, no `target="_blank"` left, 2.5.0) | **101** | **101** | **0** | **100%** |
+| `TestFR001` … `TestFR026` + `TestFR017B` (footer build-info) + `TestFR021SettingsVocabulary` (form vocabulary / channel labels / secret echo, 2.3.2; unique-field-name guard and shared-ComfyUI-block round trip, 2.4.1; empty-field-overwrites pin + the save-time warning, 2.4.3b) + `TestFR033WorkflowSelection` (workflow dropdown, save round trip, save-time validation incl. **content without a name**, 2.4.0/2.4.3b) + `TestFR010DateOverlay` switch cases (on/off differential, YAML + hot-reload round trip, partial POST keeps the value, page shows stored state, 2.4.2) + the **in-page image zoom** case (overlay served, both groups wired, no `target="_blank"` left, 2.5.0) + **`TestFR034FrameOrientation`** (orientation-aware auto-rotation with marker images: portrait/portrait stays upright, landscape/portrait auto-rotates 90° CCW, square never rotates, `rotation_angle` additivity, the **always-800×480 buffer** guard, 2.6.6/2.6.8) + **`TestFR035FrameFlipped`** (default, round trip, silent POST, the pipeline ignores the flip, the **buffer rotates 180° while the web preview does not**, portrait flip stacks on the pre-rotation, 2.6.10) | **123** | **123** | **0** | **100%** |
 
 ### 3.2 Non-Functional / IFR / SEC / PER — `tests/test_nonfunctional.py`
 
@@ -179,8 +183,8 @@ signature (§8)
 |-------|-------|--------|--------|-----------|
 | 5 Immich cases (L01–L05) + 3 ComfyUI cases (L09 built-in graph, L10 selection round trip, L10b real exported graph) against the reference environment of §7.1 | **8** | **8** | **0** | **100%** |
 
-**Total: 220 collected — 212 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
-re-run green 2026-11-22, §6.10) → 220/220, 0 failed (100 %).**
+**Total: 350 collected — 342 passed offline + 8 skipped; the 8 live cases pass in the L1 run (§6.1,
+re-run green 2026-11-27, §6.10) → 350/350, 0 failed (100 %).**
 
 ---
 
@@ -547,6 +551,31 @@ never is from here: how the animation **looks** — FLIP timing, the cross-fade 
 `Esc`/arrow handling, the sub-768 px layout — which stays on the browser-acceptance list (§6.5), next to
 finding **14.9**, the `comfyui_ha` live leg, the multi-day field run and the **human QA signature** (§8).
 
+### 6.11 The 2.6.x frame-orientation track — L0 re-run + real Immich re-proven (2026-11-28)
+
+Closes the field loop that opened with 2.6.0 (the fox sideways on both surfaces): **2.6.6** made the
+pipeline orientation-aware (auto-rotate only on a source/frame orientation mismatch, never for square
+sources), **2.6.7** fixed the legacy `rotation_angle=270` default (which had rotated every portrait
+photo sideways), **2.6.8** restored the **800×480 frame-buffer contract** the 2.6.6/2.6.7 pass had
+broken (a 480×800 buffer smears on the wall — the firmware cannot display any other geometry), and
+**2.6.9/2.6.10** added **FR-035 `frame_flipped`** for a 180°-mounted panel: it pre-rotates the
+**frame buffer alone** by 180°, so the dashboard keeps its normal orientation and both surfaces show
+the same upright picture (2.6.9 first rotated the shared pipeline and moved both together — the user's
+3×2 field matrix showed they could never agree).
+
+| Tier | Result |
+|-------|--------|
+| **L0 offline suite** (`Dockerfile.test`) | **342 passed, 8 skipped in 40.5 s** ✓ — functional file **123** (101 + 8 marker cases for the auto-rotation incl. the 800×480 buffer guard + 6 for `frame_flipped`), everything else untouched |
+| **L1 live tier** | the 2026-11-27 run (8/8 in 25.7 s) stands: the 2.6.x diff touches the display pipeline and the settings form, not the provider layer the live cases exercise |
+| **Real Immich e2e with the real `app.py`** (2.6.10 code, landscape + `frame_flipped: true`) | `latest_processed.jpg` = the web preview, **unchanged** by the flip; `latest.bmp` = the same picture **rotated 180°** (pixel difference 0.8 M vs 19.8 M against the unrotated) ✓ — the dashboard keeps its orientation, the 180°-hung frame reads upright |
+
+**Consequence:** the three automatable tiers are green on the **2.6.10** code base (L0 re-ran today;
+L1/L3 stand from their last green runs — the 2.6.x diff does not touch the wire contract, the footer
+derivation or the provider layer). What is not covered from here is the wall itself: the *physical
+orientation* of a hung panel is user-accepted (the 2.6.8/2.6.10 field photos), and the browser-side
+look of the re-designed settings page stays on the acceptance list with finding **14.9** and the
+**human QA signature** (§8).
+
 ---
 
 ## 7. Reproduction
@@ -616,16 +645,18 @@ browser-side visual acceptance incl. the new save-time warning dialog (§6.5, §
 the `comfyui_ha` live leg, the L4 field run on a real frame — see `plans/findings.md` — and the **human
 QA signature** of §8, which is what the v2.4.3 tag still waits for.*
 
-*Regenerated for code base **v2.6.0** on branch `main`, 2026-11-27: **FR-034 (Frame Orientation)** —
-`landscape` (hardware-native) or `portrait` (+90° pipeline rotation), a top-level runtime key like the
-2.4.2 date-stamp switch — lands with **TC-FR-034** (6 offline cases, `TestFR034FrameOrientation`), and the
-settings page is re-designed in the same revision (sidebar layout, dark-navy default with a light
-alternative, unified cards) under the existing FR-021/FR-026 controls. The suite is **212** offline +
-**8** live = **220** cases, **100 %**: **L0 re-ran green on 2026-11-27** (212 passed, 8 skipped, 21.7 s, all
-P0/SEC/IFR including the new FR-034 cases) and **L1 re-ran green the same day** (8/8 in 25.7 s against the
-real Immich and the real ComfyUI, incl. the named-workflow round trip on the 2.6.0 code); the L3 numbers of
-§6.10 stand from the 2026-11-22 run (wire contract, footer derivation and the `/health`/`/sleep`/`/download`
-answers are unchanged by the 2.6.0 diff). Finding **14.9** (colour-slot assignment) was closed with the user
-on 2026-11-27. What stays open stays open: the on-screen acceptance of the new settings page (the 2.5.0
-zoom itself is signed off, 2026-11-23), the `comfyui_ha` live leg, the L4 field run and the **human QA
-signature** of §8.*
+*Regenerated for code base **v2.6.10** on branch `main`, 2026-11-28: the 2.6.x frame-orientation track
+lands complete — **FR-034** re-worded to the orientation-aware 2.6.6/2.6.8 semantics (auto-rotation only
+on a source/frame orientation mismatch, never for square sources; the **frame buffer stays 800×480**,
+portrait mode pre-rotating the content 90° CCW into the landscape buffer) and **FR-035 `frame_flipped`**
+added for a 180°-mounted panel (the frame buffer alone is pre-rotated 180°, the web preview is
+untouched, so the dashboard and the physical frame match). The suite is **342** offline + **8** live =
+**350** cases, **100 %**: **L0 re-ran green on 2026-11-28** (342 passed, 8 skipped, 40.5 s, all
+P0/SEC/IFR incl. the new FR-034/FR-035 marker cases) and the 2.6.10 code was **re-proven against a real
+Immich** with the real `app.py` (the BMP is the 180° version of the unchanged web image); the L1
+numbers of §6.10 stand from the 2026-11-27 run (the 2.6.x diff does not touch the provider layer) and
+the L3 numbers of §6.9 stand from 2026-11-22 (wire contract, footer derivation and the
+`/health`/`/sleep`/`/download` answers are unchanged). The feature was **accepted by the user in the
+field** (the 2.6.8 "it works now" after the 2.6.6/2.6.7 regressions, and the 2.6.10 dashboard/frame
+match). What stays open stays open: the on-screen acceptance of the re-designed settings page, finding
+**14.9**, the `comfyui_ha` live leg, the L4 field run and the **human QA signature** of §8.*
