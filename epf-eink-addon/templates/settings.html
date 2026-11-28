@@ -855,6 +855,7 @@
                                     <option value="180" {% if config['immich']['rotation'] == 180 %}selected{% endif %}>180&deg;</option>
                                     <option value="270" {% if config['immich']['rotation'] == 270 %}selected{% endif %}>270&deg; (counter-clockwise)</option>
                                 </select>
+                                <p class="small-text">Extra rotation applied <i>on top of</i> the automatic orientation handling (90° steps, counter-clockwise). Keep it at 0° unless a picture needs manual fine-tuning — the pipeline already rotates a source only when its orientation doesn't match the frame.</p>
                             </div>
                             <div class="form-group">
                                 <label for="display_mode">Display Mode:</label>
@@ -1617,7 +1618,7 @@
             if (comfyuiMaxGens) comfyuiMaxGens.value = '50';
             if (comfyuiDirectUrl) comfyuiDirectUrl.value = '';
             if (comfyuiWorkflow) comfyuiWorkflow.value = '';
-            if (rotation) rotation.value = '270';
+            if (rotation) rotation.value = '0';
             if (displayMode) displayMode.value = 'fill';
             if (imageOrder) imageOrder.value = 'random';
             if (dithering) dithering.value = 'atkinson';

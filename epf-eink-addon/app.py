@@ -177,7 +177,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
-        'rotation': int(os.getenv('ROTATION_ANGLE', '270')),
+        'rotation': int(os.getenv('ROTATION_ANGLE', '0')),
         'enhanced': float(os.getenv('COLOR_ENHANCE', '1.8')),
         'contrast': float(os.getenv('CONTRAST', '0.9')),
         'strength': float(os.getenv('DITHERING_STRENGTH', '1.0')),

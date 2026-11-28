@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.7] - 2026-11-28
+
+### Fixed
+- **Legacy `rotation_angle` default of 270° no longer rotates portrait pictures sideways.** The old base-project default was seeded into existing runtime configs; with the new orientation-aware pipeline it is now applied verbatim, which turned upright portrait sources on portrait frames on their side (verified with a real-album image: rotation 0° = upright, 270° = sideways). The add-on option default, the env fallback, and the UI “Reset to defaults” now all use 0°.
+- **Existing installs:** set **Display → Rotation = 0°** once in the settings UI – the stored value is kept (a save without the field never overwrites it), so the new manifest default does not rewrite it.
+
+### Changed
+- The Rotation field now documents that it is an *extra* rotation applied on top of the automatic orientation handling.
+
 ## [2.6.6] - 2026-11-28
 
 ### Changed

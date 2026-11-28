@@ -1,5 +1,5 @@
 name: "E-Paper Photo Frame (EPF)"
-version: "2.6.6"
+version: "2.6.7"
 slug: "epf-eink-addon"
 description: "E-Ink Photo Frame with Immich and ComfyUI integration for displaying photos on E-Ink displays"
 url: "https://github.com/Zippo2000/epf-homeassistant-addons"
@@ -39,7 +39,7 @@ options:
   comfyui_checkpoint: ""
   comfyui_workflows: ""
   comfyui_active_workflow: ""
-  rotation_angle: 270
+  rotation_angle: 0
   color_enhance: 1.8
   contrast: 0.9
   dithering_strength: 1.0

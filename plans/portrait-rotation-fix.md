@@ -1,6 +1,6 @@
 # Bugfix: Portrait-Vorschau – Rotationsrichtung
 
-> **Status:** 🔶 IN ARBEIT – Implementiert für **2.6.6** (Code + Tests). Noch offen: visuelle Abnahme am echten Frame (Foto vom User).
+> **Status:** 🔶 2.6.6 + 2.6.7 implementiert (Realtests grün). Offen: User muss in der UI **Display → Rotation = 0°** setzen (gespeicherter Legacy-Wert 270° drehte das Bild), danach ein Frame-Foto zur Abnahme.
 > **Hindernis:** Aktuelles Modell (`club3090-active`) hat keine Vision – Screenshots müssen analysiert werden.
 
 ---
@@ -167,6 +167,18 @@ Die Einstellung `rotation_angle` bleibt erhalten und addiert sich zur automatisc
 
 ---
 
+## Realtests (28.11.2026, nach 2.6.6-Build)
+
+1. **Echt-Immich-Replikation** (Album `eink`, Server 192.168.177.42): echte Quellbilder geholt und durch das echte Cython-Modul `load_scaled` gejagt:
+   - Fuchs-Portrait 864×1184, `rotation=0` → **aufrecht** 480×800 ✓
+   - derselbe Fuchs, `rotation=270` → **seitlich** (Kopf zeigt rechts) – exakt die Pose aus dem User-Screenshot `152906.png` ✓
+2. **Echter End-to-End-Test** (echte `app.py` + echtes Immich + `frame_orientation: portrait`, `rotation: 0`): `POST /prepare-photo` → `latest_processed.jpg` 480×800 **aufrecht** mit Datumsstempel ✓
+3. **L0-Suite:** 334 passed, 8 skipped (L1) ✓
+
+**Schlussfolgerung:** Die Pipeline ist korrekt. Der seitliche Homer im Screenshot kommt aus dem **gespeicherten** `rotation_angle=270` (Legacy-Default aus dem Manifest; wurde in 2.6.4/2.6.5 vom Portrait-`+90` zu 360°=0 ausgeglichen, ist jetzt aber wirksam). Fix 2.6.7: Manifest-/Env-/UI-Reset-Default auf **0°**; bestehende Installationen müssen Rotation einmalig in der UI auf 0° setzen (gespeicherte Werte überschreibt kein Save ohne Feld).
+
+---
+
 ## Wie man weitermacht
 
 > **Wichtig:** Nach dem Update auf **2.6.6** muss ein **neuer** Dashboard-Screenshot im Portrait-Modus erstellt und mit dem echten Frame-Foto verglichen werden.
@@ -207,6 +219,6 @@ body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform:
 ```
 
 ### Versionsstand
-- `config.yaml`: `version: "2.6.6"`
-- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.6
+- `config.yaml`: `version: "2.6.7"`
+- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.7
 - Latest commit: TBD
