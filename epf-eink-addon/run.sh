@@ -41,6 +41,7 @@ export DATE_OVERLAY=$(bashio::config 'date_overlay' 'true')
 
 # Frame orientation (2.6.0): landscape = hardware-native, portrait = +90deg pipeline rotation
 export FRAME_ORIENTATION=$(bashio::config 'frame_orientation' 'landscape')
+export FRAME_FLIPPED=$(bashio::config 'frame_flipped' 'false')
 
 # Gallery history limits (defaults: 50 shots, 7 days)
 export GALLERY_MAX_COUNT=$(bashio::config 'gallery_max_count' '50')

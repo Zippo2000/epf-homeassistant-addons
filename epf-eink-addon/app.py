@@ -174,6 +174,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # source when its orientation mismatches the physical frame orientation (and the source
     # is not square). Seeded from the add-on option, like date_overlay.
     'frame_orientation': os.getenv('FRAME_ORIENTATION', 'landscape'),
+    # The panel is physically mounted upside down (180°): rotate both the web preview
+    # and the frame buffer by 180° so the picture reads upright on the wall (2.6.9).
+    'frame_flipped': _env_bool('FRAME_FLIPPED', False),
     'immich': {
         'url': os.getenv('IMMICH_URL', ''),
         'album': os.getenv('ALBUM_NAME', 'default_album'),
@@ -242,6 +245,9 @@ dithering_method: str = current_config['immich'].get('dithering_method', 'atkins
 date_overlay: bool = current_config.get('date_overlay', True)
 # Frame orientation (2.6.0): landscape = hardware-native; portrait rotates the pipeline 90deg.
 frame_orientation: str = current_config.get('frame_orientation', 'landscape')
+# Panel mounted upside down (2.6.9): rotate the picture 180° in both the web
+# preview and the frame buffer.
+frame_flipped: bool = current_config.get('frame_flipped', False)
 sleep_start_hour: int = current_config['immich']['sleep_start_hour']
 sleep_start_minute: int = current_config['immich']['sleep_start_minute']
 sleep_end_hour: int = current_config['immich']['sleep_end_hour']
@@ -528,13 +534,16 @@ def _needs_auto_rotation(width: int, height: int, frame_orientation: str) -> boo
 
 
 def scale_img_in_memory(image: PILImage, target_width: int = 800, target_height: int = 480, bg_color: Tuple[int, int, int] = (255, 255, 255)) -> PILImage:
-    global rotation_angle, dithering_method, frame_orientation
+    global rotation_angle, dithering_method, frame_orientation, frame_flipped
     # Effective rotation: the stored rotation plus 90° only when the source orientation
-    # does not match the physical frame orientation (and the source is not square).
+    # does not match the physical frame orientation (and the source is not square),
+    # plus 180° when the panel is mounted upside down (frame_flipped, 2.6.9).
     # The output dimensions depend on frame_orientation (800x480 landscape, 480x800 portrait).
     target_width, target_height = _target_dimensions(frame_orientation)
     image = ImageOps.exif_transpose(image)
     extra_rotation: int = 90 if _needs_auto_rotation(image.width, image.height, frame_orientation) else 0
+    if frame_flipped:
+        extra_rotation += 180
     rotation: int = (rotation_angle + extra_rotation) % 360
     
     datetime_str: Optional[str] = None
@@ -803,7 +812,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     global current_config, image_source, url, album_name, rotation_angle, img_enhanced, img_contrast
     global strength, display_mode, image_order, dithering_method, sleep_start_hour, sleep_end_hour, sleep_start_minute, sleep_end_minute
     global GALLERY_MAX_COUNT, GALLERY_RETENTION_DAYS, GALLERY_MAX_AGE_SECONDS
-    global date_overlay, frame_orientation
+    global date_overlay, frame_orientation, frame_flipped
     
     if new_config is None or 'immich' not in new_config:
         logger.warning("Invalid config received, ignoring update")
@@ -822,6 +831,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     dithering_method = new_config['immich'].get('dithering_method', 'atkinson')
     date_overlay = bool(new_config.get('date_overlay', True))
     frame_orientation = str(new_config.get('frame_orientation', 'landscape'))
+    frame_flipped = bool(new_config.get('frame_flipped', False))
     sleep_start_hour = new_config['immich']['sleep_start_hour']
     sleep_end_hour = new_config['immich']['sleep_end_hour']
     sleep_start_minute = new_config['immich']['sleep_start_minute']
@@ -834,7 +844,7 @@ def update_app_config(new_config: Dict[str, Any]) -> None:
     
     reset_provider()
     
-    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Orientation={frame_orientation}, Dithering={dithering_method}, DateOverlay={date_overlay}")
+    logger.info(f"Config updated: source={image_source}, URL={url}, Album={album_name}, Rotation={rotation_angle}, Orientation={frame_orientation}, Flipped={frame_flipped}, Dithering={dithering_method}, DateOverlay={date_overlay}")
 
 def start_config_watcher(cfg_path: str) -> Observer:
     config_handler = ConfigFileHandler(cfg_path, update_app_config)
@@ -1048,6 +1058,8 @@ def settings() -> Any:
             # the stored value (2.4.3b rule) and invalid values are refused below (FR-034/D5).
             'frame_orientation': (request.form.get('frame_orientation')
                                   or current_config.get('frame_orientation', 'landscape')),
+            # physical 180° mounting (2.6.9); same keep-stored-on-silence rule as the others
+            'frame_flipped': form_bool('frame_flipped', current_config.get('frame_flipped', False)),
             'immich': {
                 'url': form_field('immich_url', 'url', current_config['immich']['url']),
                 'album': form_field('album_name', 'album', current_config['immich']['album']),

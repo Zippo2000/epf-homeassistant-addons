@@ -1,6 +1,6 @@
 # Bugfix: Portrait-Vorschau – Rotationsrichtung
 
-> **Status:** 🔶 2.6.8 implementiert + Realtests (L0 336 passed, echtes E2E gegen Immich: BMP wieder 800×480). Offen: ein Foto vom echten Frame zur endgültigen Abnahme (Drehrichtung CCW ist aus dem 094406-Foto abgeleitet; falls der Fuchs schief/versehrt ist: 90→270, Ein-Zeilen-Fix).
+> **Status:** ✅ 2.6.8 abgenommen vom User („es funktioniert nun“). Nachbefund: Display physikalisch 180° verdreht verbaut → **2.6.9** `frame_flipped` (180°-Drehung von Web-Preview UND Frame-Bild). Offen: L0-Ablauf + ein Verifikationsfoto mit `frame_flipped: enabled`.
 > **Hindernis:** Aktuelles Modell (`club3090-active`) hat keine Vision – Screenshots müssen analysiert werden.
 
 ---
@@ -184,6 +184,10 @@ Die Einstellung `rotation_angle` bleibt erhalten und addiert sich zur automatisc
 
 **Offen (Abnahme):** ein Frame-Foto vom User; falls das Bild verspiegelt/versehrt ist → `rotate(90)` → `rotate(270)` in `save_three_previews` (eine Zeile).
 
+## 2.6.9: `frame_flipped` (180°-Montage, 28.11.2026)
+
+**Nachbefund des Users:** 2.6.8 funktioniert, aber das Panel ist physikalisch 180° verdreht verbaut → Bild kopfüber. Lösung: neue top-level-YAML-Einstellung `frame_flipped` (Add-on-Option `frame_flipped`, env `FRAME_FLIPPED`, Default `false`), die in `scale_img_in_memory` 180° zur Rotation addiert – Web-Preview UND Frame-BMP drehen zusammen (die BMP-Vorrotation erbt den Effekt automatisch, es gibt keine zweite Stelle). UI: Select im Frame-&-Rotation-Kartuschen („No / Yes – rotate the picture 180°“), Reset setzt auf `disabled`, POST-ohne-Feld behält den Wert (2.4.3b-Regel). Tests: TC-FR-035 (Default, Round-Trip, Silent-POST, Pipeline 180°, Additivität mit Auto-Rotation 90+180=270).
+
 ---
 
 ## Wie man weitermacht
@@ -226,6 +230,6 @@ body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform:
 ```
 
 ### Versionsstand
-- `config.yaml`: `version: "2.6.8"`
-- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.8
+- `config.yaml`: `version: "2.6.9"`
+- `CHANGELOG.md`: Einträge 2.6.0 → 2.6.9
 - Latest commit: TBD

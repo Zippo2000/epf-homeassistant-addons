@@ -1864,3 +1864,74 @@ class TestFR034FrameOrientation:
         bmp = Image.open(os.path.join(test_dir['photos'], 'latest.bmp'))
         assert bmp.size == (EPD_W, EPD_H)
         assert self._is_marker(bmp.load()[0, 0])
+
+
+# ============================================================
+# TC-FR-035: Frame Flipped (2.6.9)
+# ============================================================
+
+class TestFR035FrameFlipped:
+    """TC-FR-035: the panel can be physically mounted upside down.
+
+    'frame_flipped' is a top-level runtime-YAML key (like date_overlay /
+    frame_orientation): seeded from the FRAME_FLIPPED add-on option on first
+    start, edited on the settings page, and honoured by the pipeline. When
+    enabled it adds 180° to the rotation of BOTH the web preview and the frame
+    buffer, so the picture reads upright on a 180°-mounted panel.
+    """
+
+    def _is_marker(self, pixel):
+        r, g, b = pixel
+        return r >= 180 and g == 0 and b == 0
+
+    def test_default_is_not_flipped(self, app_module, client_with_mocks):
+        assert app_module.frame_flipped is False
+        html = client_with_mocks.get('/').data.decode('utf-8')
+        assert 'name="frame_flipped"' in html
+
+    def test_flipped_round_trips_through_the_settings_page(self, client_with_mocks, app_module, test_config_path):
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'frame_flipped': 'enabled'}, follow_redirects=True)
+        with open(test_config_path) as fh:
+            saved = yaml.safe_load(fh)
+        assert saved['frame_flipped'] is True
+        assert app_module.frame_flipped is True
+
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'frame_flipped': 'disabled'}, follow_redirects=True)
+        assert app_module.frame_flipped is False
+
+    def test_a_post_without_the_field_keeps_the_stored_value(self, client_with_mocks, app_module):
+        app_module.current_config['frame_flipped'] = True
+        app_module.frame_flipped = True
+        client_with_mocks.post('/', data={'image_source': 'immich',
+                                          'album_name': 'some-album'}, follow_redirects=True)
+        assert app_module.frame_flipped is True
+
+    def test_pipeline_rotates_180_when_flipped(self, app_module):
+        """A portrait source on a portrait frame with the panel flipped ends up 180° turned."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.frame_flipped = True
+        app_module.display_mode = 'fit'
+        src = _marker_image(480, 800, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        # 180°: the top-left marker lands at bottom-right
+        assert self._is_marker(result.load()[479, 799])
+
+    def test_flipped_is_additive_with_auto_rotation(self, app_module):
+        """A landscape source on a portrait frame: auto 90° + flip 180° = 270°."""
+        if not app_module.CYTHON_AVAILABLE:
+            pytest.skip("Cython not available")
+        app_module.rotation_angle = 0
+        app_module.frame_orientation = 'portrait'
+        app_module.frame_flipped = True
+        app_module.display_mode = 'fit'
+        src = _marker_image(800, 480, 'tl')
+        result = app_module.scale_img_in_memory(src)
+        assert result.size == (480, 800)
+        # 90+180=270: top-left marker lands at top-right
+        assert self._is_marker(result.load()[479, 0])

@@ -848,6 +848,14 @@
                                 <p class="small-text">How the frame is hung. <b>Portrait</b> means the 800×480 panel is mounted on its side: the pipeline pre-rotates the picture so it reads upright on the wall, and the previews on this page show it in that same wall orientation. The frame itself always receives the native 800×480 buffer (the panel can't display anything else).</p>
                             </div>
                             <div class="form-group">
+                                <label for="frame_flipped">Panel Mounted Upside Down:</label>
+                                <select id="frame_flipped" name="frame_flipped">
+                                    <option value="disabled" {% if not config.get('frame_flipped', False) %}selected{% endif %}>No</option>
+                                    <option value="enabled" {% if config.get('frame_flipped', False) %}selected{% endif %}>Yes – rotate the picture 180°</option>
+                                </select>
+                                <p class="small-text">For frames whose panel was installed rotated 180°: turns both the previews on this page and the frame picture upside down so the image reads upright on the wall.</p>
+                            </div>
+                            <div class="form-group">
                                 <label for="rotation_angle">Rotation:</label>
                                 <select id="rotation_angle" name="rotation_angle">
                                     <option value="0" {% if config['immich']['rotation'] == 0 %}selected{% endif %}>0&deg;</option>
@@ -1605,6 +1613,7 @@
             var imageOrder = safeGet('image_order');
             var dithering = safeGet('dithering_method');
             var frameOrientation = safeGet('frame_orientation');
+            var frameFlipped = safeGet('frame_flipped');
 
             if (imageSource) imageSource.value = 'immich';
             if (url) url.value = 'http://localhost';
@@ -1623,6 +1632,7 @@
             if (imageOrder) imageOrder.value = 'random';
             if (dithering) dithering.value = 'atkinson';
             if (frameOrientation) frameOrientation.value = 'portrait';
+            if (frameFlipped) frameFlipped.value = 'disabled';
 
             var sliderIds = ['color_enhance', 'contrast', 'dithering_strength'];
             sliderIds.forEach(function (id) {

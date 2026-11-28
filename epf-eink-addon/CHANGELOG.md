@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.9] - 2026-11-28
+
+### Added
+- **`frame_flipped` – Panel mounted upside down (180°).** New setting in **Display → Frame & Rotation** (runtime YAML, seeded from the add-on option): rotates both the web previews and the frame picture by 180° for frames whose panel was installed rotated 180°. A POST without the field keeps the stored value, like all other settings.
+
 ## [2.6.8] - 2026-11-28
 
 ### Fixed
