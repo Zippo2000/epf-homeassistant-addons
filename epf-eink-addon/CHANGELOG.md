@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.4] - 2026-11-28
+
+### Fixed
+- **Portrait preview rotation matches the actual wall view.** The `object-fit: cover` crop (2.6.3) removed the `rotate(90deg)` that replicates what the viewer sees at the wall. Restored the 166.67%-width + `rotate(90deg)` approach for `.portrait-box` previews and gallery `.is-wall` items. Verified against a real photo of the frame (portrait, building upright).
+
+### Changed
+- **Default `frame_orientation` is now `portrait`.** The frame hangs vertical in practice. Affects `app.py` defaults, the template body attribute, the settings select, and the JS reset.
+
+## [2.6.3] - 2026-11-28
+
+### Added
+- **114 UI visual/structural validation tests** (`tests/test_ui_visual.py`): DOM structure, CSS custom properties, CSP, ARIA, Lightbox behaviour, Modals, Channel-Badges, JS constants/functions/init, form integrity (one field name per config key), orientation (body data-attr, portrait-box CSS, gallery .is-wall), theme persistence, responsive breakpoints, security headers.
+- **2.6.2 workflow slot guard** (in `test_functional.py`): an unchanged nameless legacy slot must not veto a save when all other slots are correctly filled.
+
+### Changed
+- Portrait preview: initially switched from `rotate(90deg)` to `object-fit: cover` crop (reverted in 2.6.4 after field verification).
+
+## [2.6.0] - 2026-11-27
+
+### Added
+- **Frame orientation setting** (`frame_orientation`: landscape | portrait). When set to portrait, the firmware applies a 90° rotation to the image before dithering, and the web preview shows the wall-oriented view (rotated 90° inside a 3:5 box). The original panel stays landscape in both modes (it shows the source, not the wall).
+- **TC-FR-034** in `test_functional.py` covering default value, env override, config round-trip, and the template body attribute.
+
 ## [2.5.0] - 2026-11-22
 
 ### Added
