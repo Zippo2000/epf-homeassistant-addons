@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.6.5] - 2026-11-28
+
+### Fixed
+- **Correct portrait preview rotation direction.** The 2.6.4 release note described restoring `rotate(90deg)`, but that made the Dashboard `processed`/`delivered` previews and the Gallery `.is-wall` items lie sideways relative to the actual wall view. The correct CSS simulation is `rotate(-90deg)`: the 800×480 file already contains content rotated for the portrait-hung panel, so the browser must rotate it back 90° CCW to match what the viewer sees. Updated in `templates/settings.html` for `.preview-img-container.portrait-box img` and `.gallery-item a.is-wall img`.
+
 ## [2.6.4] - 2026-11-28
 
 ### Fixed
-- **Portrait preview rotation matches the actual wall view.** The `object-fit: cover` crop (2.6.3) removed the `rotate(90deg)` that replicates what the viewer sees at the wall. Restored the 166.67%-width + `rotate(90deg)` approach for `.portrait-box` previews and gallery `.is-wall` items. Verified against a real photo of the frame (portrait, building upright).
+- **Portrait preview rotation matches the actual wall view.** The `object-fit: cover` crop (2.6.3) removed the rotation that replicates what the viewer sees at the wall. Restored the 166.67%-width + rotated approach for `.portrait-box` previews and gallery `.is-wall` items. **Note: the rotation direction was corrected to `rotate(-90deg)` in 2.6.5.**
 
 ### Changed
 - **Default `frame_orientation` is now `portrait`.** The frame hangs vertical in practice. Affects `app.py` defaults, the template body attribute, the settings select, and the JS reset.
