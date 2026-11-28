@@ -240,7 +240,7 @@
         body[data-orientation="portrait"] .preview-img-container.portrait-box img {
             position: absolute; top: 50%; left: 50%;
             width: 166.67%; height: auto;
-            transform: translate(-50%, -50%) rotate(90deg);
+            transform: translate(-50%, -50%) rotate(-90deg);
         }
         /* Gallery items in portrait mode: same treatment for wall-oriented files. */
         .gallery-item a { display: block; overflow: hidden; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--surface-2); }
@@ -250,9 +250,9 @@
         body[data-orientation="portrait"] .gallery-item a.is-wall img {
             position: absolute; top: 50%; left: 50%;
             width: 166.67%; height: auto;
-            transform: translate(-50%, -50%) rotate(90deg);
+            transform: translate(-50%, -50%) rotate(-90deg);
         }
-        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(90deg) scale(1.03); }
+        body[data-orientation="portrait"] .gallery-item:hover a.is-wall img { transform: translate(-50%, -50%) rotate(-90deg) scale(1.03); }
         /* ============ Gallery ============ */
         .gallery-controls { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); flex-wrap: wrap; }
         .gallery-count { color: var(--text-tertiary); font-size: var(--text-sm); }
